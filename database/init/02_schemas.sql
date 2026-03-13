@@ -1,0 +1,3 @@
+-- All application tables are managed by Alembic migrations.
+-- This file exists for any database-level configuration only.
+-- Do NOT create application tables here.

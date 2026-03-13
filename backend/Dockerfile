@@ -1,9 +1,10 @@
 FROM python:3.12-slim
 
-# System dependencies (minimal for Phase 0, more added later)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    gdal-bin \
+    libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
