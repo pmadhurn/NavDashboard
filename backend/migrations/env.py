@@ -21,11 +21,13 @@ target_metadata = Base.metadata
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "table" and name == "spatial_ref_sys":
         return False
+    # Don't touch tables that exist in DB but not in our models (PostGIS tiger, topology, etc.)
+    if type_ == "table" and reflected and compare_to is None:
+        return False
     return True
 
-
 def run_migrations_offline() -> None:
-    url = settings.DATABASE_URL
+    url = settings.async_database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -49,7 +51,7 @@ def do_run_migrations(connection):
 
 async def run_async_migrations() -> None:
     connectable = create_async_engine(
-        settings.DATABASE_URL,
+        settings.async_database_url,
         poolclass=pool.NullPool,
     )
     async with connectable.connect() as connection:

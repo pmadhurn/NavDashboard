@@ -96,10 +96,10 @@ async def ensure_default_admin(db: AsyncSession) -> None:
     count = await repository.count_users(db)
     if count == 0:
         admin_in = UserCreate(
-            email="admin@navdashboard.local",
-            username="admin",
+            email="admin@navdashboard.com",
+            username="Madhur",
             password="admin123",
-            full_name="Administrator",
+            full_name="Madhur",
             role="ADMIN",
         )
         await repository.create(db, admin_in)
