@@ -1,17 +1,17 @@
 services:
   nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
+    image: nginx:alpine
     ports:
       - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       frontend:
         condition: service_started
       backend:
-        condition: service_started
+        condition: service_healthy
     networks:
-      - navdashboard_net
+      - navdashboard
     restart: unless-stopped
 
   frontend:
@@ -22,7 +22,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     networks:
-      - navdashboard_net
+      - navdashboard
     restart: unless-stopped
 
   backend:
@@ -39,42 +39,46 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - navdashboard_net
+      - navdashboard
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   db:
-    image: postgis/postgis:16-3.4
+    image: imresamu/postgis:16-3.5
     environment:
+      POSTGRES_DB: navdashboard
       POSTGRES_USER: navdashboard
-      POSTGRES_PASSWORD: navdashboard_secret
-      POSTGRES_DB: navdashboard_db
+      POSTGRES_PASSWORD: navdashboard
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d
-      - ./database/backups:/backups
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - navdashboard
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U navdashboard -d navdashboard_db"]
+      test: ["CMD-SHELL", "pg_isready -U navdashboard -d navdashboard"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - navdashboard_net
-    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    networks:
+      - navdashboard
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - navdashboard_net
-    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  pgdata:
 
 networks:
-  navdashboard_net:
+  navdashboard:
     driver: bridge
