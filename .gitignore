@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Environment
+.env
+!.env.example
+
+# Docker
+postgres_data/
+redis_data/
+
+# Database
+database/backups/*.sql
+database/backups/*.dump
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
