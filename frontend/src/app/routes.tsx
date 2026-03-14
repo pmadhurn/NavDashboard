@@ -22,6 +22,8 @@ import LoginPage from '@/modules/auth/pages/LoginPage';
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage';
 import DeviceListPage from '@/modules/devices/pages/DeviceListPage';
 import DeviceDetailPage from '@/modules/devices/pages/DeviceDetailPage';
+import CoupleListPage from '@/modules/couples/pages/CoupleListPage';
+import CoupleDetailPage from '@/modules/couples/pages/CoupleDetailPage';
 
 export function AppRoutes() {
   return (
@@ -30,8 +32,8 @@ export function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="devices" element={<DeviceListPage />} />
         <Route path="devices/:id" element={<DeviceDetailPage />} />
-        <Route path="couples" element={<PlaceholderPage title="Couples" icon={<LinkOutlined />} />} />
-        <Route path="couples/:id" element={<PlaceholderPage title="Couple Detail" />} />
+        <Route path="couples" element={<CoupleListPage />} />
+        <Route path="couples/:id" element={<CoupleDetailPage />} />
         <Route path="pairs" element={<PlaceholderPage title="Pairs" icon={<SwapOutlined />} />} />
         <Route path="pairs/:id" element={<PlaceholderPage title="Pair Detail" />} />
         <Route path="map" element={<PlaceholderPage title="Map" icon={<EnvironmentOutlined />} />} />

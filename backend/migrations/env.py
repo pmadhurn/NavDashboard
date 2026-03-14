@@ -14,6 +14,8 @@ from modules.auth.models import User  # noqa
 from modules.devices.models import Device, DeviceStatusHistory  # noqa
 from modules.personnel.models import Person, AssignmentHistory  # noqa
 from modules.inventory.models import FittingMaterial, MaterialTemplate  # noqa
+from modules.locations.models import Location, LocationHistory  # noqa
+from modules.couples.models import Couple  # noqa
 
 config = context.config
 if config.config_file_name is not None:
