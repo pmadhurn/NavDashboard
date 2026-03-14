@@ -1,50 +1,4 @@
-*, *::before, *::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background-color: #0A0A0A;
-  color: #F2F2F2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
-               'Inter', Roboto, sans-serif;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-#root {
-  min-height: 100vh;
-}
-
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0A0A0A; }
-::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3A3A3A; }
-
-::selection {
-  background: rgba(230, 230, 230, 0.2);
-  color: #F2F2F2;
-}
-
-.ant-btn-primary {
-  background: #E6E6E6 !important;
-  color: #0A0A0A !important;
-  border: none !important;
-}
-
-.ant-input, .ant-input-affix-wrapper {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: #2A2A2A !important;
-  color: #F2F2F2 !important;
-}
-
-.ant-input:focus, .ant-input-affix-wrapper:focus,
-.ant-input-focused, .ant-input-affix-wrapper-focused {
-  border-color: #C9C9C9 !important;
-  box-shadow: 0 0 0 2px rgba(201, 201, 201, 0.1) !important;
-}@import './glass.css';
+@import './glass.css';
 
 /* ═══════════════════════════════════════════════════ */
 /* GLOBAL RESET + BASE STYLES                          */
@@ -103,13 +57,85 @@ body {
 /* Transitions */
 .ant-btn,
 .ant-input,
+.ant-input-affix-wrapper,
 .ant-select,
 .ant-menu-item,
 .ant-table-row {
   transition: all 0.3s ease !important;
 }
 
-/* Table overrides */
+/* ─── Input overrides ─── */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-password,
+.ant-input-affix-wrapper-lg,
+.ant-input-affix-wrapper-sm,
+.ant-input-lg,
+.ant-input-sm {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid #2A2A2A !important;
+  color: #F2F2F2 !important;
+  border-radius: 8px !important;
+}
+
+.ant-input::placeholder,
+.ant-input-affix-wrapper .ant-input::placeholder {
+  color: #7A7A7A !important;
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused,
+.ant-input-affix-wrapper:focus-within {
+  border-color: #C9C9C9 !important;
+  box-shadow: 0 0 0 2px rgba(201, 201, 201, 0.1) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Inner input inside affix wrapper (password, prefix inputs) */
+.ant-input-affix-wrapper .ant-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #F2F2F2 !important;
+}
+
+/* Password eye icon */
+.ant-input-password-icon,
+.ant-input-suffix {
+  color: #7A7A7A !important;
+}
+
+.ant-input-password-icon:hover {
+  color: #B8B8B8 !important;
+}
+
+/* Prefix icon */
+.ant-input-prefix {
+  color: #7A7A7A !important;
+  margin-inline-end: 8px !important;
+}
+
+/* ─── Button overrides ─── */
+.ant-btn-primary {
+  background: #E6E6E6 !important;
+  color: #0A0A0A !important;
+  border: 1px solid #E6E6E6 !important;
+  font-weight: 500 !important;
+}
+
+.ant-btn-primary:hover {
+  background: #FFFFFF !important;
+  border-color: #FFFFFF !important;
+}
+
+/* ─── Table overrides ─── */
 .ant-table {
   background: transparent !important;
 }
@@ -145,7 +171,7 @@ body {
   color: #F2F2F2 !important;
 }
 
-/* Modal overrides */
+/* ─── Modal overrides ─── */
 .ant-modal-mask {
   background: rgba(0, 0, 0, 0.7) !important;
   backdrop-filter: blur(4px);
@@ -181,7 +207,7 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Menu overrides (sidebar) */
+/* ─── Menu overrides (sidebar) ─── */
 .ant-menu-dark {
   background: transparent !important;
 }
@@ -207,7 +233,7 @@ body {
   color: #C8C8C8 !important;
 }
 
-/* Dropdown overrides */
+/* ─── Dropdown overrides ─── */
 .ant-dropdown-menu {
   background: rgba(31, 31, 31, 0.95) !important;
   backdrop-filter: blur(20px) !important;
@@ -223,7 +249,7 @@ body {
   background: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Pagination */
+/* ─── Pagination ─── */
 .ant-pagination-item {
   background: transparent !important;
   border-color: #242424 !important;
@@ -242,29 +268,25 @@ body {
   color: #E6E6E6 !important;
 }
 
-/* Spin */
+/* ─── Misc ─── */
 .ant-spin-text {
   color: #B8B8B8 !important;
 }
 
-/* Empty */
 .ant-empty-description {
   color: #7A7A7A !important;
 }
 
-/* Breadcrumb */
 .ant-breadcrumb-separator {
   color: #7A7A7A !important;
 }
 
-/* Tooltip */
 .ant-tooltip-inner {
   background: rgba(31, 31, 31, 0.95) !important;
   backdrop-filter: blur(10px) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Message */
 .ant-message-notice-content {
   background: rgba(31, 31, 31, 0.95) !important;
   backdrop-filter: blur(20px) !important;

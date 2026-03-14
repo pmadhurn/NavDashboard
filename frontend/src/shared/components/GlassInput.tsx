@@ -30,13 +30,10 @@ export default function GlassInput({
   disabled = false,
   size = 'md',
 }: GlassInputProps) {
-  const baseStyle: React.CSSProperties = {
+  const wrapperStyle: React.CSSProperties = {
     background: 'rgba(255, 255, 255, 0.05)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
     border: `1px solid ${error ? '#A14242' : '#2A2A2A'}`,
     borderRadius: 8,
-    color: '#F2F2F2',
     transition: 'all 0.3s ease',
   };
 
@@ -54,8 +51,8 @@ export default function GlassInput({
           value={value}
           onChange={handleChange}
           disabled={disabled}
-          style={baseStyle}
           rows={4}
+          style={wrapperStyle}
         />
         {error && (
           <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
@@ -76,7 +73,7 @@ export default function GlassInput({
           prefix={prefix}
           disabled={disabled}
           size={sizeMap[size]}
-          style={baseStyle}
+          style={wrapperStyle}
         />
         {error && (
           <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
@@ -98,7 +95,7 @@ export default function GlassInput({
         suffix={suffix}
         disabled={disabled}
         size={sizeMap[size]}
-        style={baseStyle}
+        style={wrapperStyle}
       />
       {error && (
         <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
