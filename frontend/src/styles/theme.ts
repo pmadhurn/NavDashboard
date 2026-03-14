@@ -1,0 +1,175 @@
+import { theme } from 'antd';
+
+export const colors = {
+  primary: '#E6E6E6',
+  secondary: '#9FA3A8',
+  bg: {
+    main: '#0A0A0A',
+    card: '#141414',
+    sidebar: '#0F0F0F',
+  },
+  text: {
+    primary: '#F2F2F2',
+    secondary: '#B8B8B8',
+    muted: '#7A7A7A',
+  },
+  border: '#242424',
+  status: {
+    working: '#5F8F6B',
+    notWorking: '#B68A3C',
+    faulty: '#9B3E3E',
+  },
+  sidebar: {
+    bg: '#0F0F0F',
+    active: '#1E1E1E',
+    hover: '#1A1A1A',
+    icon: '#C8C8C8',
+  },
+  btn: {
+    primaryBg: '#E6E6E6',
+    primaryText: '#0A0A0A',
+    secondary: '#2A2A2A',
+    danger: '#8A3A3A',
+    disabled: '#3A3A3A',
+  },
+  table: {
+    header: '#151515',
+    altRow: '#111111',
+    hover: '#1C1C1C',
+    selected: '#242424',
+  },
+  input: {
+    border: '#2A2A2A',
+    focus: '#C9C9C9',
+    error: '#A14242',
+  },
+  form: {
+    success: '#5F8F6B',
+  },
+  dropdown: {
+    bg: '#1F1F1F',
+  },
+  tag: {
+    iu: '#6B7F8C',
+    ou: '#8C6B7C',
+    hc: '#6B8C7A',
+    rf: '#8C836B',
+  },
+  severity: {
+    low: '#6E6E6E',
+    medium: '#B68A3C',
+    high: '#9B3E3E',
+    critical: '#6E2C2C',
+  },
+  role: {
+    admin: '#8C8C8C',
+    technician: '#6F7A8C',
+    viewer: '#6E6E6E',
+  },
+  dashboard: {
+    cardSecondary: '#1A1A1A',
+    accentEdge: '#2E2E2E',
+    chart1: '#D6D6D6',
+    chart2: '#A8A8A8',
+    chart3: '#7A7A7A',
+    chart4: '#5A5A5A',
+    chartGrid: '#262626',
+  },
+  audit: {
+    line: '#2C2C2C',
+    create: '#5F8F6B',
+    update: '#7A7A7A',
+    delete: '#9B3E3E',
+  },
+  diff: {
+    match: '#4F7A63',
+    difference: '#8A5C3C',
+  },
+  chat: {
+    userBubble: '#2A2A2A',
+    aiBubble: '#141414',
+    bg: '#0B0B0B',
+    typing: '#8C8C8C',
+  },
+  notif: {
+    info: '#6E7E8A',
+    success: '#5F8F6B',
+    warning: '#B68A3C',
+    error: '#9B3E3E',
+  },
+};
+
+export const antdThemeConfig = {
+  algorithm: theme.darkAlgorithm,
+  token: {
+    colorPrimary: colors.primary,
+    colorBgBase: colors.bg.main,
+    colorBgContainer: colors.bg.card,
+    colorBgElevated: colors.bg.card,
+    colorBgLayout: colors.bg.main,
+    colorText: colors.text.primary,
+    colorTextSecondary: colors.text.secondary,
+    colorTextTertiary: colors.text.muted,
+    colorBorder: colors.border,
+    colorBorderSecondary: colors.border,
+    borderRadius: 8,
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    colorError: colors.input.error,
+    colorSuccess: colors.form.success,
+    colorWarning: colors.severity.medium,
+    colorInfo: colors.notif.info,
+  },
+  components: {
+    Button: {
+      colorPrimary: colors.btn.primaryBg,
+      colorPrimaryHover: '#FFFFFF',
+      colorPrimaryActive: '#D0D0D0',
+      primaryColor: colors.btn.primaryText,
+      borderRadius: 8,
+    },
+    Input: {
+      colorBgContainer: 'rgba(255, 255, 255, 0.05)',
+      colorBorder: colors.input.border,
+      activeBorderColor: colors.input.focus,
+      hoverBorderColor: 'rgba(255, 255, 255, 0.15)',
+      activeShadow: '0 0 0 2px rgba(201, 201, 201, 0.1)',
+      borderRadius: 8,
+    },
+    Table: {
+      colorBgContainer: 'transparent',
+      headerBg: colors.table.header,
+      headerColor: colors.text.secondary,
+      rowHoverBg: colors.table.hover,
+      headerBorderRadius: 0,
+      borderColor: colors.border,
+    },
+    Menu: {
+      darkItemBg: 'transparent',
+      darkItemColor: colors.text.secondary,
+      darkItemHoverBg: colors.sidebar.hover,
+      darkItemHoverColor: colors.text.primary,
+      darkItemSelectedBg: colors.sidebar.active,
+      darkItemSelectedColor: colors.text.primary,
+      itemBorderRadius: 8,
+      iconSize: 18,
+      itemMarginInline: 8,
+      itemMarginBlock: 4,
+    },
+    Modal: {
+      contentBg: 'rgba(20, 20, 20, 0.95)',
+      headerBg: 'transparent',
+      titleColor: colors.text.primary,
+    },
+    Spin: {
+      colorPrimary: colors.primary,
+    },
+    Breadcrumb: {
+      itemColor: colors.text.muted,
+      lastItemColor: colors.text.secondary,
+      linkColor: colors.text.muted,
+      linkHoverColor: colors.text.primary,
+      separatorColor: colors.text.muted,
+    },
+  },
+};

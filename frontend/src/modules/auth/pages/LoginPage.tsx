@@ -1,114 +1,128 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Input, Button, Typography } from 'antd'
-import { MailOutlined, LockOutlined } from '@ant-design/icons'
-import { useLogin } from '@/modules/auth/hooks/useAuth'
-import { useAuthStore } from '@/shared/stores/authStore'
-import { AxiosError } from 'axios'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { message } from 'antd';
+import GlassCard from '@/shared/components/GlassCard';
+import GlassInput from '@/shared/components/GlassInput';
+import GlassButton from '@/shared/components/GlassButton';
+import { useLogin } from '@/modules/auth/hooks/useAuth';
+import { useAuthStore } from '@/shared/stores/authStore';
 
-const { Title, Text } = Typography
-
-interface ApiErrorResponse {
-  detail: string
-}
-
-export function LoginPage() {
-  const navigate = useNavigate()
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
-  const login = useLogin()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const token = useAuthStore((s) => s.token);
+  const { mutate: login, isPending } = useLogin();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true })
+    if (token) {
+      navigate('/', { replace: true });
     }
-  }, [isAuthenticated, navigate])
+  }, [token, navigate]);
 
-  const handleSubmit = () => {
-    setError('')
-    login.mutate(
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      message.error('Please enter email and password');
+      return;
+    }
+    login(
       { email, password },
       {
         onSuccess: () => {
-          navigate('/', { replace: true })
+          navigate('/', { replace: true });
         },
-        onError: (err) => {
-          const axiosError = err as AxiosError<ApiErrorResponse>
-          setError(axiosError.response?.data?.detail || 'Login failed')
+        onError: () => {
+          message.error('Invalid email or password');
         },
-      },
-    )
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit()
-    }
-  }
+      }
+    );
+  };
 
   return (
     <div
       style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
         minHeight: '100vh',
-        backgroundColor: '#0A0A0A',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0A0A0A',
+        padding: 24,
       }}
     >
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: 16,
-          padding: 48,
-          width: 400,
-        }}
-      >
+      <GlassCard padding="lg" style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Title level={2} style={{ color: '#F2F2F2', fontSize: 32, marginBottom: 8 }}>
+          <h1
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              color: '#E6E6E6',
+              margin: 0,
+              letterSpacing: 1,
+              textShadow: '0 0 20px rgba(230, 230, 230, 0.15)',
+            }}
+          >
             NavDashboard
-          </Title>
-          <Text style={{ color: '#7A7A7A', fontSize: 14 }}>Sign in to continue</Text>
+          </h1>
+          <p style={{ color: '#7A7A7A', fontSize: 13, marginTop: 8 }}>
+            Sign in to your account
+          </p>
         </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Input
-            size="large"
-            placeholder="Email"
-            prefix={<MailOutlined style={{ color: '#7A7A7A' }} />}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <Input.Password
-            size="large"
-            placeholder="Password"
-            prefix={<LockOutlined style={{ color: '#7A7A7A' }} />}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-
-          {error && (
-            <Text style={{ color: '#9B3E3E', fontSize: 13 }}>{error}</Text>
-          )}
-
-          <Button
-            type="primary"
-            size="large"
-            block
-            loading={login.isPending}
-            onClick={handleSubmit}
-            style={{ marginTop: 8, height: 44, fontWeight: 600 }}
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label
+              style={{
+                display: 'block',
+                color: '#B8B8B8',
+                fontSize: 13,
+                marginBottom: 6,
+                fontWeight: 500,
+              }}
+            >
+              Email
+            </label>
+            <GlassInput
+              type="email"
+              placeholder="admin@navdashboard.com"
+              value={email}
+              onChange={setEmail}
+              prefix={<MailOutlined style={{ color: '#7A7A7A' }} />}
+              size="lg"
+            />
+          </div>
+          <div style={{ marginBottom: 24 }}>
+            <label
+              style={{
+                display: 'block',
+                color: '#B8B8B8',
+                fontSize: 13,
+                marginBottom: 6,
+                fontWeight: 500,
+              }}
+            >
+              Password
+            </label>
+            <GlassInput
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={setPassword}
+              prefix={<LockOutlined style={{ color: '#7A7A7A' }} />}
+              size="lg"
+            />
+          </div>
+          <GlassButton
+            variant="primary"
+            htmlType="submit"
+            loading={isPending}
+            fullWidth
+            size="lg"
           >
             Sign In
-          </Button>
-        </div>
-      </div>
+          </GlassButton>
+        </form>
+      </GlassCard>
     </div>
-  )
+  );
 }
