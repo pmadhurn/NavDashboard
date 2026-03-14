@@ -20,14 +20,16 @@ import Layout from '@/shared/components/Layout';
 import PlaceholderPage from '@/shared/components/PlaceholderPage';
 import LoginPage from '@/modules/auth/pages/LoginPage';
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage';
+import DeviceListPage from '@/modules/devices/pages/DeviceListPage';
+import DeviceDetailPage from '@/modules/devices/pages/DeviceDetailPage';
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="devices" element={<PlaceholderPage title="Devices" icon={<ApiOutlined />} />} />
-        <Route path="devices/:id" element={<PlaceholderPage title="Device Detail" />} />
+        <Route path="devices" element={<DeviceListPage />} />
+        <Route path="devices/:id" element={<DeviceDetailPage />} />
         <Route path="couples" element={<PlaceholderPage title="Couples" icon={<LinkOutlined />} />} />
         <Route path="couples/:id" element={<PlaceholderPage title="Couple Detail" />} />
         <Route path="pairs" element={<PlaceholderPage title="Pairs" icon={<SwapOutlined />} />} />

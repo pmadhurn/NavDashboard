@@ -10,6 +10,7 @@ from core.database import Base
 
 from shared.audit import AuditLog  # noqa
 from modules.auth.models import User  # noqa
+from modules.devices.models import Device, DeviceStatusHistory  # noqa
 
 config = context.config
 if config.config_file_name is not None:
@@ -21,10 +22,10 @@ target_metadata = Base.metadata
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "table" and name == "spatial_ref_sys":
         return False
-    # Don't touch tables that exist in DB but not in our models (PostGIS tiger, topology, etc.)
     if type_ == "table" and reflected and compare_to is None:
         return False
     return True
+
 
 def run_migrations_offline() -> None:
     url = settings.async_database_url
