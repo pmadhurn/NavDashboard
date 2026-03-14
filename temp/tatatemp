@@ -1,0 +1,2377 @@
+  backend/main.py
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+
+from core.config import settings
+from core.database import async_session_factory, engine
+from core.exceptions import (
+    NotFoundException,
+    BadRequestException,
+    UnauthorizedException,
+    ForbiddenException,
+    ConflictException,
+)
+from modules.auth.router import router as auth_router
+from modules.devices.router import router as devices_router
+from modules.personnel.router import router as personnel_router
+from modules.inventory.router import router as inventory_router
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("NavDashboard API starting...")
+
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        logger.info("Database connection verified.")
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+
+    try:
+        async with async_session_factory() as db:
+            from modules.auth.service import ensure_default_admin
+
+            await ensure_default_admin(db)
+    except Exception as e:
+        logger.error(f"Default admin creation failed: {e}")
+
+    logger.info("Startup complete.")
+    yield
+    logger.info("NavDashboard API shutting down...")
+
+
+app = FastAPI(
+    title="NavDashboard API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.exception_handler(NotFoundException)
+async def not_found_handler(request: Request, exc: NotFoundException):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(BadRequestException)
+async def bad_request_handler(request: Request, exc: BadRequestException):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(UnauthorizedException)
+async def unauthorized_handler(request: Request, exc: UnauthorizedException):
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
+
+
+@app.exception_handler(ForbiddenException)
+async def forbidden_handler(request: Request, exc: ForbiddenException):
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(ConflictException)
+async def conflict_handler(request: Request, exc: ConflictException):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+app.include_router(auth_router, prefix=settings.API_V1_PREFIX + "/auth", tags=["auth"])
+app.include_router(devices_router, prefix=settings.API_V1_PREFIX + "/devices", tags=["devices"])
+app.include_router(personnel_router, prefix=settings.API_V1_PREFIX + "/personnel", tags=["personnel"])
+app.include_router(inventory_router, prefix=settings.API_V1_PREFIX + "/inventory", tags=["inventory"])
+
+
+@app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
+async def health_check():
+    db_status = "disconnected"
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception:
+        pass
+
+    return {
+        "status": "ok",
+        "environment": settings.ENVIRONMENT,
+        "database": db_status,
+        "version": "0.1.0",
+    }
+
+
+backend/migrations/env.py
+import asyncio
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from core.config import settings
+from core.database import Base
+
+# Model imports for autogenerate
+from shared.audit import AuditLog  # noqa
+from modules.auth.models import User  # noqa
+from modules.devices.models import Device, DeviceStatusHistory  # noqa
+from modules.personnel.models import Person, AssignmentHistory  # noqa
+from modules.inventory.models import FittingMaterial, MaterialTemplate  # noqa
+
+config = context.config
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+target_metadata = Base.metadata
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name == "spatial_ref_sys":
+        return False
+    if type_ == "table" and reflected and compare_to is None:
+        return False
+    return True
+
+
+def run_migrations_offline() -> None:
+    url = settings.async_database_url
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection):
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    connectable = create_async_engine(
+        settings.async_database_url,
+        poolclass=pool.NullPool,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    asyncio.run(run_async_migrations())
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+
+backend/core/database.py
+import logging
+from datetime import datetime
+from typing import AsyncGenerator, Optional
+from uuid import uuid4
+
+from sqlalchemy import Column, DateTime, func, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from core.config import settings
+
+logger = logging.getLogger(__name__)
+
+engine = create_async_engine(
+    settings.async_database_url,
+    echo=(settings.ENVIRONMENT == "development"),
+    pool_size=20,
+    max_overflow=10,
+)
+
+async_session_factory = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+
+class Base(DeclarativeBase):
+    __abstract__ = True
+
+    id: Mapped[uuid4] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        nullable=True,
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class SoftDeleteMixin:
+    @classmethod
+    def not_deleted(cls):
+        return cls.deleted_at.is_(None)
+
+
+class CustomFieldsMixin:
+    custom_fields = Column(JSONB, nullable=True, default=None)
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    session = async_session_factory()
+    try:
+        yield session
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+
+
+async def check_db_connection() -> bool:
+    try:
+        async with async_session_factory() as session:
+            await session.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        logger.error("Database connection check failed: %s", e)
+        return False
+
+backend/core/config.py
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
+    # Database
+    POSTGRES_USER: str = "navdashboard"
+    POSTGRES_PASSWORD: str = "navdashboard_secret"
+    POSTGRES_DB: str = "navdashboard_db"
+    POSTGRES_HOST: str = "db"
+    POSTGRES_PORT: int = 5432
+
+    # Redis
+    REDIS_URL: str = "redis://redis:6379/0"
+
+    # JWT (defined now, used in Phase 2)
+    SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRY_MINUTES: int = 1440
+
+    # App
+    ENVIRONMENT: str = "development"
+    APP_NAME: str = "NavDashboard"
+    API_V1_PREFIX: str = "/api/v1"
+
+    @property
+    def async_database_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
+            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    @property
+    def sync_database_url(self) -> str:
+        return (
+            f"postgresql+psycopg2://{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
+            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+
+settings = Settings()
+
+backend/shared/audit.py
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import DateTime, String, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    entity_type: Mapped[str] = mapped_column(String, nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    changed_by: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    old_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    new_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+
+async def record_audit(
+    db: AsyncSession,
+    action: str,
+    entity_type: str,
+    entity_id: UUID,
+    user_id: UUID,
+    old_values: dict | None = None,
+    new_values: dict | None = None,
+) -> None:
+    entry = AuditLog(
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changed_by=user_id,
+        old_values=old_values,
+        new_values=new_values,
+    )
+    db.add(entry)
+    await db.flush()
+
+backend/shared/pagination.py
+from math import ceil
+from typing import Generic, Type, TypeVar
+
+from pydantic import BaseModel, Field
+from sqlalchemy import Select, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+T = TypeVar("T", bound=BaseModel)
+
+
+class PaginationParams(BaseModel):
+    page: int = Field(default=1, ge=1)
+    size: int = Field(default=20, ge=1, le=100)
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+async def paginate(
+    db: AsyncSession,
+    query: Select,
+    params: PaginationParams,
+    response_schema: Type[T],
+) -> PaginatedResponse[T]:
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+
+    offset = (params.page - 1) * params.size
+    paginated_query = query.offset(offset).limit(params.size)
+    result = await db.execute(paginated_query)
+    rows = result.all()
+
+    items = []
+    for row in rows:
+        obj = row[0] if len(row) == 1 else row
+        if hasattr(obj, "__dict__") and hasattr(obj, "__table__"):
+            items.append(response_schema.model_validate(obj, from_attributes=True))
+        else:
+            items.append(response_schema.model_validate(obj._mapping))
+
+    pages = ceil(total / params.size) if params.size > 0 else 0
+
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
+    )
+
+backend/shared/filters.py
+
+from typing import Any
+
+from sqlalchemy import Select
+
+
+def apply_filters(
+    query: Select,
+    model: Any,
+    filters: dict[str, Any],
+) -> Select:
+    for key, value in filters.items():
+        if value is None:
+            continue
+
+        parts = key.split("__")
+        field_name = parts[0]
+        suffix = parts[1] if len(parts) > 1 else None
+
+        column = getattr(model, field_name, None)
+        if column is None:
+            continue
+
+        if suffix is None:
+            query = query.where(column == value)
+        elif suffix == "contains":
+            query = query.where(column.ilike(f"%{value}%"))
+        elif suffix == "gte":
+            query = query.where(column >= value)
+        elif suffix == "lte":
+            query = query.where(column <= value)
+        elif suffix == "in":
+            query = query.where(column.in_(value))
+        elif suffix == "isnull":
+            if value:
+                query = query.where(column.is_(None))
+            else:
+                query = query.where(column.isnot(None))
+
+    return query
+
+backend/modules/devices/models.py
+
+from datetime import datetime
+from typing import Optional
+from uuid import UUID, uuid4
+
+from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
+
+
+class Device(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "devices"
+
+    serial_number: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )
+    device_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    couple_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )  # FK added in Phase 6 when couples table exists
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="WORKING"
+    )
+    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )  # FK added in Phase 5
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+
+class DeviceStatusHistory(Base):
+    __tablename__ = "device_status_history"
+
+    device_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        nullable=False,
+        index=True,
+    )
+    old_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    new_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    changed_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+backend/modules/devices/schemas.py
+
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field, model_validator
+
+from modules.devices.constants import STATUS_COLORS, DeviceStatus
+
+
+class DeviceCreate(BaseModel):
+    serial_number: str = Field(min_length=1, max_length=50)
+    device_type: str
+    status: str = "WORKING"
+    couple_id: Optional[UUID] = None
+    handling_person_id: Optional[UUID] = None
+    notes: Optional[str] = None
+    custom_fields: Optional[dict] = None
+    metadata_json: Optional[dict] = None
+
+
+class DeviceUpdate(BaseModel):
+    serial_number: Optional[str] = None
+    device_type: Optional[str] = None
+    status: Optional[str] = None
+    couple_id: Optional[UUID] = None
+    handling_person_id: Optional[UUID] = None
+    notes: Optional[str] = None
+    custom_fields: Optional[dict] = None
+    metadata_json: Optional[dict] = None
+
+
+class DeviceResponse(BaseModel):
+    id: UUID
+    serial_number: str
+    device_type: str
+    status: str
+    status_color: str = ""
+    couple_id: Optional[UUID] = None
+    handling_person_id: Optional[UUID] = None
+    notes: Optional[str] = None
+    custom_fields: Optional[dict] = None
+    metadata_json: Optional[dict] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def compute_status_color(self) -> "DeviceResponse":
+        try:
+            self.status_color = STATUS_COLORS[DeviceStatus(self.status)]
+        except (ValueError, KeyError):
+            self.status_color = "#888888"
+        return self
+
+
+class DeviceStatusHistoryResponse(BaseModel):
+    id: UUID
+    device_id: UUID
+    old_status: str
+    new_status: str
+    changed_by: UUID
+    changed_at: datetime
+    reason: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DeviceStatsResponse(BaseModel):
+    total: int
+    by_type: dict[str, int]
+    by_status: dict[str, int]
+
+
+class StatusChangeRequest(BaseModel):
+    status: str
+    reason: Optional[str] = None
+backend/modules/devices/repository.py
+
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from modules.devices.models import Device, DeviceStatusHistory
+from modules.devices.schemas import DeviceCreate, DeviceUpdate
+from shared.filters import apply_filters
+
+
+async def get_by_id(db: AsyncSession, id: UUID) -> Optional[Device]:
+    stmt = select(Device).where(Device.id == id, Device.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_multi(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 100,
+    filters: dict | None = None,
+) -> list[Device]:
+    stmt = select(Device).where(Device.deleted_at.is_(None))
+    if filters:
+        stmt = apply_filters(stmt, Device, filters)
+    stmt = stmt.offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create(db: AsyncSession, obj_in: DeviceCreate) -> Device:
+    device = Device(
+        serial_number=obj_in.serial_number,
+        device_type=obj_in.device_type,
+        status=obj_in.status,
+        couple_id=obj_in.couple_id,
+        handling_person_id=obj_in.handling_person_id,
+        notes=obj_in.notes,
+        custom_fields=obj_in.custom_fields,
+        metadata_json=obj_in.metadata_json,
+    )
+    db.add(device)
+    await db.flush()
+    await db.refresh(device)
+    return device
+
+
+async def update(db: AsyncSession, id: UUID, obj_in: DeviceUpdate) -> Device:
+    stmt = select(Device).where(Device.id == id, Device.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    device = result.scalar_one_or_none()
+    if not device:
+        return None  # type: ignore
+    update_data = obj_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(device, field, value)
+    await db.flush()
+    await db.refresh(device)
+    return device
+
+
+async def soft_delete(db: AsyncSession, id: UUID) -> Optional[Device]:
+    stmt = select(Device).where(Device.id == id, Device.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    device = result.scalar_one_or_none()
+    if not device:
+        return None
+    from datetime import datetime, timezone
+
+    device.deleted_at = datetime.now(timezone.utc)
+    device.couple_id = None
+    await db.flush()
+    await db.refresh(device)
+    return device
+
+
+async def find_by_serial(db: AsyncSession, serial_number: str) -> Optional[Device]:
+    stmt = select(Device).where(
+        Device.serial_number == serial_number, Device.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def search_by_serial(db: AsyncSession, query: str) -> list[Device]:
+    stmt = select(Device).where(
+        Device.serial_number.ilike(f"%{query}%"), Device.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_stats(db: AsyncSession) -> dict:
+    base = select(Device).where(Device.deleted_at.is_(None))
+
+    total_result = await db.execute(
+        select(func.count()).select_from(base.subquery())
+    )
+    total = total_result.scalar_one()
+
+    type_result = await db.execute(
+        select(Device.device_type, func.count())
+        .where(Device.deleted_at.is_(None))
+        .group_by(Device.device_type)
+    )
+    by_type = {row[0]: row[1] for row in type_result.all()}
+
+    status_result = await db.execute(
+        select(Device.status, func.count())
+        .where(Device.deleted_at.is_(None))
+        .group_by(Device.status)
+    )
+    by_status = {row[0]: row[1] for row in status_result.all()}
+
+    return {"total": total, "by_type": by_type, "by_status": by_status}
+
+
+async def get_status_history(
+    db: AsyncSession, device_id: UUID
+) -> list[DeviceStatusHistory]:
+    stmt = (
+        select(DeviceStatusHistory)
+        .where(DeviceStatusHistory.device_id == device_id)
+        .order_by(DeviceStatusHistory.changed_at.desc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create_status_history(
+    db: AsyncSession, entry: DeviceStatusHistory
+) -> DeviceStatusHistory:
+    db.add(entry)
+    await db.flush()
+    await db.refresh(entry)
+    return entry
+
+
+async def count_all(db: AsyncSession) -> int:
+    stmt = select(func.count()).select_from(
+        select(Device).where(Device.deleted_at.is_(None)).subquery()
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one()
+backend/modules/personnel/models.py
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+
+
+class Person(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "personnel"
+
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class AssignmentHistory(Base):
+    __tablename__ = "assignment_history"
+
+    person_id: Mapped[UUID] = mapped_column(
+        ForeignKey("personnel.id"), index=True, nullable=False
+    )
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(index=True, nullable=False)
+    assigned_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    unassigned_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+backend/modules/inventory/models.py
+from __future__ import annotations
+
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import Boolean, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+
+
+class FittingMaterial(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "fitting_materials"
+
+    couple_id: Mapped[Optional[UUID]] = mapped_column(nullable=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    is_template: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class MaterialTemplate(Base):
+    __tablename__ = "material_templates"
+
+    template_name: Mapped[str] = mapped_column(
+        String(200), unique=True, nullable=False
+    )
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    materials: Mapped[dict] = mapped_column(JSONB, nullable=False)
+backend/modules/inventory/schemas.py
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+
+class MaterialCreate(BaseModel):
+    couple_id: Optional[UUID] = None
+    name: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = None
+    quantity: int = Field(default=1, ge=1)
+    unit: Optional[str] = None
+    is_template: bool = False
+    custom_fields: Optional[dict] = None
+
+
+class MaterialUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    quantity: Optional[int] = None
+    unit: Optional[str] = None
+    custom_fields: Optional[dict] = None
+
+
+class MaterialResponse(BaseModel):
+    id: UUID
+    couple_id: Optional[UUID] = None
+    name: str
+    description: Optional[str] = None
+    quantity: int
+    unit: Optional[str] = None
+    is_template: bool
+    custom_fields: Optional[dict] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class TemplateCreate(BaseModel):
+    template_name: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = None
+    materials: list[dict]
+
+
+class TemplateUpdate(BaseModel):
+    template_name: Optional[str] = None
+    description: Optional[str] = None
+    materials: Optional[list[dict]] = None
+
+
+class TemplateResponse(BaseModel):
+    id: UUID
+    template_name: str
+    description: Optional[str] = None
+    materials: list[dict]
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class SuggestionResponse(BaseModel):
+    name: str
+    count: int
+backend/modules/inventory/repository.py
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from shared.filters import apply_filters
+
+from .models import FittingMaterial, MaterialTemplate
+from .schemas import MaterialCreate, MaterialUpdate, TemplateCreate, TemplateUpdate
+
+
+async def get_by_id(db: AsyncSession, id: UUID) -> Optional[FittingMaterial]:
+    stmt = select(FittingMaterial).where(
+        FittingMaterial.id == id, FittingMaterial.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_multi(
+    db: AsyncSession, skip: int = 0, limit: int = 100, filters: dict | None = None
+) -> list[FittingMaterial]:
+    stmt = select(FittingMaterial).where(FittingMaterial.deleted_at.is_(None))
+    if filters:
+        stmt = apply_filters(stmt, FittingMaterial, filters)
+    stmt = stmt.order_by(FittingMaterial.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create(db: AsyncSession, obj_in: MaterialCreate) -> FittingMaterial:
+    material = FittingMaterial(**obj_in.model_dump())
+    db.add(material)
+    await db.flush()
+    await db.refresh(material)
+    return material
+
+
+async def update(
+    db: AsyncSession, id: UUID, obj_in: MaterialUpdate
+) -> Optional[FittingMaterial]:
+    material = await get_by_id(db, id)
+    if not material:
+        return None
+    update_data = obj_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(material, field, value)
+    material.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(material)
+    return material
+
+
+async def soft_delete(db: AsyncSession, id: UUID) -> Optional[FittingMaterial]:
+    material = await get_by_id(db, id)
+    if not material:
+        return None
+    material.deleted_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(material)
+    return material
+
+
+async def get_by_couple(db: AsyncSession, couple_id: UUID) -> list[FittingMaterial]:
+    stmt = (
+        select(FittingMaterial)
+        .where(
+            FittingMaterial.couple_id == couple_id,
+            FittingMaterial.deleted_at.is_(None),
+        )
+        .order_by(FittingMaterial.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_templates(db: AsyncSession) -> list[MaterialTemplate]:
+    stmt = select(MaterialTemplate).order_by(MaterialTemplate.created_at.desc())
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_template_by_id(
+    db: AsyncSession, template_id: UUID
+) -> Optional[MaterialTemplate]:
+    stmt = select(MaterialTemplate).where(MaterialTemplate.id == template_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_template(
+    db: AsyncSession, obj_in: TemplateCreate
+) -> MaterialTemplate:
+    template = MaterialTemplate(**obj_in.model_dump())
+    db.add(template)
+    await db.flush()
+    await db.refresh(template)
+    return template
+
+
+async def update_template(
+    db: AsyncSession, template_id: UUID, obj_in: TemplateUpdate
+) -> Optional[MaterialTemplate]:
+    template = await get_template_by_id(db, template_id)
+    if not template:
+        return None
+    update_data = obj_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(template, field, value)
+    template.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(template)
+    return template
+
+
+async def get_suggestions(
+    db: AsyncSession, query: str, limit: int = 10
+) -> list[dict]:
+    stmt = (
+        select(
+            FittingMaterial.name,
+            func.count(FittingMaterial.id).label("count"),
+        )
+        .where(
+            FittingMaterial.deleted_at.is_(None),
+            FittingMaterial.name.ilike(f"%{query}%"),
+        )
+        .group_by(FittingMaterial.name)
+        .order_by(func.count(FittingMaterial.id).desc())
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    return [{"name": row.name, "count": row.count} for row in result.all()]
+
+
+async def count_all(db: AsyncSession) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(FittingMaterial)
+        .where(FittingMaterial.deleted_at.is_(None))
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one()
+backend/modules/inventory/templates.py
+from __future__ import annotations
+
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.exceptions import NotFoundException
+
+from . import repository
+from .models import FittingMaterial
+from .schemas import MaterialCreate
+
+
+async def create_materials_from_template(
+    db: AsyncSession, template_id: UUID, couple_id: UUID
+) -> list[FittingMaterial]:
+    template = await repository.get_template_by_id(db, template_id)
+    if not template:
+        raise NotFoundException(detail=f"Template {template_id} not found")
+
+    created = []
+    for mat_def in template.materials:
+        material_in = MaterialCreate(
+            couple_id=couple_id,
+            name=mat_def["name"],
+            quantity=mat_def.get("quantity", 1),
+            unit=mat_def.get("unit"),
+            is_template=False,
+        )
+        material = await repository.create(db, material_in)
+        created.append(material)
+
+    return created
+
+
+async def copy_materials_from_couple(
+    db: AsyncSession, source_couple_id: UUID, target_couple_id: UUID
+) -> list[FittingMaterial]:
+    source_materials = await repository.get_by_couple(db, source_couple_id)
+
+    created = []
+    for src in source_materials:
+        material_in = MaterialCreate(
+            couple_id=target_couple_id,
+            name=src.name,
+            description=src.description,
+            quantity=src.quantity,
+            unit=src.unit,
+            is_template=False,
+        )
+        material = await repository.create(db, material_in)
+        created.append(material)
+
+    return created
+backend/modules/auth/models.py
+from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
+
+
+class User(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "users"
+
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), default="VIEWER", nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+backend/requirements.txt
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+sqlalchemy[asyncio]>=2.0.36
+asyncpg>=0.30.0
+alembic>=1.14.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+python-dotenv>=1.0.0
+geoalchemy2>=0.17.0
+shapely>=2.0.0
+python-jose[cryptography]>=3.3
+passlib[bcrypt]>=1.7
+python-multipart>=0.0.18
+pydantic[email]>=2.10
+bcrypt==4.0.
+
+
+18. frontend/src/app/routes.tsx
+
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import {
+  ApiOutlined,
+  LinkOutlined,
+  SwapOutlined,
+  EnvironmentOutlined,
+  ToolOutlined,
+  RobotOutlined,
+  HistoryOutlined,
+  FileOutlined,
+  BarChartOutlined,
+  AuditOutlined,
+  SearchOutlined,
+  DiffOutlined,
+  CloudDownloadOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
+import Layout from '@/shared/components/Layout';
+import PlaceholderPage from '@/shared/components/PlaceholderPage';
+import LoginPage from '@/modules/auth/pages/LoginPage';
+import DashboardPage from '@/modules/dashboard/pages/DashboardPage';
+import DeviceListPage from '@/modules/devices/pages/DeviceListPage';
+import DeviceDetailPage from '@/modules/devices/pages/DeviceDetailPage';
+
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="devices" element={<DeviceListPage />} />
+        <Route path="devices/:id" element={<DeviceDetailPage />} />
+        <Route path="couples" element={<PlaceholderPage title="Couples" icon={<LinkOutlined />} />} />
+        <Route path="couples/:id" element={<PlaceholderPage title="Couple Detail" />} />
+        <Route path="pairs" element={<PlaceholderPage title="Pairs" icon={<SwapOutlined />} />} />
+        <Route path="pairs/:id" element={<PlaceholderPage title="Pair Detail" />} />
+        <Route path="map" element={<PlaceholderPage title="Map" icon={<EnvironmentOutlined />} />} />
+        <Route path="troubleshooting" element={<PlaceholderPage title="Troubleshooting" icon={<ToolOutlined />} />} />
+        <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
+        <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
+        <Route path="documents" element={<PlaceholderPage title="Documents" icon={<FileOutlined />} />} />
+        <Route path="reports" element={<PlaceholderPage title="Reports" icon={<BarChartOutlined />} />} />
+        <Route path="audit" element={<PlaceholderPage title="Audit Trail" icon={<AuditOutlined />} />} />
+        <Route path="search" element={<PlaceholderPage title="Search" icon={<SearchOutlined />} />} />
+        <Route path="comparison" element={<PlaceholderPage title="Comparison" icon={<DiffOutlined />} />} />
+        <Route path="backup" element={<PlaceholderPage title="Backup" icon={<CloudDownloadOutlined />} />} />
+        <Route path="settings" element={<PlaceholderPage title="Settings" icon={<SettingOutlined />} />} />
+      </Route>
+      <Route path="login" element={<LoginPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+19. frontend/src/shared/types/devices.ts
+export interface Device {
+  id: string
+  serial_number: string
+  device_type: 'IU' | 'OU' | 'HC' | 'RF'
+  status: 'WORKING' | 'NOT_WORKING' | 'FAULTY'
+  status_color: string
+  couple_id: string | null
+  handling_person_id: string | null
+  notes: string | null
+  custom_fields: Record<string, unknown> | null
+  metadata_json: Record<string, unknown> | null
+  created_at: string
+  updated_at: string | null
+}
+
+export interface DeviceStatusHistory {
+  id: string
+  device_id: string
+  old_status: string
+  new_status: string
+  changed_by: string
+  changed_at: string
+  reason: string | null
+}
+
+export interface DeviceStats {
+  total: number
+  by_type: Record<string, number>
+  by_status: Record<string, number>
+}
+
+export interface DeviceCreate {
+  serial_number: string
+  device_type: string
+  status?: string
+  couple_id?: string | null
+  handling_person_id?: string | null
+  notes?: string | null
+  custom_fields?: Record<string, unknown> | null
+  metadata_json?: Record<string, unknown> | null
+}
+
+export interface DeviceUpdate extends Partial<DeviceCreate> {}
+
+export interface StatusChangeRequest {
+  status: string
+  reason?: string | null
+}
+}
+20. frontend/src/shared/types/common.ts
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface ApiError {
+  detail: string;
+  status_code?: number;
+}
+
+export type DeviceType = 'IU' | 'OU' | 'HC' | 'RF';
+export type DeviceStatus = 'WORKING' | 'NOT_WORKING' | 'FAULTY';
+export type Severity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type UserRole = 'ADMIN' | 'TECHNICIAN' | 'VIEWER';
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
+  updated_at: string | null;
+  custom_fields: Record<string, unknown> | null;
+}
+21. frontend/src/shared/api/client.ts
+
+import axios from 'axios'
+
+const axiosInstance = axios.create({
+  baseURL: '/api/v1',
+  headers: { 'Content-Type': 'application/json' },
+})
+
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('access_token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  },
+)
+
+export const api = {
+  get: <T>(url: string, params?: object): Promise<T> =>
+    axiosInstance.get(url, { params }).then(res => res.data),
+  post: <T>(url: string, data?: object): Promise<T> =>
+    axiosInstance.post(url, data).then(res => res.data),
+  put: <T>(url: string, data?: object): Promise<T> =>
+    axiosInstance.put(url, data).then(res => res.data),
+  del: <T>(url: string): Promise<T> =>
+    axiosInstance.delete(url).then(res => res.data),
+}
+22. frontend/src/shared/components/DataTable.tsx
+import React from 'react';
+import { Table } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import EmptyState from './EmptyState';
+import LoadingSpinner from './LoadingSpinner';
+
+interface DataTableProps<T> {
+  columns: ColumnsType<T>;
+  data: T[];
+  loading?: boolean;
+  pagination?: {
+    current: number;
+    pageSize: number;
+    total: number;
+    onChange: (page: number, pageSize: number) => void;
+  };
+  onRowClick?: (record: T) => void;
+  selectedRowKeys?: React.Key[];
+  onSelectionChange?: (keys: React.Key[]) => void;
+  emptyText?: string;
+  rowKey?: string | ((record: T) => string);
+}
+
+export default function DataTable<T extends object>({
+  columns,
+  data,
+  loading = false,
+  pagination,
+  onRowClick,
+  selectedRowKeys,
+  onSelectionChange,
+  emptyText = 'No data available',
+  rowKey = 'id',
+}: DataTableProps<T>) {
+  if (loading && data.length === 0) {
+    return <LoadingSpinner text="Loading data..." />;
+  }
+
+  return (
+    <Table<T>
+      columns={columns}
+      dataSource={data}
+      loading={loading}
+      rowKey={rowKey}
+      locale={{
+        emptyText: <EmptyState title={emptyText} />,
+      }}
+      pagination={
+        pagination
+          ? {
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              onChange: pagination.onChange,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} items`,
+            }
+          : false
+      }
+      onRow={
+        onRowClick
+          ? (record) => ({
+              onClick: () => onRowClick(record),
+              style: { cursor: 'pointer' },
+            })
+          : undefined
+      }
+      rowSelection={
+        onSelectionChange
+          ? {
+              selectedRowKeys,
+              onChange: (keys) => onSelectionChange(keys),
+            }
+          : undefined
+      }
+      style={{ background: 'transparent' }}
+    />
+  );
+}
+23. frontend/src/shared/components/GlassCard.tsx
+import React, { useState } from 'react';
+
+interface GlassCardProps {
+  children: React.ReactNode;
+  className?: string;
+  hoverable?: boolean;
+  padding?: 'sm' | 'md' | 'lg';
+  onClick?: () => void;
+  accentColor?: string;
+  fullHeight?: boolean;
+  style?: React.CSSProperties;
+}
+
+const paddingMap = {
+  sm: 16,
+  md: 24,
+  lg: 32,
+};
+
+export default function GlassCard({
+  children,
+  className = '',
+  hoverable = false,
+  padding = 'md',
+  onClick,
+  accentColor,
+  fullHeight = false,
+  style,
+}: GlassCardProps) {
+  const [hovered, setHovered] = useState(false);
+
+  const baseStyle: React.CSSProperties = {
+    background: hovered && hoverable
+      ? 'rgba(255, 255, 255, 0.05)'
+      : 'rgba(255, 255, 255, 0.03)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: `1px solid ${
+      hovered && hoverable
+        ? 'rgba(255, 255, 255, 0.1)'
+        : 'rgba(255, 255, 255, 0.06)'
+    }`,
+    borderRadius: 16,
+    padding: paddingMap[padding],
+    transition: 'all 0.3s ease',
+    cursor: hoverable || onClick ? 'pointer' : 'default',
+    boxShadow: hovered && hoverable ? '0 8px 32px rgba(0, 0, 0, 0.3)' : 'none',
+    height: fullHeight ? '100%' : undefined,
+    ...(accentColor ? { borderLeft: `3px solid ${accentColor}` } : {}),
+    ...style,
+  };
+
+  return (
+    <div
+      className={className}
+      style={baseStyle}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+    </div>
+  );
+}
+24. frontend/src/shared/components/GlassModal.tsx
+import React from 'react';
+import { Modal } from 'antd';
+
+interface GlassModalProps {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  width?: number | string;
+  closable?: boolean;
+}
+
+export default function GlassModal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 520,
+  closable = true,
+}: GlassModalProps) {
+  return (
+    <Modal
+      open={open}
+      onCancel={onClose}
+      title={title}
+      footer={footer}
+      width={width}
+      closable={closable}
+      centered
+      destroyOnClose
+      styles={{
+        content: {
+          background: 'rgba(20, 20, 20, 0.95)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: 20,
+          padding: 0,
+        },
+        header: {
+          background: 'transparent',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          padding: '20px 24px',
+        },
+        body: {
+          padding: 24,
+        },
+        footer: {
+          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          padding: '16px 24px',
+        },
+      }}
+    >
+      {children}
+    </Modal>
+  );
+}
+25. frontend/src/shared/components/GlassInput.tsx
+import React from 'react';
+import { Input } from 'antd';
+
+interface GlassInputProps {
+  type?: 'text' | 'password' | 'email' | 'number' | 'textarea';
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  error?: string;
+  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const sizeMap = {
+  sm: 'small' as const,
+  md: 'middle' as const,
+  lg: 'large' as const,
+};
+
+export default function GlassInput({
+  type = 'text',
+  placeholder,
+  value,
+  onChange,
+  prefix,
+  suffix,
+  error,
+  disabled = false,
+  size = 'md',
+}: GlassInputProps) {
+  const wrapperStyle: React.CSSProperties = {
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: `1px solid ${error ? '#A14242' : '#2A2A2A'}`,
+    borderRadius: 8,
+    transition: 'all 0.3s ease',
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    onChange?.(e.target.value);
+  };
+
+  if (type === 'textarea') {
+    return (
+      <div>
+        <Input.TextArea
+          placeholder={placeholder}
+          value={value}
+          onChange={handleChange}
+          disabled={disabled}
+          rows={4}
+          style={wrapperStyle}
+        />
+        {error && (
+          <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (type === 'password') {
+    return (
+      <div>
+        <Input.Password
+          placeholder={placeholder}
+          value={value}
+          onChange={handleChange}
+          prefix={prefix}
+          disabled={disabled}
+          size={sizeMap[size]}
+          style={wrapperStyle}
+        />
+        {error && (
+          <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        prefix={prefix}
+        suffix={suffix}
+        disabled={disabled}
+        size={sizeMap[size]}
+        style={wrapperStyle}
+      />
+      {error && (
+        <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+26. frontend/src/shared/components/GlassButton.tsx
+import React from 'react';
+import { Button } from 'antd';
+
+interface GlassButtonProps {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+  disabled?: boolean;
+  icon?: React.ReactNode;
+  onClick?: () => void;
+  fullWidth?: boolean;
+  htmlType?: 'button' | 'submit';
+}
+
+const sizeMap = {
+  sm: 'small' as const,
+  md: 'middle' as const,
+  lg: 'large' as const,
+};
+
+export default function GlassButton({
+  children,
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  disabled = false,
+  icon,
+  onClick,
+  fullWidth = false,
+  htmlType = 'button',
+}: GlassButtonProps) {
+  const getStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      borderRadius: 8,
+      fontWeight: 500,
+      width: fullWidth ? '100%' : undefined,
+      transition: 'all 0.3s ease',
+    };
+
+    if (disabled) {
+      return {
+        ...base,
+        background: '#3A3A3A',
+        color: '#7A7A7A',
+        border: '1px solid #3A3A3A',
+        opacity: 0.6,
+        cursor: 'not-allowed',
+      };
+    }
+
+    switch (variant) {
+      case 'primary':
+        return {
+          ...base,
+          background: '#E6E6E6',
+          color: '#0A0A0A',
+          border: '1px solid #E6E6E6',
+        };
+      case 'secondary':
+        return {
+          ...base,
+          background: 'rgba(42, 42, 42, 0.8)',
+          color: '#F2F2F2',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+        };
+      case 'danger':
+        return {
+          ...base,
+          background: 'rgba(138, 58, 58, 0.8)',
+          color: '#F2F2F2',
+          border: '1px solid rgba(138, 58, 58, 0.5)',
+        };
+      case 'ghost':
+        return {
+          ...base,
+          background: 'transparent',
+          color: '#F2F2F2',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        };
+      default:
+        return base;
+    }
+  };
+
+  return (
+    <Button
+      size={sizeMap[size]}
+      loading={loading}
+      disabled={disabled}
+      icon={icon}
+      onClick={onClick}
+      htmlType={htmlType}
+      style={getStyle()}
+    >
+      {children}
+    </Button>
+  );
+}
+27. frontend/src/shared/components/StatusBadge.tsx
+import React from 'react';
+import { getStatusColor } from '@/shared/utils/colors';
+
+interface StatusBadgeProps {
+  status: 'WORKING' | 'NOT_WORKING' | 'FAULTY';
+  size?: 'sm' | 'md';
+}
+
+const statusLabels: Record<string, string> = {
+  WORKING: 'Working',
+  NOT_WORKING: 'Not Working',
+  FAULTY: 'Faulty',
+};
+
+export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
+  const color = getStatusColor(status);
+  const isSmall = size === 'sm';
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: isSmall ? '2px 8px' : '4px 12px',
+        borderRadius: 20,
+        background: `rgba(${hexToRgb(color)}, 0.1)`,
+        fontSize: isSmall ? 11 : 13,
+        fontWeight: 500,
+        color,
+        lineHeight: 1,
+      }}
+    >
+      <span
+        style={{
+          width: isSmall ? 6 : 8,
+          height: isSmall ? 6 : 8,
+          borderRadius: '50%',
+          background: color,
+          animation: status === 'WORKING' ? 'pulse 2s ease-in-out infinite' : 'none',
+        }}
+      />
+      {statusLabels[status] || status}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
+    </span>
+  );
+}
+
+function hexToRgb(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
+28. frontend/src/shared/components/PageHeader.tsx
+import React, { useEffect } from 'react';
+import { Breadcrumb } from 'antd';
+import { Link } from 'react-router-dom';
+import { useUiStore } from '@/shared/stores/uiStore';
+
+interface PageHeaderProps {
+  title: string;
+  subtitle?: string;
+  breadcrumbs?: { label: string; path?: string }[];
+  actions?: React.ReactNode;
+}
+
+export default function PageHeader({
+  title,
+  subtitle,
+  breadcrumbs,
+  actions,
+}: PageHeaderProps) {
+  const setPageTitle = useUiStore((s) => s.setPageTitle);
+
+  useEffect(() => {
+    setPageTitle(title);
+  }, [title, setPageTitle]);
+
+  return (
+    <div
+      style={{
+        marginBottom: 24,
+        paddingBottom: 20,
+        borderBottom: '1px solid #242424',
+      }}
+    >
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <Breadcrumb
+          style={{ marginBottom: 8 }}
+          items={breadcrumbs.map((bc) => ({
+            title: bc.path ? <Link to={bc.path}>{bc.label}</Link> : bc.label,
+          }))}
+        />
+      )}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 24,
+              fontWeight: 600,
+              color: '#F2F2F2',
+              margin: 0,
+              lineHeight: 1.3,
+            }}
+          >
+            {title}
+          </h1>
+          {subtitle && (
+            <p
+              style={{
+                fontSize: 14,
+                color: '#B8B8B8',
+                margin: '4px 0 0 0',
+              }}
+            >
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {actions && <div style={{ display: 'flex', gap: 8 }}>{actions}</div>}
+      </div>
+    </div>
+  );
+}
+29. frontend/src/shared/components/EmptyState.tsx
+import React from 'react';
+import { InboxOutlined } from '@ant-design/icons';
+
+interface EmptyStateProps {
+  icon?: React.ReactNode;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}
+
+export default function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+}: EmptyStateProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 48,
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 48, color: '#7A7A7A', marginBottom: 16 }}>
+        {icon || <InboxOutlined />}
+      </div>
+      <div
+        style={{
+          fontSize: 18,
+          color: '#B8B8B8',
+          fontWeight: 500,
+          marginBottom: 8,
+        }}
+      >
+        {title}
+      </div>
+      {description && (
+        <div
+          style={{
+            fontSize: 14,
+            color: '#7A7A7A',
+            maxWidth: 400,
+            marginBottom: 16,
+          }}
+        >
+          {description}
+        </div>
+      )}
+      {action && <div>{action}</div>}
+    </div>
+  );
+}
+30. frontend/src/shared/components/ConfirmDialog.tsx
+import React from 'react';
+import GlassModal from './GlassModal';
+import GlassButton from './GlassButton';
+
+interface ConfirmDialogProps {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  danger?: boolean;
+  loading?: boolean;
+}
+
+export default function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  onConfirm,
+  onCancel,
+  danger = false,
+  loading = false,
+}: ConfirmDialogProps) {
+  return (
+    <GlassModal
+      open={open}
+      onClose={onCancel}
+      title={title}
+      width={420}
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <GlassButton variant="ghost" onClick={onCancel}>
+            {cancelText}
+          </GlassButton>
+          <GlassButton
+            variant={danger ? 'danger' : 'primary'}
+            onClick={onConfirm}
+            loading={loading}
+          >
+            {confirmText}
+          </GlassButton>
+        </div>
+      }
+    >
+      <p style={{ color: '#B8B8B8', fontSize: 14, margin: 0 }}>{message}</p>
+    </GlassModal>
+  );
+}
+
+31. frontend/src/shared/hooks/useDebounce.ts
+import { useState, useEffect } from 'react';
+
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+32. frontend/src/modules/devices/hooks/useDevices.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '@/shared/api/client'
+import type { PaginatedResponse } from '@/shared/types/common'
+import type {
+  Device,
+  DeviceCreate,
+  DeviceUpdate,
+  DeviceStats,
+  DeviceStatusHistory,
+  StatusChangeRequest,
+} from '@/shared/types/devices'
+
+export function useDevices(filters?: Record<string, unknown>) {
+  return useQuery<PaginatedResponse<Device>>({
+    queryKey: ['devices', filters],
+    queryFn: () => api.get<PaginatedResponse<Device>>('/devices', filters),
+  })
+}
+
+export function useDevice(id: string) {
+  return useQuery<Device>({
+    queryKey: ['device', id],
+    queryFn: () => api.get<Device>(`/devices/${id}`),
+    enabled: !!id,
+  })
+}
+
+export function useCreateDevice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: DeviceCreate) => api.post<Device>('/devices', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['devices'] })
+    },
+  })
+}
+
+export function useUpdateDevice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DeviceUpdate }) =>
+      api.put<Device>(`/devices/${id}`, data),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['devices'] })
+      qc.invalidateQueries({ queryKey: ['device', variables.id] })
+    },
+  })
+}
+
+export function useDeleteDevice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.del<Device>(`/devices/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['devices'] })
+    },
+  })
+}
+
+export function useChangeDeviceStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: StatusChangeRequest }) =>
+      api.put<Device>(`/devices/${id}/status`, data),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['devices'] })
+      qc.invalidateQueries({ queryKey: ['device', variables.id] })
+      qc.invalidateQueries({ queryKey: ['device-status-history', variables.id] })
+    },
+  })
+}
+
+export function useDeviceStatusHistory(id: string) {
+  return useQuery<DeviceStatusHistory[]>({
+    queryKey: ['device-status-history', id],
+    queryFn: () => api.get<DeviceStatusHistory[]>(`/devices/${id}/status-history`),
+    enabled: !!id,
+  })
+}
+
+export function useDeviceStats() {
+  return useQuery<DeviceStats>({
+    queryKey: ['device-stats'],
+    queryFn: () => api.get<DeviceStats>('/devices/stats'),
+  })
+}
+
+export function useSeedDevices() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post<Device[]>('/devices/seed'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['devices'] })
+      qc.invalidateQueries({ queryKey: ['device-stats'] })
+    },
+  })
+}
+33. frontend/src/shared/utils/formatters.ts
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
+
+export function formatDate(date: string | Date | null): string {
+  if (!date) return '—';
+  const d = dayjs(date);
+  if (!d.isValid()) return '—';
+  return d.format('MMM D, YYYY');
+}
+
+export function formatDateTime(date: string | Date | null): string {
+  if (!date) return '—';
+  const d = dayjs(date);
+  if (!d.isValid()) return '—';
+  return d.format('MMM D, YYYY HH:mm');
+}
+
+export function formatRelativeTime(date: string | Date): string {
+  const d = dayjs(date);
+  if (!d.isValid()) return '—';
+  return d.fromNow();
+}
+
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
+export function formatSerialNumber(serial: string): string {
+  return serial.toUpperCase();
+}
+
+export function formatCoordinates(lat: number, lng: number): string {
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lngDir = lng >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(4)}°${latDir}, ${Math.abs(lng).toFixed(4)}°${lngDir}`;
+}
+
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const size = bytes / Math.pow(1024, i);
+  return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+34. frontend/src/shared/utils/colors.ts
+import { colors } from '@/styles/theme';
+
+export { colors };
+
+export function getStatusColor(status: string): string {
+  switch (status.toUpperCase()) {
+    case 'WORKING':
+      return colors.status.working;
+    case 'NOT_WORKING':
+      return colors.status.notWorking;
+    case 'FAULTY':
+      return colors.status.faulty;
+    default:
+      return colors.text.muted;
+  }
+}
+
+export function getSeverityColor(severity: string): string {
+  switch (severity.toUpperCase()) {
+    case 'LOW':
+      return colors.severity.low;
+    case 'MEDIUM':
+      return colors.severity.medium;
+    case 'HIGH':
+      return colors.severity.high;
+    case 'CRITICAL':
+      return colors.severity.critical;
+    default:
+      return colors.text.muted;
+  }
+}
+
+export function getDeviceTypeColor(type: string): string {
+  switch (type.toUpperCase()) {
+    case 'IU':
+      return colors.tag.iu;
+    case 'OU':
+      return colors.tag.ou;
+    case 'HC':
+      return colors.tag.hc;
+    case 'RF':
+      return colors.tag.rf;
+    default:
+      return colors.text.muted;
+  }
+}
+
+export function getRoleColor(role: string): string {
+  switch (role.toUpperCase()) {
+    case 'ADMIN':
+      return colors.role.admin;
+    case 'TECHNICIAN':
+      return colors.role.technician;
+    case 'VIEWER':
+      return colors.role.viewer;
+    default:
+      return colors.text.muted;
+  }
+}
+
+export function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+35. frontend/src/styles/glass.css
+/* ═══════════════════════════════════════════════════ */
+/* GLASS CSS UTILITIES                                 */
+/* ═══════════════════════════════════════════════════ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.glass-sidebar {
+  background: rgba(15, 15, 15, 0.85);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.glass-modal {
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid #2A2A2A !important;
+  border-radius: 8px;
+  color: #F2F2F2;
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus,
+.glass-input:focus-within {
+  border-color: #C9C9C9 !important;
+  box-shadow: 0 0 0 2px rgba(201, 201, 201, 0.1) !important;
+}
+
+.glass-input::placeholder {
+  color: #7A7A7A;
+}
+
+.glass-button {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.glass-popup {
+  background: rgba(31, 31, 31, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.glass-badge {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+.glass-header {
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+36. frontend/package.json
+
+{
+  "name": "navdashboard-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "antd": "^5.22.0",
+    "@ant-design/icons": "^5.5.0",
+    "axios": "^1.7.0",
+    "zustand": "^5.0.0",
+    "@tanstack/react-query": "^5.60.0",
+    "dayjs": "^1.11.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}
+
+
+Here is a descriptive summary of each file, categorized by their structural roles within the project.
+
+Backend
+1. service.py
+This file forms the business logic layer for the Devices module. It contains asynchronous functions (list_devices, create_device, update_device, etc.) that execute the core logic, interact with the database repository, and manage device lifecycle events (like altering a device's status and logging status history). Additionally, it triggers the audit service to record changes to devices.
+
+2. router.py
+This acts as the API presentation layer for the Devices module. It defines the FastAPI REST endpoints (GET, POST, PUT, DELETE) to interact with devices securely. It injects dependencies for database sessions, user authentication, and RBAC to pass validated incoming requests down to the functions in service.py.
+
+3. service.py
+Similar to the devices service, this handles the business logic for the Personnel module. It includes logic mapping for adding, updating, and deleting personnel records, as well as fetching their assignment histories, while automatically creating audit logs for CRUD operations.
+
+4. repository.py
+This file directly manages standard database operations (SQLAlchemy) for the Personnel module. It contains raw queries matching exact rows in tables such as Person and AssignmentHistory. Notable features includes soft deletion logic, filtering, name searching, and assigning/unassigning personnel.
+
+5. schemas.py
+Defines data validation models for the Personnel module using Pydantic. It strictly dictates the required sizes, types, and constraints of data when parsing incoming requests (e.g., PersonCreate, PersonUpdate) as well as structuring how API responses must be returned to the client (PersonResponse, AssignmentHistoryResponse).
+
+6. service.py
+The business logic handler for the Inventory module. Its primary focus is managing fitting materials and templates. Notably, along with standard CRUD operations, it contains specialized methods to create new material sets from templates, or to copy entire material sets from a "couple" to another.
+
+7. router.py
+The API routing specification for the Inventory module. Much like the other routers, it maps HTTP requests to the inventory/service.py component and requires authentication for actions like material generation, bulk copying schemas, and retrieving suggestions.
+
+8. dependencies.py
+Houses FastAPI reusable dependencies, specifically regarding authentication and authorization. It includes get_current_user to extract details from an incoming JWT token and retrieve the user from the database, and require_role, which allows routes to be protected by ensuring the token's authenticated user has specific internal permissions (e.g., "ADMIN").
+
+9. exceptions.py
+The centralized module for custom backend exceptions (e.g., NotFoundException, UnauthorizedException, ConflictException). It additionally holds a FastApi registration block (register_exception_handlers) that gracefully catches these specific errors globally and transforms them into standardized HTTP JSONResponses.
+
+10. security.py
+Manages cryptographic and token-based logic for the API. It uses Passlib (bcrypt) for one-way password hashing and validation. It also uses jose to encode and decode signed RS256 algorithm JWT access tokens with embedded expiration times and assigned user roles.
+
+Infrastructure & Database
+11. docker-compose.yml
+The master configuration file that maps out all docker containers required to run the stack. It declares 5 linked applications: an nginx reverse proxy, the React-based frontend, the FastAPI backend, a PostgreSQL db with PostGIS support, and a redis instance, defining volume mappings, networks, and dependency health checks.
+
+12. 01_extensions.sql
+An initialization script that executes inside the Postgres container when the database is spun up for the very first time. It installs mission-critical extensions: PostGIS (geospatial), uuid-ossp (UUID generation), pgvector (AI embeddings), and trigram/GIN indexes for advanced searching.
+
+Frontend
+13. App.tsx
+The simplest root component of the React frontend; its sole responsibility is wrapping the application's top-level router (BrowserRouter) and rendering <AppRoutes />.
+
+14. providers.tsx
+Sets up global state and UI context providers for the frontend. It initializes @tanstack/react-query (allowing efficient caching and server state data-fetching) and the Ant Design ConfigProvider to deploy a global dark/glass UI theme across all component sub-trees.
+
+15. Layout.tsx
+The application's structural app shell component handling the general User Dashboard wrapper. It binds together the <Sidebar>, the top header (showing logged in context/logout logic), window resizing logic for a collapsed sidebar, and guards the page layout by forcefully redirecting unauthenticated users cleanly using Zustand state checks.
+
+16. Sidebar.tsx
+Renders the navigation sidebar using Ant Design's <Menu>. It lists paths out to all functional areas in the dashboard (Devices, Maps, Pairs, AI Assistant, etc.) styled with a dark glassmorphism aesthetic. It tracks the React router location state to highlight the currently active path.
+
+17. authStore.ts
+The centralized standard client-side authentication store built with Zustand. It keeps track of the JWT token, user metadata, and isAuthenticated boolean toggle logic. It acts as the bridge between saving and clearing states against localStorage across page reloads.
+
+
