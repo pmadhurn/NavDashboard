@@ -11,6 +11,13 @@ import ErrorBoundary from './ErrorBoundary';
 
 const { Sider, Header, Content } = AntLayout;
 
+function hexToRgb(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
 export default function Layout() {
   const navigate = useNavigate();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
@@ -18,7 +25,7 @@ export default function Layout() {
   const currentPageTitle = useUiStore((s) => s.currentPageTitle);
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
-  const { mutate: logout } = useLogout();
+  const logout = useLogout();
 
   useEffect(() => {
     if (!token) {
@@ -43,7 +50,6 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login', { replace: true });
   };
 
   const roleColor = user?.role ? getRoleColor(user.role) : '#7A7A7A';
@@ -106,13 +112,14 @@ export default function Layout() {
                 <span
                   style={{
                     display: 'inline-block',
-                    padding: '2px 8px',
+                    padding: '2px 10px',
                     borderRadius: 20,
                     fontSize: 11,
                     fontWeight: 500,
+                    lineHeight: '18px',
                     color: roleColor,
                     background: `rgba(${hexToRgb(roleColor)}, 0.12)`,
-                    border: `1px solid rgba(${hexToRgb(roleColor)}, 0.2)`,
+                    border: 'none',
                   }}
                 >
                   {user.role}
@@ -160,11 +167,4 @@ export default function Layout() {
       </AntLayout>
     </AntLayout>
   );
-}
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
 }
