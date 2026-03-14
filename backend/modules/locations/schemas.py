@@ -41,7 +41,7 @@ class LocationHistoryResponse(BaseModel):
     handled_by: Optional[UUID] = None
     had_rf: bool
     distance_meters: Optional[float] = None
-    fitting_materials_snapshot: Optional[dict] = None
+    fitting_materials_snapshot: Optional[list[dict]] = None  # THIS WAS dict, now list[dict]
     configuration_snapshot: Optional[dict] = None
     notes: Optional[str] = None
     created_at: datetime

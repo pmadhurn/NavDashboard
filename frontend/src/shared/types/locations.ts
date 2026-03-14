@@ -18,7 +18,7 @@ export interface LocationHistory {
   handled_by: string | null
   had_rf: boolean
   distance_meters: number | null
-  fitting_materials_snapshot: Record<string, unknown> | null
+  fitting_materials_snapshot: Array<Record<string, unknown>> | null
   configuration_snapshot: Record<string, unknown> | null
   notes: string | null
   created_at: string
