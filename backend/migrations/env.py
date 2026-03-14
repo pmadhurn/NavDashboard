@@ -8,9 +8,12 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from core.config import settings
 from core.database import Base
 
+# Model imports for autogenerate
 from shared.audit import AuditLog  # noqa
 from modules.auth.models import User  # noqa
 from modules.devices.models import Device, DeviceStatusHistory  # noqa
+from modules.personnel.models import Person, AssignmentHistory  # noqa
+from modules.inventory.models import FittingMaterial, MaterialTemplate  # noqa
 
 config = context.config
 if config.config_file_name is not None:

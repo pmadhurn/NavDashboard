@@ -17,6 +17,8 @@ from core.exceptions import (
 )
 from modules.auth.router import router as auth_router
 from modules.devices.router import router as devices_router
+from modules.personnel.router import router as personnel_router
+from modules.inventory.router import router as inventory_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -90,6 +92,8 @@ async def conflict_handler(request: Request, exc: ConflictException):
 
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX + "/auth", tags=["auth"])
 app.include_router(devices_router, prefix=settings.API_V1_PREFIX + "/devices", tags=["devices"])
+app.include_router(personnel_router, prefix=settings.API_V1_PREFIX + "/personnel", tags=["personnel"])
+app.include_router(inventory_router, prefix=settings.API_V1_PREFIX + "/inventory", tags=["inventory"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
