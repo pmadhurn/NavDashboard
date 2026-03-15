@@ -5,6 +5,7 @@ import GlassModal from '@/shared/components/GlassModal'
 import GlassButton from '@/shared/components/GlassButton'
 import GlassInput from '@/shared/components/GlassInput'
 import MaterialSelector from './MaterialSelector'
+import LocationPicker from '@/modules/map/components/LocationPicker'
 import { useCreateCouple, useUpdateCouple } from '../hooks/useCouples'
 import { api } from '@/shared/api/client'
 import type { Couple, MaterialCreateInline } from '@/shared/types/couples'
@@ -39,6 +40,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
   const [personnelOptions, setPersonnelOptions] = useState<PersonOption[]>([])
   const [deviceOptions, setDeviceOptions] = useState<Device[]>([])
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([])
+  const [locationValue, setLocationValue] = useState<{ latitude: number; longitude: number } | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -59,8 +61,6 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
           name: couple.name,
           status: couple.status,
           handling_person_id: couple.handling_person_id || undefined,
-          latitude: couple.location?.latitude ?? '',
-          longitude: couple.location?.longitude ?? '',
           address_note: couple.location?.address_note || '',
           configuration: couple.configuration ? JSON.stringify(couple.configuration, null, 2) : '',
           notes: couple.notes || '',
@@ -68,6 +68,14 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
         setHasRf(couple.has_rf)
         setMaterials([])
         setSelectedDeviceIds([])
+        if (couple.location) {
+          setLocationValue({
+            latitude: couple.location.latitude,
+            longitude: couple.location.longitude,
+          })
+        } else {
+          setLocationValue(null)
+        }
         if (couple.custom_fields) {
           setCustomFields(
             Object.entries(couple.custom_fields).map(([k, v]) => ({
@@ -85,6 +93,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
         setMaterials([])
         setCustomFields([])
         setSelectedDeviceIds([])
+        setLocationValue(null)
       }
     }
   }, [open, couple, form])
@@ -111,7 +120,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
         }
       }
 
-      const hasLocation = values.latitude !== '' && values.longitude !== ''
+      const hasLocation = locationValue !== null
 
       if (isEdit && couple) {
         await updateCouple.mutateAsync({
@@ -135,8 +144,8 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
           handling_person_id: values.handling_person_id || null,
           location: hasLocation
             ? {
-                latitude: parseFloat(values.latitude),
-                longitude: parseFloat(values.longitude),
+                latitude: locationValue.latitude,
+                longitude: locationValue.longitude,
                 address_note: values.address_note || null,
               }
             : null,
@@ -238,14 +247,11 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
 
         <div style={{ marginBottom: 16 }}>
           <span style={{ color: '#B8B8B8', fontSize: 14, display: 'block', marginBottom: 8 }}>Location</span>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Form.Item name="latitude" style={{ flex: 1, marginBottom: 0 }}>
-              <Input type="number" placeholder="Latitude" style={inputStyle} step="0.0001" />
-            </Form.Item>
-            <Form.Item name="longitude" style={{ flex: 1, marginBottom: 0 }}>
-              <Input type="number" placeholder="Longitude" style={inputStyle} step="0.0001" />
-            </Form.Item>
-          </div>
+          <LocationPicker
+            value={locationValue}
+            onChange={setLocationValue}
+            height="250px"
+          />
           <Form.Item name="address_note" style={{ marginTop: 8, marginBottom: 0 }}>
             <Input placeholder="Address note" style={inputStyle} />
           </Form.Item>

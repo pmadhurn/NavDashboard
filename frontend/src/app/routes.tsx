@@ -26,6 +26,7 @@ import CoupleListPage from '@/modules/couples/pages/CoupleListPage';
 import CoupleDetailPage from '@/modules/couples/pages/CoupleDetailPage';
 import PairListPage from '@/modules/pairs/pages/PairListPage';
 import PairDetailPage from '@/modules/pairs/pages/PairDetailPage';
+import MapViewPage from '@/modules/map/pages/MapViewPage';
 
 export function AppRoutes() {
   return (
@@ -38,7 +39,7 @@ export function AppRoutes() {
         <Route path="couples/:id" element={<CoupleDetailPage />} />
         <Route path="pairs" element={<PairListPage />} />
         <Route path="pairs/:id" element={<PairDetailPage />} />
-        <Route path="map" element={<PlaceholderPage title="Map" icon={<EnvironmentOutlined />} />} />
+        <Route path="map" element={<MapViewPage />} />
         <Route path="troubleshooting" element={<PlaceholderPage title="Troubleshooting" icon={<ToolOutlined />} />} />
         <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
         <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
