@@ -2,597 +2,518 @@
 
 ```markdown
 # ═══════════════════════════════════════════════════════════════
-# NAVDASHBOARD — PHASE 9: TROUBLESHOOTING + STATUS (FULL STACK)
+# NAVDASHBOARD — PHASE 10: DASHBOARD + ANALYTICS (FULL STACK)
 # ═══════════════════════════════════════════════════════════════
 
-## CONTEXT FROM PHASES 0–8
+## CONTEXT FROM PHASES 0–9
 
 **Backend state:**
-- Tables: users, audit_logs, devices, device_status_history, personnel, assignment_history, fitting_materials, material_templates, locations, location_history, couples, pairs
-- Modules: auth, devices, personnel, inventory, locations, couples, pairs
-- Seed data: 10 devices, 6 personnel, 2 templates, 4 couples, 2 pairs (Paris area)
-- Device status history already tracked in device_status_history table (from Phase 4)
+- 15 tables: users, audit_logs, devices, device_status_history, personnel, assignment_history, fitting_materials, material_templates, locations, location_history, couples, pairs, error_logs, troubleshoot_entries, status_change_logs
+- Modules: auth, devices, personnel, inventory, locations, couples, pairs, troubleshooting, status
+- Seed data: 10 devices, 6 personnel, 2 templates, 4 couples, 2 pairs, 5 errors with steps
+- Existing stats endpoints: `GET /devices/stats`, `GET /pairs/stats`, `GET /troubleshooting/stats`, `GET /status/stats`
 
 **Frontend state:**
-- Layout shell, 14 shared components, glass theme
-- Modules: auth, dashboard (placeholder), devices, couples, pairs, map
-- Live routes: /, /login, /devices, /devices/:id, /couples, /couples/:id, /pairs, /pairs/:id, /map
-- Available utils: getStatusColor, getSeverityColor, formatDateTime, all shared components
+- Layout shell, 14 shared components, glass theme, Recharts NOT yet installed
+- Live modules: auth, devices, couples, pairs, map, troubleshooting
+- Dashboard page at `/` is currently a placeholder with hardcoded "—" stat cards
 
 **DB name:** `navdashboard`
 
 ---
 
-## PHASE 9 GOAL
+## PHASE 10 GOAL
 
 After this phase:
-- Error logs table with JSONB custom_fields for high customizability
-- Troubleshoot steps table linked to error logs
-- Status change log table (generic, works for device/couple/pair)
-- Backend: full troubleshooting API (errors, steps, resolve) + status API (change, history)
-- Frontend: troubleshooting page with timeline view, error form, filters, stats bar
-- Every status change on any entity creates a StatusChangeLog record (Business Rule #7)
-- Seed data: 5 sample error logs with troubleshoot steps
+- Backend dashboard module aggregates data across all existing modules into unified endpoints
+- Frontend dashboard replaces the placeholder with real charts, stats, and activity feed
+- Recharts library installed for pie charts, bar charts, line charts
+- Dashboard shows: stat cards, status overview bar, device type breakdown, error trend, pair status pie, recent activity timeline
+- All data is live from the database — no hardcoded values
 
 ---
 
 ## FILES TO GENERATE
 
-### Backend — Troubleshooting module (NEW):
-1. `NavDashboard/backend/modules/troubleshooting/__init__.py`
-2. `NavDashboard/backend/modules/troubleshooting/models.py`
-3. `NavDashboard/backend/modules/troubleshooting/schemas.py`
-4. `NavDashboard/backend/modules/troubleshooting/repository.py`
-5. `NavDashboard/backend/modules/troubleshooting/service.py`
-6. `NavDashboard/backend/modules/troubleshooting/router.py`
-
-### Backend — Status module (NEW):
-7. `NavDashboard/backend/modules/status/__init__.py`
-8. `NavDashboard/backend/modules/status/models.py`
-9. `NavDashboard/backend/modules/status/schemas.py`
-10. `NavDashboard/backend/modules/status/repository.py`
-11. `NavDashboard/backend/modules/status/service.py`
-12. `NavDashboard/backend/modules/status/router.py`
+### Backend — Dashboard module (NEW):
+1. `NavDashboard/backend/modules/dashboard/__init__.py`
+2. `NavDashboard/backend/modules/dashboard/models.py`
+3. `NavDashboard/backend/modules/dashboard/schemas.py`
+4. `NavDashboard/backend/modules/dashboard/repository.py`
+5. `NavDashboard/backend/modules/dashboard/service.py`
+6. `NavDashboard/backend/modules/dashboard/router.py`
 
 ### Backend — Updates (REPLACE):
-13. `NavDashboard/backend/main.py`
-14. `NavDashboard/backend/migrations/env.py`
+7. `NavDashboard/backend/main.py`
+8. `NavDashboard/backend/migrations/env.py`
 
-### Frontend — Troubleshooting module (NEW):
-15. `NavDashboard/frontend/src/modules/troubleshooting/pages/TroubleshootingPage.tsx`
-16. `NavDashboard/frontend/src/modules/troubleshooting/components/ErrorTimeline.tsx`
-17. `NavDashboard/frontend/src/modules/troubleshooting/components/TroubleshootForm.tsx`
-18. `NavDashboard/frontend/src/modules/troubleshooting/components/ErrorFilters.tsx`
-19. `NavDashboard/frontend/src/modules/troubleshooting/hooks/useTroubleshooting.ts`
+### Frontend — Package update (REPLACE):
+9. `NavDashboard/frontend/package.json`
 
-### Frontend — Routes update (REPLACE):
-20. `NavDashboard/frontend/src/app/routes.tsx`
+### Frontend — Dashboard module (REPLACE/NEW):
+10. `NavDashboard/frontend/src/modules/dashboard/pages/DashboardPage.tsx`
+11. `NavDashboard/frontend/src/modules/dashboard/components/StatsCards.tsx`
+12. `NavDashboard/frontend/src/modules/dashboard/components/StatusOverview.tsx`
+13. `NavDashboard/frontend/src/modules/dashboard/components/RecentActivity.tsx`
+14. `NavDashboard/frontend/src/modules/dashboard/components/DeviceChart.tsx`
+15. `NavDashboard/frontend/src/modules/dashboard/components/ErrorTrendChart.tsx`
+16. `NavDashboard/frontend/src/modules/dashboard/components/PairStatusPie.tsx`
+17. `NavDashboard/frontend/src/modules/dashboard/hooks/useDashboard.ts`
 
-**Total: 20 files.**
-
----
-
-## BACKEND — TROUBLESHOOTING MODULE
-
-### models.py
-
-**ErrorLog** model:
-- Inherits: `Base`, `SoftDeleteMixin`, `CustomFieldsMixin`
-- Table name: `error_logs`
-- Columns:
-  - `device_id`: `Mapped[Optional[UUID]]`, nullable (error can be on device, couple, or pair)
-  - `couple_id`: `Mapped[Optional[UUID]]`, nullable
-  - `pair_id`: `Mapped[Optional[UUID]]`, nullable
-  - `error_type`: `Mapped[str]`, not nullable (free text: "Connection Loss", "Signal Degradation", etc.)
-  - `severity`: `Mapped[str]`, not nullable (LOW, MEDIUM, HIGH, CRITICAL)
-  - `description`: `Mapped[str]`, not nullable (Text)
-  - `reported_by`: `Mapped[Optional[UUID]]`, nullable (person who reported)
-  - `reported_at`: `Mapped[datetime]`, `DateTime(timezone=True)`, `server_default=func.now()`
-  - `resolved`: `Mapped[bool]`, default False
-  - `resolved_at`: `Mapped[Optional[datetime]]`, nullable
-  - `resolved_by`: `Mapped[Optional[UUID]]`, nullable
-
-**TroubleshootEntry** model:
-- Inherits: `Base`, `CustomFieldsMixin`
-- Table name: `troubleshoot_entries`
-- Columns:
-  - `error_id`: `Mapped[UUID]`, ForeignKey to `error_logs.id`, indexed, not nullable
-  - `step_number`: `Mapped[int]`, not nullable
-  - `step_description`: `Mapped[str]`, not nullable
-  - `action_taken`: `Mapped[Optional[str]]`, nullable
-  - `resolution`: `Mapped[Optional[str]]`, nullable
-  - `performed_by`: `Mapped[Optional[UUID]]`, nullable (person who performed step)
-  - `performed_at`: `Mapped[datetime]`, `DateTime(timezone=True)`, `server_default=func.now()`
-
-Both models have `custom_fields` JSONB — users can add any extra data they want.
+**Total: 17 files.**
 
 ---
 
-### schemas.py
+## BACKEND SPECIFICATIONS
+
+### modules/dashboard/models.py
 
 ```python
-class ErrorLogCreate(BaseModel):
-    device_id: Optional[UUID] = None
-    couple_id: Optional[UUID] = None
-    pair_id: Optional[UUID] = None
-    error_type: str = Field(min_length=1, max_length=200)
-    severity: str = Field(pattern="^(LOW|MEDIUM|HIGH|CRITICAL)$")
-    description: str = Field(min_length=1)
-    reported_by: Optional[UUID] = None
-    custom_fields: Optional[dict] = None
+# No dedicated models — dashboard queries across other modules
+```
 
-class ErrorLogUpdate(BaseModel):
-    error_type: Optional[str] = None
-    severity: Optional[str] = None
-    description: Optional[str] = None
-    custom_fields: Optional[dict] = None
+Just a comment. This is a query-only module.
 
-class ErrorLogResponse(BaseModel):
+---
+
+### modules/dashboard/schemas.py
+
+```python
+class DashboardStats(BaseModel):
+    total_pairs: int
+    total_couples: int
+    total_devices: int
+    active_errors: int  # unresolved error count
+    devices_working: int
+    devices_not_working: int
+    devices_faulty: int
+
+class StatusDistribution(BaseModel):
+    entity_type: str  # "device", "couple", "pair"
+    working: int
+    not_working: int
+    faulty: int
+
+class DeviceTypeBreakdown(BaseModel):
+    device_type: str  # IU, OU, HC, RF
+    count: int
+    color: str  # hex color for chart
+
+class ErrorTrendPoint(BaseModel):
+    date: str  # YYYY-MM-DD
+    count: int
+    severity_low: int
+    severity_medium: int
+    severity_high: int
+    severity_critical: int
+
+class RecentActivityItem(BaseModel):
     id: UUID
-    device_id: Optional[UUID] = None
-    couple_id: Optional[UUID] = None
-    pair_id: Optional[UUID] = None
-    error_type: str
-    severity: str
-    severity_color: str  # computed from severity
-    description: str
-    reported_by: Optional[UUID] = None
-    reported_by_name: Optional[str] = None  # denormalized
-    reported_at: datetime
-    resolved: bool
-    resolved_at: Optional[datetime] = None
-    resolved_by: Optional[UUID] = None
-    resolved_by_name: Optional[str] = None
-    steps: list["TroubleshootEntryResponse"] = []
-    custom_fields: Optional[dict] = None
-    created_at: datetime
-    model_config = {"from_attributes": True}
-
-class TroubleshootEntryCreate(BaseModel):
-    step_description: str = Field(min_length=1)
-    action_taken: Optional[str] = None
-    resolution: Optional[str] = None
-    performed_by: Optional[UUID] = None
-    custom_fields: Optional[dict] = None
-
-class TroubleshootEntryResponse(BaseModel):
-    id: UUID
-    error_id: UUID
-    step_number: int
-    step_description: str
-    action_taken: Optional[str] = None
-    resolution: Optional[str] = None
-    performed_by: Optional[UUID] = None
-    performed_by_name: Optional[str] = None
-    performed_at: datetime
-    custom_fields: Optional[dict] = None
-    model_config = {"from_attributes": True}
-
-class ResolveRequest(BaseModel):
-    resolution_notes: Optional[str] = None
-    resolved_by: Optional[UUID] = None
-
-class ErrorStatsResponse(BaseModel):
-    total: int
-    open: int
-    resolved: int
-    by_severity: dict[str, int]
-    by_type: dict[str, int]
-```
-
-**severity_color mapping:**
-- LOW → `#6E6E6E`
-- MEDIUM → `#B68A3C`
-- HIGH → `#9B3E3E`
-- CRITICAL → `#6E2C2C`
-
----
-
-### repository.py
-
-Mandatory interface for ErrorLog:
-```python
-async def get_by_id(db, id) -> Optional[ErrorLog]
-async def get_multi(db, skip=0, limit=100, filters=None) -> list[ErrorLog]
-async def create(db, obj_in: ErrorLogCreate) -> ErrorLog
-async def update(db, id, obj_in: ErrorLogUpdate) -> ErrorLog
-async def soft_delete(db, id) -> ErrorLog
-```
-
-Additional:
-```python
-async def get_by_device(db, device_id) -> list[ErrorLog]
-async def get_by_couple(db, couple_id) -> list[ErrorLog]
-async def get_by_pair(db, pair_id) -> list[ErrorLog]
-async def get_steps(db, error_id) -> list[TroubleshootEntry]
-async def create_step(db, error_id, step_in: TroubleshootEntryCreate, step_number: int) -> TroubleshootEntry
-async def update_step(db, step_id, step_in) -> TroubleshootEntry
-async def get_stats(db) -> dict
-async def count_open(db) -> int
-```
-
----
-
-### service.py
-
-```python
-async def list_errors(db, params, filters=None) -> PaginatedResponse[ErrorLogResponse]
-async def get_error(db, error_id) -> ErrorLogResponse
-async def create_error(db, error_in: ErrorLogCreate, user_id) -> ErrorLogResponse
-async def update_error(db, error_id, error_in: ErrorLogUpdate, user_id) -> ErrorLogResponse
-async def delete_error(db, error_id, user_id) -> ErrorLogResponse
-async def add_step(db, error_id, step_in: TroubleshootEntryCreate, user_id) -> TroubleshootEntryResponse
-async def update_step(db, error_id, step_id, step_in, user_id) -> TroubleshootEntryResponse
-async def resolve_error(db, error_id, resolve_in: ResolveRequest, user_id) -> ErrorLogResponse
-async def get_errors_by_entity(db, entity_type, entity_id, params) -> PaginatedResponse[ErrorLogResponse]
-async def get_error_stats(db) -> ErrorStatsResponse
-async def seed_errors(db, user_id) -> list[ErrorLogResponse]
-```
-
-**resolve_error logic:**
-1. Set `resolved = True`, `resolved_at = now()`, `resolved_by`
-2. If `resolution_notes` provided, create a final TroubleshootEntry with those notes
-3. Record audit
-
-**add_step logic:**
-1. Count existing steps for this error
-2. Set `step_number` = count + 1
-3. Create TroubleshootEntry
-4. Record audit
-
-**_build_error_response helper:**
-1. Get all steps for this error (ordered by step_number)
-2. Look up reporter name from personnel if reported_by is set
-3. Look up resolver name if resolved_by is set
-4. Look up performer names for each step
-5. Compute severity_color
-6. Return ErrorLogResponse with nested steps
-
-**seed_errors** creates 5 error logs (only if zero exist):
-```
-1. Device IU-00001, "Connection Loss", HIGH, "Intermittent connection drops during heavy rain", reported by Ahmed
-   - Step 1: "Inspected cable connections"
-   - Step 2: "Replaced weatherproof sealant"
-   - Resolved
-
-2. Couple A2, "Signal Degradation", MEDIUM, "Signal strength dropped below 60%", reported by Maria
-   - Step 1: "Checked alignment of OU"
-   - Not resolved
-
-3. Device OU-00002, "Hardware Fault", CRITICAL, "OU unit not responding to ping", reported by Fatima
-   - Not resolved, no steps yet
-
-4. Couple B1, "Configuration Mismatch", LOW, "Firmware versions differ between IU and OU", reported by Lars
-   - Step 1: "Documented current firmware versions"
-   - Step 2: "Scheduled firmware update"
-   - Step 3: "Updated firmware, verified match"
-   - Resolved
-
-5. Pair 02, "RF Interference", MEDIUM, "RF listener detecting noise on channel 5", reported by James
-   - Step 1: "Ran spectrum analysis"
-   - Not resolved
-```
-
-Use actual device/couple/pair IDs and personnel IDs from seed data. Query them by serial_number/name.
-
----
-
-### router.py
-
-Prefix: `/troubleshooting` (mounted at `/api/v1/troubleshooting`)
-
-```
-GET    /                          → list errors (paginated, filterable by severity, resolved, entity_type, error_type, date range)
-GET    /stats                     → error stats
-POST   /                          → create error log
-GET    /{error_id}                → error detail with steps
-PUT    /{error_id}                → update error
-DELETE /{error_id}                → soft delete
-POST   /{error_id}/steps          → add troubleshoot step
-PUT    /{error_id}/steps/{step_id} → update step
-PUT    /{error_id}/resolve        → mark as resolved
-GET    /by-device/{device_id}     → errors for device
-GET    /by-couple/{couple_id}     → errors for couple
-GET    /by-pair/{pair_id}         → errors for pair
-POST   /seed                      → seed sample errors (admin only)
-```
-
-Query params for GET /: `page`, `size`, `severity`, `resolved` (bool), `error_type__contains`, `device_id`, `couple_id`, `pair_id`, `reported_at__gte`, `reported_at__lte`.
-
----
-
-## BACKEND — STATUS MODULE
-
-### models.py
-
-**StatusChangeLog** model:
-- Inherits: `Base`
-- Table name: `status_change_logs`
-- Columns:
-  - `entity_type`: `Mapped[str]`, not nullable (device, couple, pair)
-  - `entity_id`: `Mapped[UUID]`, not nullable, indexed
-  - `old_status`: `Mapped[str]`, not nullable
-  - `new_status`: `Mapped[str]`, not nullable
-  - `changed_by`: `Mapped[UUID]`, not nullable
-  - `changed_at`: `Mapped[datetime]`, `DateTime(timezone=True)`, `server_default=func.now()`
-  - `reason`: `Mapped[Optional[str]]`, nullable
-
----
-
-### schemas.py
-
-```python
-class StatusChangeRequest(BaseModel):
-    entity_type: str = Field(pattern="^(device|couple|pair)$")
-    entity_id: UUID
-    new_status: str = Field(pattern="^(WORKING|NOT_WORKING|FAULTY)$")
-    reason: Optional[str] = None
-
-class StatusChangeLogResponse(BaseModel):
-    id: UUID
+    action: str  # CREATE, UPDATE, DELETE, STATUS_CHANGE
     entity_type: str
     entity_id: UUID
-    old_status: str
-    new_status: str
-    changed_by: UUID
-    changed_at: datetime
-    reason: Optional[str] = None
-    model_config = {"from_attributes": True}
+    description: str  # human-readable description
+    user_id: Optional[UUID] = None
+    timestamp: datetime
 
-class StatusStatsResponse(BaseModel):
-    devices: dict[str, int]  # status → count
-    couples: dict[str, int]
-    pairs: dict[str, int]
+class PairStatusData(BaseModel):
+    status: str
+    count: int
+    color: str  # hex color for chart
 ```
 
 ---
 
-### repository.py
+### modules/dashboard/repository.py
+
+All functions query across multiple tables:
 
 ```python
-async def create_log(db, log: StatusChangeLog) -> StatusChangeLog
-async def get_history(db, entity_type: str, entity_id: UUID, skip=0, limit=50) -> list[StatusChangeLog]
-async def get_all(db, skip=0, limit=100, filters=None) -> list[StatusChangeLog]
-async def get_stats(db) -> dict
+async def get_entity_counts(db) -> dict:
+    """Count total devices, couples, pairs (non-deleted)."""
+
+async def get_active_error_count(db) -> int:
+    """Count error_logs where resolved=False and deleted_at IS NULL."""
+
+async def get_status_distribution(db) -> list[dict]:
+    """For each entity type (device, couple, pair), count by status."""
+
+async def get_device_type_breakdown(db) -> list[dict]:
+    """Count devices grouped by device_type."""
+
+async def get_error_trends(db, days: int = 30) -> list[dict]:
+    """Count errors per day for the last N days, broken down by severity.
+    Use date_trunc('day', reported_at) for grouping.
+    Fill in zero-count days (no gaps in the timeline)."""
+
+async def get_recent_activity(db, limit: int = 20) -> list[dict]:
+    """Get the most recent audit_logs entries, ordered by timestamp desc.
+    Include a human-readable description based on action + entity_type."""
+
+async def get_pair_status_breakdown(db) -> list[dict]:
+    """Count pairs grouped by status."""
 ```
+
+**get_error_trends implementation detail:**
+- Query: `SELECT date_trunc('day', reported_at) as date, severity, count(*) FROM error_logs WHERE deleted_at IS NULL AND reported_at >= now() - interval '{days} days' GROUP BY date, severity ORDER BY date`
+- Post-process: build a list of dicts with one entry per day, filling gaps with zeros
+- Each entry: `{date: "2025-01-15", count: 3, severity_low: 1, severity_medium: 1, severity_high: 1, severity_critical: 0}`
+
+**get_recent_activity implementation detail:**
+- Query audit_logs ordered by created_at DESC, LIMIT 20
+- Build human-readable descriptions:
+  - CREATE device → "Created device {entity_id}"
+  - UPDATE couple → "Updated couple {entity_id}"
+  - DELETE pair → "Deleted pair {entity_id}"
+  - STATUS_CHANGE → "Status changed on {entity_type} {entity_id}"
 
 ---
 
-### service.py
+### modules/dashboard/service.py
 
 ```python
-async def change_status(db, request: StatusChangeRequest, user_id) -> StatusChangeLogResponse
-async def get_status_history(db, entity_type, entity_id, params) -> PaginatedResponse[StatusChangeLogResponse]
-async def get_status_stats(db) -> StatusStatsResponse
+async def get_dashboard_stats(db) -> DashboardStats
+async def get_status_distribution(db) -> list[StatusDistribution]
+async def get_device_type_breakdown(db) -> list[DeviceTypeBreakdown]
+async def get_error_trends(db, days: int = 30) -> list[ErrorTrendPoint]
+async def get_recent_activity(db, limit: int = 20) -> list[RecentActivityItem]
+async def get_pair_status_data(db) -> list[PairStatusData]
 ```
 
-**change_status logic:**
-1. Based on `entity_type`, fetch the entity (device/couple/pair) from its repository
-2. If not found → raise NotFoundException
-3. Get old_status from the entity
-4. If old_status == new_status → raise BadRequestException("Status unchanged")
-5. Update the entity's status field
-6. Create StatusChangeLog record
-7. If entity_type is "device": also create DeviceStatusHistory record (existing table)
-8. If entity_type is "couple" and couple belongs to a pair: recalculate pair's auto-derived status (Business Rule #12)
-9. Record audit
-10. Return StatusChangeLogResponse
+**get_dashboard_stats:**
+1. Get entity counts from repository
+2. Get active error count
+3. Get device status counts (query devices grouped by status)
+4. Return DashboardStats
 
-This is the CENTRAL status change function — it handles all entity types and maintains consistency.
+**get_device_type_breakdown:**
+- Map colors: IU → `#6B7F8C`, OU → `#8C6B7C`, HC → `#6B8C7A`, RF → `#8C836B`
+
+**get_pair_status_data:**
+- Map colors: WORKING → `#5F8F6B`, NOT_WORKING → `#B68A3C`, FAULTY → `#9B3E3E`
 
 ---
 
-### router.py
+### modules/dashboard/router.py
 
-Prefix: `/status` (mounted at `/api/v1/status`)
+Prefix: `/dashboard` (mounted at `/api/v1/dashboard`)
+
+All endpoints require authentication.
 
 ```
-POST   /change                              → change status of any entity (Business Rule #7)
-GET    /history/{entity_type}/{entity_id}   → status history for entity
-GET    /stats                               → status distribution across all entities
+GET /stats                → DashboardStats (total counts, active errors, device status counts)
+GET /status-distribution  → list[StatusDistribution] (per entity type)
+GET /device-type-breakdown → list[DeviceTypeBreakdown] (for bar chart)
+GET /error-trends?days=30 → list[ErrorTrendPoint] (for line chart)
+GET /recent-activity?limit=20 → list[RecentActivityItem] (for timeline)
+GET /pair-status          → list[PairStatusData] (for pie chart)
 ```
 
 ---
 
-## UPDATED BACKEND FILES
+### modules/dashboard/__init__.py
 
-### main.py
+Empty file.
+
+---
+
+### Updated main.py
 
 Add:
 ```python
-from modules.troubleshooting.router import router as troubleshooting_router
-from modules.status.router import router as status_router
+from modules.dashboard.router import router as dashboard_router
 ```
-Include under `/api/v1/troubleshooting` and `/api/v1/status`.
+Include: `app.include_router(dashboard_router, prefix=settings.API_V1_PREFIX + "/dashboard", tags=["dashboard"])`
+
 Keep all existing routers. Output COMPLETE file.
 
-### migrations/env.py
+---
 
-Add:
-```python
-from modules.troubleshooting.models import ErrorLog, TroubleshootEntry  # noqa
-from modules.status.models import StatusChangeLog  # noqa
-```
-Keep all existing imports. Output COMPLETE file.
+### Updated migrations/env.py
+
+No new models to import (dashboard has no models). But output the COMPLETE file unchanged from Phase 9 to ensure consistency.
 
 ---
 
 ## FRONTEND SPECIFICATIONS
 
-### modules/troubleshooting/hooks/useTroubleshooting.ts
+### package.json
 
-```typescript
-export function useErrors(filters?)
-  // GET /troubleshooting — PaginatedResponse<ErrorLog>
-
-export function useError(id: string)
-  // GET /troubleshooting/{id} — includes steps
-
-export function useCreateError()
-  // POST /troubleshooting — invalidates ['errors']
-
-export function useAddStep()
-  // POST /troubleshooting/{errorId}/steps
-  // mutationFn: { errorId: string, data: StepCreate }
-  // invalidates ['errors'], ['error', errorId]
-
-export function useResolveError()
-  // PUT /troubleshooting/{errorId}/resolve
-  // mutationFn: { errorId: string, data: ResolveRequest }
-  // invalidates ['errors'], ['error', errorId]
-
-export function useErrorStats()
-  // GET /troubleshooting/stats
-
-export function useErrorsByEntity(entityType: string, entityId: string)
-  // GET /troubleshooting/by-{entityType}/{entityId}
-  // enabled only when both are truthy
-
-export function useSeedErrors()
-  // POST /troubleshooting/seed — invalidates ['errors']
+Add Recharts:
+```json
+"recharts": "^2.13.0"
 ```
 
-Add TypeScript interfaces for ErrorLog, TroubleshootEntry, ErrorStats, etc. in the hook file or in a separate types file. Keep it pragmatic — define them at the top of the hooks file if simpler.
+Keep ALL existing dependencies. Output COMPLETE file.
 
 ---
 
-### modules/troubleshooting/pages/TroubleshootingPage.tsx
-
-- `<PageHeader title="Troubleshooting" actions={[reportButton, seedButton]}>`
-- Stats bar at top: 3 GlassCards in a row:
-  - Open Errors (count, amber accent)
-  - Resolved Today (count, green accent)  
-  - Critical (count, red accent)
-- `<ErrorFilters>` bar
-- View toggle: Timeline / Table
-- Timeline view: `<ErrorTimeline>`
-- Table view: `<DataTable>` with columns: Type, Severity, Description (truncated), Entity, Reporter, Date, Status (Open/Resolved), Actions
-- "Report Error" button opens `<TroubleshootForm>` in create mode
-
----
-
-### modules/troubleshooting/components/ErrorTimeline.tsx
-
-Vertical timeline showing error logs chronologically:
+### modules/dashboard/hooks/useDashboard.ts
 
 ```typescript
-interface ErrorTimelineProps {
-  errors: ErrorLog[]
+export function useDashboardStats() {
+  // GET /dashboard/stats → DashboardStats
+}
+
+export function useStatusDistribution() {
+  // GET /dashboard/status-distribution → StatusDistribution[]
+}
+
+export function useDeviceTypeBreakdown() {
+  // GET /dashboard/device-type-breakdown → DeviceTypeBreakdown[]
+}
+
+export function useErrorTrends(days?: number) {
+  // GET /dashboard/error-trends?days=30 → ErrorTrendPoint[]
+}
+
+export function useRecentActivity(limit?: number) {
+  // GET /dashboard/recent-activity?limit=20 → RecentActivityItem[]
+}
+
+export function usePairStatus() {
+  // GET /dashboard/pair-status → PairStatusData[]
+}
+```
+
+Define TypeScript interfaces for all response types at the top of the file.
+
+All hooks use `useQuery` with appropriate query keys. Set `refetchInterval: 60000` (refresh every 60s) for stats and distribution. Set `staleTime: 30000`.
+
+---
+
+### modules/dashboard/pages/DashboardPage.tsx
+
+Layout using CSS Grid:
+
+```
+Row 1: [StatsCards — 4 cards spanning full width]
+Row 2: [StatusOverview (2/3 width)] [PairStatusPie (1/3 width)]
+Row 3: [DeviceChart (1/2 width)] [ErrorTrendChart (1/2 width)]
+Row 4: [RecentActivity — full width]
+```
+
+- `<PageHeader title="Dashboard" subtitle="System overview" />`
+- Each section wrapped in `<GlassCard>`
+- Loading: show `<LoadingSpinner>` inside each card while data fetches
+- Responsive: on small screens, single column layout
+- Use CSS Grid with `gap: 24px`
+
+```typescript
+// Grid layout
+const gridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(12, 1fr)',
+  gap: '24px',
+}
+// Row 1: stats cards span all 12 columns
+// Row 2: status overview 8 cols, pie 4 cols
+// Row 3: device chart 6 cols, error chart 6 cols
+// Row 4: recent activity 12 cols
+```
+
+---
+
+### modules/dashboard/components/StatsCards.tsx
+
+4 glass cards in a row:
+
+```typescript
+interface StatsCardsProps {
+  stats: DashboardStats | undefined
   loading: boolean
-  onSelectError: (error: ErrorLog) => void
-  onResolve: (errorId: string) => void
-  onAddStep: (errorId: string) => void
 }
 ```
 
-- Each entry is a GlassCard on the timeline:
-  - Left: severity dot (colored circle on timeline line)
-    - LOW: `#6E6E6E`, MEDIUM: `#B68A3C`, HIGH: `#9B3E3E`, CRITICAL: `#6E2C2C`
-  - Right card content:
-    - Top row: error_type (bold) + severity badge (colored pill) + resolved/open tag
-    - Description (truncated to 2 lines, expandable on click)
-    - Entity reference: "Device IU-00001" or "Couple A1" or "Pair 01" — as a clickable link
-    - Reporter + date (muted text)
-    - Expand section (on click): shows troubleshoot steps
-      - Each step: step number, description, action taken, resolution, performer, date
-    - Action buttons: "Add Step" (if open), "Resolve" (if open)
-- Timeline line: `2px solid #2C2C2C`, vertical, connecting severity dots
-- Most recent at top
-- Empty state if no errors
+Cards:
+1. **Total Pairs** — icon: SwapOutlined, value: `stats.total_pairs`, accent: `#2E2E2E`
+2. **Total Devices** — icon: ApiOutlined, value: `stats.total_devices`, accent: `#2E2E2E`
+3. **Active Errors** — icon: WarningOutlined, value: `stats.active_errors`, accent: `#9B3E3E` (red if > 0)
+4. **Working Devices** — icon: CheckCircleOutlined, value: `stats.devices_working`, accent: `#5F8F6B`
+
+Each card:
+- GlassCard with `padding="md"`
+- Icon top-left (24px, `#7A7A7A`)
+- Label below icon (`#B8B8B8`, 14px)
+- Value large (`#F2F2F2`, 32px, font-weight 700)
+- Left accent edge (3px border using accentColor prop)
+- Hover: gentle glow
+
+Use CSS Grid or Flexbox for the 4-card row. On narrow screens: 2x2 grid.
 
 ---
 
-### modules/troubleshooting/components/TroubleshootForm.tsx
+### modules/dashboard/components/StatusOverview.tsx
 
-Multi-mode form:
+Horizontal segmented bars showing status proportions:
 
 ```typescript
-interface TroubleshootFormProps {
-  open: boolean
-  onClose: () => void
-  mode: 'create' | 'add-step' | 'resolve'
-  errorId?: string  // for add-step and resolve modes
+interface StatusOverviewProps {
+  distribution: StatusDistribution[] | undefined
+  loading: boolean
 }
 ```
 
-**Mode: create (New Error)**
-- Entity type selector (radio: Device / Couple / Pair)
-- Entity selector (Ant Design Select, searchable — fetches from appropriate endpoint based on type)
-- Error type (GlassInput with text — free text)
-- Severity (Select: Low, Medium, High, Critical — with colored dots)
-- Description (GlassInput textarea)
-- Reported by (Select, fetch from personnel)
-- Custom fields (key-value editor)
+For each entity type (Devices, Couples, Pairs):
+- Label on left: "Devices", "Couples", "Pairs"
+- Horizontal bar divided into 3 colored segments:
+  - Working: `#5F8F6B` (width proportional to count)
+  - Not Working: `#B68A3C`
+  - Faulty: `#9B3E3E`
+- Count labels below each segment
+- Bar background: `#1A1A1A`
+- Bar border-radius: 8px
+- Bar height: 24px
+- Segments have subtle rounded corners on edges
 
-**Mode: add-step**
-- Step description (textarea, required)
-- Action taken (textarea, optional)
-- Resolution (textarea, optional)
-- Performed by (Select, personnel)
-- Custom fields
-
-**Mode: resolve**
-- Resolution notes (textarea)
-- Resolved by (Select, personnel)
-
-All glass-styled. GlassModal wrapper. Submit calls appropriate hook mutation.
+GlassCard container with title "Status Overview".
 
 ---
 
-### modules/troubleshooting/components/ErrorFilters.tsx
+### modules/dashboard/components/RecentActivity.tsx
 
-Filter bar:
+Timeline list of recent audit entries:
 
 ```typescript
-interface ErrorFiltersProps {
-  filters: ErrorFilterState
-  onChange: (filters: ErrorFilterState) => void
-}
-
-interface ErrorFilterState {
-  severity: string[]  // multi-select
-  resolved: boolean | null  // null=all, true=resolved, false=open
-  error_type: string  // search text
-  entity_type: string  // all, device, couple, pair
-  reported_at_gte: string | null  // date range start
-  reported_at_lte: string | null  // date range end
+interface RecentActivityProps {
+  items: RecentActivityItem[] | undefined
+  loading: boolean
 }
 ```
 
-- GlassCard container
-- Severity multi-select (checkboxes with colored dots)
-- Status: All / Open / Resolved (radio or segmented)
-- Entity type: All / Device / Couple / Pair (segmented)
-- Error type search (GlassInput with debounce)
-- Date range: two date pickers (Ant Design DatePicker)
-- Active filters shown as removable tags below the filter bar
+- GlassCard with title "Recent Activity"
+- Scrollable list (max-height: 400px)
+- Each entry:
+  - Left: action dot (colored circle)
+    - CREATE: `#5F8F6B`
+    - UPDATE: `#7A7A7A`
+    - DELETE: `#9B3E3E`
+    - STATUS_CHANGE: `#B68A3C`
+  - Right: description text + timestamp (relative: "2 hours ago")
+  - Connecting line: `#2C2C2C`
+- "View All" link at bottom → navigates to `/audit`
+- Empty state if no activity
 
 ---
 
-### Updated routes.tsx
+### modules/dashboard/components/DeviceChart.tsx
 
-Replace troubleshooting placeholder:
+Bar chart showing device count by type:
+
 ```typescript
-<Route path="troubleshooting" element={<TroubleshootingPage />} />
+interface DeviceChartProps {
+  data: DeviceTypeBreakdown[] | undefined
+  loading: boolean
+}
 ```
 
-Keep all other routes. Output COMPLETE file.
+- GlassCard with title "Devices by Type"
+- Recharts `<BarChart>`:
+  - X-axis: device types (IU, OU, HC, RF)
+  - Y-axis: count
+  - Bar colors: IU `#6B7F8C`, OU `#8C6B7C`, HC `#6B8C7A`, RF `#8C836B`
+  - Each bar uses its own color from the data
+- Chart styling:
+  - Background: transparent (glass card handles it)
+  - Grid lines: `#262626`
+  - Axis labels: `#B8B8B8`
+  - Axis tick color: `#7A7A7A`
+  - No chart background fill
+- Tooltip: glass-styled (dark bg, light text)
+  - Use Recharts custom tooltip with inline glass styles
+- Bar border-radius: 4px top corners (`radius={[4, 4, 0, 0]}`)
+
+**Recharts custom tooltip styling:**
+```typescript
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{
+      background: 'rgba(20, 20, 20, 0.9)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: 8,
+      padding: '8px 12px',
+      color: '#F2F2F2',
+      fontSize: 13,
+    }}>
+      <p>{label}: {payload[0].value}</p>
+    </div>
+  )
+}
+```
+
+---
+
+### modules/dashboard/components/ErrorTrendChart.tsx
+
+Line/area chart showing errors over time:
+
+```typescript
+interface ErrorTrendChartProps {
+  data: ErrorTrendPoint[] | undefined
+  loading: boolean
+}
+```
+
+- GlassCard with title "Error Trends (30 Days)"
+- Recharts `<AreaChart>` or `<LineChart>`:
+  - X-axis: dates (formatted as "Jan 15", "Jan 16", etc.)
+  - Y-axis: count
+  - Single line for total count, color: `#D6D6D6`
+  - Optional stacked areas by severity (if data supports it):
+    - Low: `#6E6E6E`
+    - Medium: `#B68A3C`
+    - High: `#9B3E3E`
+    - Critical: `#6E2C2C`
+  - Use `<Area>` with `fillOpacity={0.1}` for subtle fill
+- Grid: `#262626`
+- Axis labels: `#B8B8B8`
+- Custom glass tooltip (same pattern as DeviceChart)
+- If no data points: show EmptyState "No errors in the last 30 days"
+
+---
+
+### modules/dashboard/components/PairStatusPie.tsx
+
+Donut chart showing pair status distribution:
+
+```typescript
+interface PairStatusPieProps {
+  data: PairStatusData[] | undefined
+  loading: boolean
+}
+```
+
+- GlassCard with title "Pair Status"
+- Recharts `<PieChart>` with `<Pie>`:
+  - Donut: `innerRadius={60}` `outerRadius={90}`
+  - Slices colored from data: Working `#5F8F6B`, Not Working `#B68A3C`, Faulty `#9B3E3E`
+  - Stroke: `#0A0A0A` (background color, creates gap between slices)
+  - `strokeWidth={2}`
+- Center label: total pair count (sum of all slices)
+  - Use Recharts `<text>` element positioned at center
+  - Large number, `#F2F2F2`, below it "Total" in `#7A7A7A`
+- Legend below chart: colored dots + labels + counts
+- Custom glass tooltip
+- If no pairs: show "No pairs" center text
 
 ---
 
 ## RULES
 
-- Output ALL 20 files
+- Output ALL 17 files
 - Output COMPLETE contents — no abbreviations, no stubs
-- Severity colors exact: LOW `#6E6E6E`, MEDIUM `#B68A3C`, HIGH `#9B3E3E`, CRITICAL `#6E2C2C`
-- custom_fields JSONB on both ErrorLog and TroubleshootEntry — high customizability
-- Business Rule #7: status changes create StatusChangeLog
-- Status module's change_status handles all entity types centrally
-- Seed errors reference actual device/couple/pair IDs from existing seed data (query by name/serial)
-- Timeline line color: `#2C2C2C`
-- All glass-styled components
-- No `any` types in TypeScript
-- All mutations call record_audit
+- Recharts components must be properly imported from 'recharts'
+- Chart colors must match EXACT hex values from palette
+- All charts have transparent backgrounds (glass cards provide the container)
+- Grid lines: `#262626`, axis labels: `#B8B8B8`
+- Custom tooltips with glass styling on all charts
+- Dashboard data is LIVE — no hardcoded values
+- Loading states: LoadingSpinner or Ant Design Skeleton inside each card
+- Responsive: grid collapses to single column on small screens
+- All TypeScript strict — no `any` (Recharts tooltip props need proper typing or use inline type assertions minimally)
+- Backend queries are efficient — use COUNT and GROUP BY, not fetching all records
 
 ---
 
@@ -609,110 +530,79 @@ Keep all other routes. Output COMPLETE file.
 ## VERIFICATION STEPS
 
 ```bash
-# Step 1: Rebuild
+# Step 1: Rebuild (no migration needed — dashboard has no models)
 cd NavDashboard
 docker compose up -d --build backend frontend
 
-# Step 2: Migration
-docker compose exec backend alembic revision --autogenerate -m "add_troubleshooting_status"
-docker compose exec backend alembic upgrade head
+# Step 2: Check backend has new endpoints
+docker compose logs backend --tail=10
+# Expected: no import errors, startup complete
 
-# Step 3: Verify tables
-docker compose exec db psql -U navdashboard -d navdashboard -c "\dt"
-# Expected: error_logs, troubleshoot_entries, status_change_logs (plus all existing)
-
-# Step 4: Get token
+# Step 3: Get token
 TOKEN=$(curl -s -X POST http://localhost/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@navdashboard.com","password":"admin123"}' | \
   python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-# Step 5: Seed errors
-curl -X POST http://localhost/api/v1/troubleshooting/seed \
+# Step 4: Test dashboard stats
+curl "http://localhost/api/v1/dashboard/stats" \
   -H "Authorization: Bearer $TOKEN"
-# Expected: 5 error logs with steps
+# Expected: {"total_pairs":...,"total_couples":...,"total_devices":...,"active_errors":...,"devices_working":...}
 
-# Step 6: List errors
-curl "http://localhost/api/v1/troubleshooting/" \
+# Step 5: Test status distribution
+curl "http://localhost/api/v1/dashboard/status-distribution" \
   -H "Authorization: Bearer $TOKEN"
-# Expected: PaginatedResponse with 5 errors
+# Expected: array with entries for device, couple, pair — each with working/not_working/faulty counts
 
-# Step 7: Get single error with steps
-ERROR_ID=$(curl -s "http://localhost/api/v1/troubleshooting/" \
-  -H "Authorization: Bearer $TOKEN" | \
-  python3 -c "import sys,json; print(json.load(sys.stdin)['items'][0]['id'])")
-
-curl "http://localhost/api/v1/troubleshooting/$ERROR_ID" \
+# Step 6: Test device type breakdown
+curl "http://localhost/api/v1/dashboard/device-type-breakdown" \
   -H "Authorization: Bearer $TOKEN"
-# Expected: error with steps array
+# Expected: [{"device_type":"IU","count":3,"color":"#6B7F8C"},...]
 
-# Step 8: Test add step
-curl -X POST "http://localhost/api/v1/troubleshooting/$ERROR_ID/steps" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"step_description":"Tested new step","action_taken":"Verified connections"}'
-# Expected: new step with incremented step_number
-
-# Step 9: Test resolve
-OPEN_ERROR=$(curl -s "http://localhost/api/v1/troubleshooting/?resolved=false" \
-  -H "Authorization: Bearer $TOKEN" | \
-  python3 -c "import sys,json; items=[i for i in json.load(sys.stdin)['items'] if not i['resolved']]; print(items[0]['id'] if items else '')")
-
-curl -X PUT "http://localhost/api/v1/troubleshooting/$OPEN_ERROR/resolve" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"resolution_notes":"Issue resolved after firmware update"}'
-# Expected: error with resolved=true, resolved_at set
-
-# Step 10: Error stats
-curl "http://localhost/api/v1/troubleshooting/stats" \
+# Step 7: Test error trends
+curl "http://localhost/api/v1/dashboard/error-trends?days=30" \
   -H "Authorization: Bearer $TOKEN"
-# Expected: {"total":5,"open":...,"resolved":...,"by_severity":{...},"by_type":{...}}
+# Expected: array of daily error counts (may be sparse if errors were seeded on same day)
 
-# Step 11: Test status change via status module
-DEVICE_ID=$(curl -s "http://localhost/api/v1/devices/?size=1" \
-  -H "Authorization: Bearer $TOKEN" | \
-  python3 -c "import sys,json; print(json.load(sys.stdin)['items'][0]['id'])")
-
-curl -X POST "http://localhost/api/v1/status/change" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"entity_type\":\"device\",\"entity_id\":\"$DEVICE_ID\",\"new_status\":\"NOT_WORKING\",\"reason\":\"Testing status module\"}"
-# Expected: StatusChangeLogResponse
-
-# Step 12: Check status history
-curl "http://localhost/api/v1/status/history/device/$DEVICE_ID" \
+# Step 8: Test recent activity
+curl "http://localhost/api/v1/dashboard/recent-activity?limit=10" \
   -H "Authorization: Bearer $TOKEN"
-# Expected: array with status change entries
+# Expected: array of recent audit log entries with descriptions
 
-# Step 13: Status stats
-curl "http://localhost/api/v1/status/stats" \
+# Step 9: Test pair status
+curl "http://localhost/api/v1/dashboard/pair-status" \
   -H "Authorization: Bearer $TOKEN"
-# Expected: {"devices":{...},"couples":{...},"pairs":{...}}
+# Expected: [{"status":"WORKING","count":1,"color":"#5F8F6B"},{"status":"FAULTY","count":1,"color":"#9B3E3E"}]
 
-# Step 14: Frontend — open browser
+# Step 10: Open browser → login
 open http://localhost
-# Login → click "Troubleshooting" in sidebar
-# Expected: Troubleshooting page with stats bar, timeline, filters
+# Expected: Dashboard page loads with REAL data
 
-# Step 15: Frontend features
-# - Stats bar shows correct counts (open, resolved, critical)
-# - Timeline shows 5 errors with severity dots and colored line
-# - Click an error → expands to show steps
-# - Click "Report Error" → form modal with entity selector, severity, description
-# - Submit → new error appears in timeline
-# - Click "Add Step" on an open error → step form
-# - Click "Resolve" → resolve form → error marked resolved
-# - Filters work: severity, open/resolved, entity type, date range
-# - Toggle table view → DataTable with error data
+# Step 11: Verify dashboard components
+# - 4 stat cards with real numbers (not "—")
+# - Status overview bars with colored segments
+# - Device type bar chart (4 bars: IU, OU, HC, RF)
+# - Error trend line/area chart
+# - Pair status donut chart with center count
+# - Recent activity timeline with colored dots
+# - All charts have glass-styled tooltips on hover
+# - Responsive: resize browser → layout adjusts
 
-# Step 16: Existing features
+# Step 12: Verify charts render correctly
+# - Bar chart: bars are colored per device type
+# - Pie chart: slices are green/amber/red
+# - Line chart: shows data points (even if just one day)
+# - Tooltips appear on hover with dark glass background
+# - Grid lines visible at #262626
+
+# Step 13: Existing features still work
+# Navigate to /devices, /couples, /pairs, /map, /troubleshooting
+# All still functional
 curl http://localhost/api/v1/health
-curl "http://localhost/api/v1/devices/stats" -H "Authorization: Bearer $TOKEN"
-# Expected: all still working
+# Expected: ok
 ```
 
-**ALL 16 steps must pass.**
+**ALL 13 steps must pass.**
 
 ---
 
@@ -720,14 +610,14 @@ curl "http://localhost/api/v1/devices/stats" -H "Authorization: Bearer $TOKEN"
 
 After verification, produce concise report:
 1. **Files created/modified** — count
-2. **Database state** — new tables
-3. **API surface** — new endpoints for both modules
-4. **Business rules verified** — #7
-5. **Frontend pages** — what works
-6. **Seed data** — errors created
-7. **Issues and fixes**
-8. **Phase 10 needs** — what Dashboard module will use
+2. **API surface** — new dashboard endpoints
+3. **Dashboard components** — what renders with real data
+4. **Chart library** — Recharts integration status
+5. **Issues and fixes**
+6. **Phase 11a needs** — what Search + Audit Trail + Comparison will use
 ```
+
+
 
 you will need to write code as mentioned above
 this is the current directory structure :
@@ -774,8 +664,10 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │       │   ├── 8c160d3bc7f0_add_devices.cpython-312.pyc
 │   │       │   ├── 919b93c9c09d_add_locations_couples.cpython-312.pyc
 │   │       │   ├── 959926f36bc1_add_pairs.cpython-312.pyc
+│   │       │   ├── aa477f490651_add_troubleshooting_status.cpython-312.pyc
 │   │       │   ├── ca3abdffb9ae_add_users_table.cpython-312.pyc
 │   │       │   └── dd1090696ae2_initial_audit_logs.cpython-312.pyc
+│   │       ├── aa477f490651_add_troubleshooting_status.py
 │   │       └── ca3abdffb9ae_add_users_table.py
 │   ├── modules
 │   │   ├── auth
@@ -861,13 +753,39 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   ├── router.py
 │   │   │   ├── schemas.py
 │   │   │   └── service.py
-│   │   └── personnel
+│   │   ├── personnel
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── status
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   └── troubleshooting
 │   │       ├── __pycache__
 │   │       │   ├── models.cpython-312.pyc
 │   │       │   ├── repository.cpython-312.pyc
 │   │       │   ├── router.cpython-312.pyc
 │   │       │   ├── schemas.cpython-312.pyc
 │   │       │   └── service.cpython-312.pyc
+│   │       ├── init.py
 │   │       ├── models.py
 │   │       ├── repository.py
 │   │       ├── router.py
@@ -943,16 +861,25 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   │   │   └── useMapData.ts
 │   │   │   │   └── pages
 │   │   │   │       └── MapViewPage.tsx
-│   │   │   └── pairs
+│   │   │   ├── pairs
+│   │   │   │   ├── components
+│   │   │   │   │   ├── PairCard.tsx
+│   │   │   │   │   ├── PairForm.tsx
+│   │   │   │   │   └── PairTable.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── usePairs.ts
+│   │   │   │   └── pages
+│   │   │   │       ├── PairDetailPage.tsx
+│   │   │   │       └── PairListPage.tsx
+│   │   │   └── troubleshooting
 │   │   │       ├── components
-│   │   │       │   ├── PairCard.tsx
-│   │   │       │   ├── PairForm.tsx
-│   │   │       │   └── PairTable.tsx
+│   │   │       │   ├── ErrorFilters.tsx
+│   │   │       │   ├── ErrorTimeline.tsx
+│   │   │       │   └── TroubleshootForm.tsx
 │   │   │       ├── hooks
-│   │   │       │   └── usePairs.ts
+│   │   │       │   └── useTroubleshooting.ts
 │   │   │       └── pages
-│   │   │           ├── PairDetailPage.tsx
-│   │   │           └── PairListPage.tsx
+│   │   │           └── TroubleshootingPage.tsx
 │   │   ├── shared
 │   │   │   ├── api
 │   │   │   │   └── client.ts
@@ -1004,6 +931,7 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
     ├── Phase 5 report.md
     ├── Phase 6 report.md
     ├── Phase 8 report.md
+    ├── Phase 9 report 
     ├── data.md
     ├── phase 1 report.md
     ├── phase 2 reports.md
@@ -1011,6 +939,10 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
     ├── phase 4 report.md
     ├── phase 7 report .md
     └── temp
-65 directories, 213 Files
+
+73 directories, 243 files
+madhur@Rajs-MacBook-Pro NavDashboard % 
+
+
 you have 2 options 1: get the whole file 2:write a prompt to get what you want from ai from that file (easy to understand for less important files)
 tell me which files will you need as soon as possible for this phase 
