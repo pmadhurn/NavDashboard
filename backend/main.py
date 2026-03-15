@@ -21,6 +21,7 @@ from modules.personnel.router import router as personnel_router
 from modules.inventory.router import router as inventory_router
 from modules.locations.router import router as locations_router
 from modules.couples.router import router as couples_router
+from modules.pairs.router import router as pairs_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -98,6 +99,7 @@ app.include_router(personnel_router, prefix=settings.API_V1_PREFIX + "/personnel
 app.include_router(inventory_router, prefix=settings.API_V1_PREFIX + "/inventory", tags=["inventory"])
 app.include_router(locations_router, prefix=settings.API_V1_PREFIX + "/locations", tags=["locations"])
 app.include_router(couples_router, prefix=settings.API_V1_PREFIX + "/couples", tags=["couples"])
+app.include_router(pairs_router, prefix=settings.API_V1_PREFIX + "/pairs", tags=["pairs"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])

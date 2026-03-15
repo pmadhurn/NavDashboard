@@ -16,6 +16,7 @@ from modules.personnel.models import Person, AssignmentHistory  # noqa
 from modules.inventory.models import FittingMaterial, MaterialTemplate  # noqa
 from modules.locations.models import Location, LocationHistory  # noqa
 from modules.couples.models import Couple  # noqa
+from modules.pairs.models import Pair  # noqa
 
 config = context.config
 if config.config_file_name is not None:

@@ -24,6 +24,8 @@ import DeviceListPage from '@/modules/devices/pages/DeviceListPage';
 import DeviceDetailPage from '@/modules/devices/pages/DeviceDetailPage';
 import CoupleListPage from '@/modules/couples/pages/CoupleListPage';
 import CoupleDetailPage from '@/modules/couples/pages/CoupleDetailPage';
+import PairListPage from '@/modules/pairs/pages/PairListPage';
+import PairDetailPage from '@/modules/pairs/pages/PairDetailPage';
 
 export function AppRoutes() {
   return (
@@ -34,8 +36,8 @@ export function AppRoutes() {
         <Route path="devices/:id" element={<DeviceDetailPage />} />
         <Route path="couples" element={<CoupleListPage />} />
         <Route path="couples/:id" element={<CoupleDetailPage />} />
-        <Route path="pairs" element={<PlaceholderPage title="Pairs" icon={<SwapOutlined />} />} />
-        <Route path="pairs/:id" element={<PlaceholderPage title="Pair Detail" />} />
+        <Route path="pairs" element={<PairListPage />} />
+        <Route path="pairs/:id" element={<PairDetailPage />} />
         <Route path="map" element={<PlaceholderPage title="Map" icon={<EnvironmentOutlined />} />} />
         <Route path="troubleshooting" element={<PlaceholderPage title="Troubleshooting" icon={<ToolOutlined />} />} />
         <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
