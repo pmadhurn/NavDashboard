@@ -2,496 +2,597 @@
 
 ```markdown
 # ═══════════════════════════════════════════════════════════════
-# NAVDASHBOARD — PHASE 8: MAP MODULE (FRONTEND)
+# NAVDASHBOARD — PHASE 9: TROUBLESHOOTING + STATUS (FULL STACK)
 # ═══════════════════════════════════════════════════════════════
 
-## CONTEXT FROM PHASES 0–7
+## CONTEXT FROM PHASES 0–8
 
 **Backend state:**
-- All tables: users, audit_logs, devices, device_status_history, personnel, assignment_history, fitting_materials, material_templates, locations, location_history, couples, pairs
-- Relevant endpoints for map:
-  - `GET /api/v1/couples/map-data` → returns `[{couple_id, couple_name, latitude, longitude, status, has_rf}]`
-  - `GET /api/v1/couples/{id}/location-history` → paginated location history for a couple
-  - `GET /api/v1/couples/{id}` → full couple detail with nested location
-  - `GET /api/v1/pairs/` → pairs with nested couples (each has location)
-- Seed data: 4 couples with Paris coordinates, 2 pairs
+- Tables: users, audit_logs, devices, device_status_history, personnel, assignment_history, fitting_materials, material_templates, locations, location_history, couples, pairs
+- Modules: auth, devices, personnel, inventory, locations, couples, pairs
+- Seed data: 10 devices, 6 personnel, 2 templates, 4 couples, 2 pairs (Paris area)
+- Device status history already tracked in device_status_history table (from Phase 4)
 
 **Frontend state:**
 - Layout shell, 14 shared components, glass theme
-- Modules: devices (list/detail/form), couples (list/detail/form/card/table), pairs (list/detail/form/card/table)
-- Live routes: /, /login, /devices, /devices/:id, /couples, /couples/:id, /pairs, /pairs/:id
-- Available: all shared types (Device, Couple, Pair, Location, LocationHistory, MapDataPoint), api client, auth store, ui store, all utils
+- Modules: auth, dashboard (placeholder), devices, couples, pairs, map
+- Live routes: /, /login, /devices, /devices/:id, /couples, /couples/:id, /pairs, /pairs/:id, /map
+- Available utils: getStatusColor, getSeverityColor, formatDateTime, all shared components
 
-**No Leaflet installed yet.** This phase adds it.
+**DB name:** `navdashboard`
 
 ---
 
-## PHASE 8 GOAL
+## PHASE 9 GOAL
 
 After this phase:
-- Leaflet and React-Leaflet are installed
-- Full-page interactive map shows all couple locations as colored markers
-- Markers are color-coded by status (Working green, Not Working amber, Faulty red)
-- Clicking a marker shows a glass-styled popup with couple info and quick links
-- Filter panel lets user toggle markers by status, RF presence, pair assignment
-- Location trail polyline shows a couple's movement history when selected
-- Location picker component allows clicking the map to set coordinates (used in couple form)
-- Side panel lists all couples with status, clickable to zoom to location
-- Dark CartoDB tile layer matches the glass theme
-
-**No backend changes this phase.** Frontend only. All data comes from existing endpoints.
+- Error logs table with JSONB custom_fields for high customizability
+- Troubleshoot steps table linked to error logs
+- Status change log table (generic, works for device/couple/pair)
+- Backend: full troubleshooting API (errors, steps, resolve) + status API (change, history)
+- Frontend: troubleshooting page with timeline view, error form, filters, stats bar
+- Every status change on any entity creates a StatusChangeLog record (Business Rule #7)
+- Seed data: 5 sample error logs with troubleshoot steps
 
 ---
 
 ## FILES TO GENERATE
 
-### Frontend — Package update (REPLACE):
-1. `NavDashboard/frontend/package.json`
+### Backend — Troubleshooting module (NEW):
+1. `NavDashboard/backend/modules/troubleshooting/__init__.py`
+2. `NavDashboard/backend/modules/troubleshooting/models.py`
+3. `NavDashboard/backend/modules/troubleshooting/schemas.py`
+4. `NavDashboard/backend/modules/troubleshooting/repository.py`
+5. `NavDashboard/backend/modules/troubleshooting/service.py`
+6. `NavDashboard/backend/modules/troubleshooting/router.py`
 
-### Frontend — Map module (NEW):
-2. `NavDashboard/frontend/src/modules/map/pages/MapViewPage.tsx`
-3. `NavDashboard/frontend/src/modules/map/components/MainMap.tsx`
-4. `NavDashboard/frontend/src/modules/map/components/DeviceMarker.tsx`
-5. `NavDashboard/frontend/src/modules/map/components/DevicePopup.tsx`
-6. `NavDashboard/frontend/src/modules/map/components/LocationPicker.tsx`
-7. `NavDashboard/frontend/src/modules/map/components/MapFilters.tsx`
-8. `NavDashboard/frontend/src/modules/map/components/LocationTrail.tsx`
-9. `NavDashboard/frontend/src/modules/map/components/MapSidePanel.tsx`
-10. `NavDashboard/frontend/src/modules/map/hooks/useMapData.ts`
+### Backend — Status module (NEW):
+7. `NavDashboard/backend/modules/status/__init__.py`
+8. `NavDashboard/backend/modules/status/models.py`
+9. `NavDashboard/backend/modules/status/schemas.py`
+10. `NavDashboard/backend/modules/status/repository.py`
+11. `NavDashboard/backend/modules/status/service.py`
+12. `NavDashboard/backend/modules/status/router.py`
+
+### Backend — Updates (REPLACE):
+13. `NavDashboard/backend/main.py`
+14. `NavDashboard/backend/migrations/env.py`
+
+### Frontend — Troubleshooting module (NEW):
+15. `NavDashboard/frontend/src/modules/troubleshooting/pages/TroubleshootingPage.tsx`
+16. `NavDashboard/frontend/src/modules/troubleshooting/components/ErrorTimeline.tsx`
+17. `NavDashboard/frontend/src/modules/troubleshooting/components/TroubleshootForm.tsx`
+18. `NavDashboard/frontend/src/modules/troubleshooting/components/ErrorFilters.tsx`
+19. `NavDashboard/frontend/src/modules/troubleshooting/hooks/useTroubleshooting.ts`
 
 ### Frontend — Routes update (REPLACE):
-11. `NavDashboard/frontend/src/app/routes.tsx`
+20. `NavDashboard/frontend/src/app/routes.tsx`
 
-### Frontend — Updated couple form to use LocationPicker (REPLACE):
-12. `NavDashboard/frontend/src/modules/couples/components/CoupleForm.tsx`
-
-**Total: 12 files.**
+**Total: 20 files.**
 
 ---
 
-## PACKAGE.JSON
+## BACKEND — TROUBLESHOOTING MODULE
 
-Add these dependencies to the existing package.json:
-```json
-"leaflet": "^1.9.4",
-"react-leaflet": "^4.2.1",
-"@types/leaflet": "^1.9.12"
+### models.py
+
+**ErrorLog** model:
+- Inherits: `Base`, `SoftDeleteMixin`, `CustomFieldsMixin`
+- Table name: `error_logs`
+- Columns:
+  - `device_id`: `Mapped[Optional[UUID]]`, nullable (error can be on device, couple, or pair)
+  - `couple_id`: `Mapped[Optional[UUID]]`, nullable
+  - `pair_id`: `Mapped[Optional[UUID]]`, nullable
+  - `error_type`: `Mapped[str]`, not nullable (free text: "Connection Loss", "Signal Degradation", etc.)
+  - `severity`: `Mapped[str]`, not nullable (LOW, MEDIUM, HIGH, CRITICAL)
+  - `description`: `Mapped[str]`, not nullable (Text)
+  - `reported_by`: `Mapped[Optional[UUID]]`, nullable (person who reported)
+  - `reported_at`: `Mapped[datetime]`, `DateTime(timezone=True)`, `server_default=func.now()`
+  - `resolved`: `Mapped[bool]`, default False
+  - `resolved_at`: `Mapped[Optional[datetime]]`, nullable
+  - `resolved_by`: `Mapped[Optional[UUID]]`, nullable
+
+**TroubleshootEntry** model:
+- Inherits: `Base`, `CustomFieldsMixin`
+- Table name: `troubleshoot_entries`
+- Columns:
+  - `error_id`: `Mapped[UUID]`, ForeignKey to `error_logs.id`, indexed, not nullable
+  - `step_number`: `Mapped[int]`, not nullable
+  - `step_description`: `Mapped[str]`, not nullable
+  - `action_taken`: `Mapped[Optional[str]]`, nullable
+  - `resolution`: `Mapped[Optional[str]]`, nullable
+  - `performed_by`: `Mapped[Optional[UUID]]`, nullable (person who performed step)
+  - `performed_at`: `Mapped[datetime]`, `DateTime(timezone=True)`, `server_default=func.now()`
+
+Both models have `custom_fields` JSONB — users can add any extra data they want.
+
+---
+
+### schemas.py
+
+```python
+class ErrorLogCreate(BaseModel):
+    device_id: Optional[UUID] = None
+    couple_id: Optional[UUID] = None
+    pair_id: Optional[UUID] = None
+    error_type: str = Field(min_length=1, max_length=200)
+    severity: str = Field(pattern="^(LOW|MEDIUM|HIGH|CRITICAL)$")
+    description: str = Field(min_length=1)
+    reported_by: Optional[UUID] = None
+    custom_fields: Optional[dict] = None
+
+class ErrorLogUpdate(BaseModel):
+    error_type: Optional[str] = None
+    severity: Optional[str] = None
+    description: Optional[str] = None
+    custom_fields: Optional[dict] = None
+
+class ErrorLogResponse(BaseModel):
+    id: UUID
+    device_id: Optional[UUID] = None
+    couple_id: Optional[UUID] = None
+    pair_id: Optional[UUID] = None
+    error_type: str
+    severity: str
+    severity_color: str  # computed from severity
+    description: str
+    reported_by: Optional[UUID] = None
+    reported_by_name: Optional[str] = None  # denormalized
+    reported_at: datetime
+    resolved: bool
+    resolved_at: Optional[datetime] = None
+    resolved_by: Optional[UUID] = None
+    resolved_by_name: Optional[str] = None
+    steps: list["TroubleshootEntryResponse"] = []
+    custom_fields: Optional[dict] = None
+    created_at: datetime
+    model_config = {"from_attributes": True}
+
+class TroubleshootEntryCreate(BaseModel):
+    step_description: str = Field(min_length=1)
+    action_taken: Optional[str] = None
+    resolution: Optional[str] = None
+    performed_by: Optional[UUID] = None
+    custom_fields: Optional[dict] = None
+
+class TroubleshootEntryResponse(BaseModel):
+    id: UUID
+    error_id: UUID
+    step_number: int
+    step_description: str
+    action_taken: Optional[str] = None
+    resolution: Optional[str] = None
+    performed_by: Optional[UUID] = None
+    performed_by_name: Optional[str] = None
+    performed_at: datetime
+    custom_fields: Optional[dict] = None
+    model_config = {"from_attributes": True}
+
+class ResolveRequest(BaseModel):
+    resolution_notes: Optional[str] = None
+    resolved_by: Optional[UUID] = None
+
+class ErrorStatsResponse(BaseModel):
+    total: int
+    open: int
+    resolved: int
+    by_severity: dict[str, int]
+    by_type: dict[str, int]
 ```
 
-Keep ALL existing dependencies (react, react-dom, react-router-dom, antd, @ant-design/icons, axios, zustand, @tanstack/react-query, dayjs). Output the COMPLETE file.
+**severity_color mapping:**
+- LOW → `#6E6E6E`
+- MEDIUM → `#B68A3C`
+- HIGH → `#9B3E3E`
+- CRITICAL → `#6E2C2C`
 
 ---
 
-## DETAILED SPECIFICATIONS
+### repository.py
 
-### modules/map/hooks/useMapData.ts
+Mandatory interface for ErrorLog:
+```python
+async def get_by_id(db, id) -> Optional[ErrorLog]
+async def get_multi(db, skip=0, limit=100, filters=None) -> list[ErrorLog]
+async def create(db, obj_in: ErrorLogCreate) -> ErrorLog
+async def update(db, id, obj_in: ErrorLogUpdate) -> ErrorLog
+async def soft_delete(db, id) -> ErrorLog
+```
+
+Additional:
+```python
+async def get_by_device(db, device_id) -> list[ErrorLog]
+async def get_by_couple(db, couple_id) -> list[ErrorLog]
+async def get_by_pair(db, pair_id) -> list[ErrorLog]
+async def get_steps(db, error_id) -> list[TroubleshootEntry]
+async def create_step(db, error_id, step_in: TroubleshootEntryCreate, step_number: int) -> TroubleshootEntry
+async def update_step(db, step_id, step_in) -> TroubleshootEntry
+async def get_stats(db) -> dict
+async def count_open(db) -> int
+```
+
+---
+
+### service.py
+
+```python
+async def list_errors(db, params, filters=None) -> PaginatedResponse[ErrorLogResponse]
+async def get_error(db, error_id) -> ErrorLogResponse
+async def create_error(db, error_in: ErrorLogCreate, user_id) -> ErrorLogResponse
+async def update_error(db, error_id, error_in: ErrorLogUpdate, user_id) -> ErrorLogResponse
+async def delete_error(db, error_id, user_id) -> ErrorLogResponse
+async def add_step(db, error_id, step_in: TroubleshootEntryCreate, user_id) -> TroubleshootEntryResponse
+async def update_step(db, error_id, step_id, step_in, user_id) -> TroubleshootEntryResponse
+async def resolve_error(db, error_id, resolve_in: ResolveRequest, user_id) -> ErrorLogResponse
+async def get_errors_by_entity(db, entity_type, entity_id, params) -> PaginatedResponse[ErrorLogResponse]
+async def get_error_stats(db) -> ErrorStatsResponse
+async def seed_errors(db, user_id) -> list[ErrorLogResponse]
+```
+
+**resolve_error logic:**
+1. Set `resolved = True`, `resolved_at = now()`, `resolved_by`
+2. If `resolution_notes` provided, create a final TroubleshootEntry with those notes
+3. Record audit
+
+**add_step logic:**
+1. Count existing steps for this error
+2. Set `step_number` = count + 1
+3. Create TroubleshootEntry
+4. Record audit
+
+**_build_error_response helper:**
+1. Get all steps for this error (ordered by step_number)
+2. Look up reporter name from personnel if reported_by is set
+3. Look up resolver name if resolved_by is set
+4. Look up performer names for each step
+5. Compute severity_color
+6. Return ErrorLogResponse with nested steps
+
+**seed_errors** creates 5 error logs (only if zero exist):
+```
+1. Device IU-00001, "Connection Loss", HIGH, "Intermittent connection drops during heavy rain", reported by Ahmed
+   - Step 1: "Inspected cable connections"
+   - Step 2: "Replaced weatherproof sealant"
+   - Resolved
+
+2. Couple A2, "Signal Degradation", MEDIUM, "Signal strength dropped below 60%", reported by Maria
+   - Step 1: "Checked alignment of OU"
+   - Not resolved
+
+3. Device OU-00002, "Hardware Fault", CRITICAL, "OU unit not responding to ping", reported by Fatima
+   - Not resolved, no steps yet
+
+4. Couple B1, "Configuration Mismatch", LOW, "Firmware versions differ between IU and OU", reported by Lars
+   - Step 1: "Documented current firmware versions"
+   - Step 2: "Scheduled firmware update"
+   - Step 3: "Updated firmware, verified match"
+   - Resolved
+
+5. Pair 02, "RF Interference", MEDIUM, "RF listener detecting noise on channel 5", reported by James
+   - Step 1: "Ran spectrum analysis"
+   - Not resolved
+```
+
+Use actual device/couple/pair IDs and personnel IDs from seed data. Query them by serial_number/name.
+
+---
+
+### router.py
+
+Prefix: `/troubleshooting` (mounted at `/api/v1/troubleshooting`)
+
+```
+GET    /                          → list errors (paginated, filterable by severity, resolved, entity_type, error_type, date range)
+GET    /stats                     → error stats
+POST   /                          → create error log
+GET    /{error_id}                → error detail with steps
+PUT    /{error_id}                → update error
+DELETE /{error_id}                → soft delete
+POST   /{error_id}/steps          → add troubleshoot step
+PUT    /{error_id}/steps/{step_id} → update step
+PUT    /{error_id}/resolve        → mark as resolved
+GET    /by-device/{device_id}     → errors for device
+GET    /by-couple/{couple_id}     → errors for couple
+GET    /by-pair/{pair_id}         → errors for pair
+POST   /seed                      → seed sample errors (admin only)
+```
+
+Query params for GET /: `page`, `size`, `severity`, `resolved` (bool), `error_type__contains`, `device_id`, `couple_id`, `pair_id`, `reported_at__gte`, `reported_at__lte`.
+
+---
+
+## BACKEND — STATUS MODULE
+
+### models.py
+
+**StatusChangeLog** model:
+- Inherits: `Base`
+- Table name: `status_change_logs`
+- Columns:
+  - `entity_type`: `Mapped[str]`, not nullable (device, couple, pair)
+  - `entity_id`: `Mapped[UUID]`, not nullable, indexed
+  - `old_status`: `Mapped[str]`, not nullable
+  - `new_status`: `Mapped[str]`, not nullable
+  - `changed_by`: `Mapped[UUID]`, not nullable
+  - `changed_at`: `Mapped[datetime]`, `DateTime(timezone=True)`, `server_default=func.now()`
+  - `reason`: `Mapped[Optional[str]]`, nullable
+
+---
+
+### schemas.py
+
+```python
+class StatusChangeRequest(BaseModel):
+    entity_type: str = Field(pattern="^(device|couple|pair)$")
+    entity_id: UUID
+    new_status: str = Field(pattern="^(WORKING|NOT_WORKING|FAULTY)$")
+    reason: Optional[str] = None
+
+class StatusChangeLogResponse(BaseModel):
+    id: UUID
+    entity_type: str
+    entity_id: UUID
+    old_status: str
+    new_status: str
+    changed_by: UUID
+    changed_at: datetime
+    reason: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+class StatusStatsResponse(BaseModel):
+    devices: dict[str, int]  # status → count
+    couples: dict[str, int]
+    pairs: dict[str, int]
+```
+
+---
+
+### repository.py
+
+```python
+async def create_log(db, log: StatusChangeLog) -> StatusChangeLog
+async def get_history(db, entity_type: str, entity_id: UUID, skip=0, limit=50) -> list[StatusChangeLog]
+async def get_all(db, skip=0, limit=100, filters=None) -> list[StatusChangeLog]
+async def get_stats(db) -> dict
+```
+
+---
+
+### service.py
+
+```python
+async def change_status(db, request: StatusChangeRequest, user_id) -> StatusChangeLogResponse
+async def get_status_history(db, entity_type, entity_id, params) -> PaginatedResponse[StatusChangeLogResponse]
+async def get_status_stats(db) -> StatusStatsResponse
+```
+
+**change_status logic:**
+1. Based on `entity_type`, fetch the entity (device/couple/pair) from its repository
+2. If not found → raise NotFoundException
+3. Get old_status from the entity
+4. If old_status == new_status → raise BadRequestException("Status unchanged")
+5. Update the entity's status field
+6. Create StatusChangeLog record
+7. If entity_type is "device": also create DeviceStatusHistory record (existing table)
+8. If entity_type is "couple" and couple belongs to a pair: recalculate pair's auto-derived status (Business Rule #12)
+9. Record audit
+10. Return StatusChangeLogResponse
+
+This is the CENTRAL status change function — it handles all entity types and maintains consistency.
+
+---
+
+### router.py
+
+Prefix: `/status` (mounted at `/api/v1/status`)
+
+```
+POST   /change                              → change status of any entity (Business Rule #7)
+GET    /history/{entity_type}/{entity_id}   → status history for entity
+GET    /stats                               → status distribution across all entities
+```
+
+---
+
+## UPDATED BACKEND FILES
+
+### main.py
+
+Add:
+```python
+from modules.troubleshooting.router import router as troubleshooting_router
+from modules.status.router import router as status_router
+```
+Include under `/api/v1/troubleshooting` and `/api/v1/status`.
+Keep all existing routers. Output COMPLETE file.
+
+### migrations/env.py
+
+Add:
+```python
+from modules.troubleshooting.models import ErrorLog, TroubleshootEntry  # noqa
+from modules.status.models import StatusChangeLog  # noqa
+```
+Keep all existing imports. Output COMPLETE file.
+
+---
+
+## FRONTEND SPECIFICATIONS
+
+### modules/troubleshooting/hooks/useTroubleshooting.ts
 
 ```typescript
-export function useMapCouples(filters?: MapFilters) {
-  // GET /couples/map-data
-  // Returns { data: MapDataPoint[], isLoading, error }
-  // Client-side filter the results based on filters (status, hasRf, pairId)
-}
+export function useErrors(filters?)
+  // GET /troubleshooting — PaginatedResponse<ErrorLog>
 
-export function useCoupleTrail(coupleId: string | null) {
-  // GET /couples/{coupleId}/location-history?size=100
-  // enabled only when coupleId is truthy
-  // Returns { data: LocationHistory[], isLoading }
-}
+export function useError(id: string)
+  // GET /troubleshooting/{id} — includes steps
 
-export function useMapPairs() {
-  // GET /pairs/?size=100
-  // Returns pairs with nested couples for drawing connection lines
-  // { data: Pair[], isLoading }
-}
+export function useCreateError()
+  // POST /troubleshooting — invalidates ['errors']
 
-interface MapFilters {
-  showWorking: boolean
-  showNotWorking: boolean
-  showFaulty: boolean
-  showRfOnly: boolean
-  pairId: string | null
-  showTrails: boolean
-}
+export function useAddStep()
+  // POST /troubleshooting/{errorId}/steps
+  // mutationFn: { errorId: string, data: StepCreate }
+  // invalidates ['errors'], ['error', errorId]
+
+export function useResolveError()
+  // PUT /troubleshooting/{errorId}/resolve
+  // mutationFn: { errorId: string, data: ResolveRequest }
+  // invalidates ['errors'], ['error', errorId]
+
+export function useErrorStats()
+  // GET /troubleshooting/stats
+
+export function useErrorsByEntity(entityType: string, entityId: string)
+  // GET /troubleshooting/by-{entityType}/{entityId}
+  // enabled only when both are truthy
+
+export function useSeedErrors()
+  // POST /troubleshooting/seed — invalidates ['errors']
 ```
+
+Add TypeScript interfaces for ErrorLog, TroubleshootEntry, ErrorStats, etc. in the hook file or in a separate types file. Keep it pragmatic — define them at the top of the hooks file if simpler.
 
 ---
 
-### modules/map/pages/MapViewPage.tsx
+### modules/troubleshooting/pages/TroubleshootingPage.tsx
 
-Full-page map layout with floating glass panels:
-
-```
-┌────────────────────────────────────────────────────────────┐
-│ ┌──────────┐                              ┌─────────────┐ │
-│ │ Side     │                              │ MapFilters  │ │
-│ │ Panel    │                              │ (floating)  │ │
-│ │ (glass)  │        MainMap               │             │ │
-│ │          │     (fills space)            └─────────────┘ │
-│ │ Couples  │                                              │
-│ │ list     │                                              │
-│ │          │                                              │
-│ │          │                              ┌─────────────┐ │
-│ │          │                              │ Legend       │ │
-│ └──────────┘                              └─────────────┘ │
-└────────────────────────────────────────────────────────────┘
-```
-
-- `<PageHeader>` is NOT shown — map takes full height (subtract sidebar width)
-- Sets page title via uiStore: "Map"
-- Left: `<MapSidePanel>` — collapsible, glass, lists couples
-- Center: `<MainMap>` fills remaining space
-- Top-right: `<MapFilters>` — floating glass panel
-- Bottom-right: Legend (small glass card showing status colors)
-- State: selectedCoupleId (for trail display), filters (MapFilters object)
-- Fetches data: `useMapCouples(filters)`, `useCoupleTrail(selectedCoupleId)`
-
-**Full height:** The map page should fill the entire content area. Use CSS:
-```css
-height: calc(100vh - <header-height>);
-```
-The Layout component's content area wraps this page — ensure the map div fills it completely with no padding/scroll on this page specifically.
+- `<PageHeader title="Troubleshooting" actions={[reportButton, seedButton]}>`
+- Stats bar at top: 3 GlassCards in a row:
+  - Open Errors (count, amber accent)
+  - Resolved Today (count, green accent)  
+  - Critical (count, red accent)
+- `<ErrorFilters>` bar
+- View toggle: Timeline / Table
+- Timeline view: `<ErrorTimeline>`
+- Table view: `<DataTable>` with columns: Type, Severity, Description (truncated), Entity, Reporter, Date, Status (Open/Resolved), Actions
+- "Report Error" button opens `<TroubleshootForm>` in create mode
 
 ---
 
-### modules/map/components/MainMap.tsx
+### modules/troubleshooting/components/ErrorTimeline.tsx
 
-Leaflet map using React-Leaflet:
+Vertical timeline showing error logs chronologically:
 
 ```typescript
-interface MainMapProps {
-  markers: MapDataPoint[]
-  selectedCoupleId: string | null
-  onMarkerClick: (coupleId: string) => void
-  onMapClick?: (lat: number, lng: number) => void  // for LocationPicker mode
-  trail: LocationHistory[]  // for selected couple's trail
-  pickerMode?: boolean  // if true, clicking sets a coordinate
-  pickerPosition?: { lat: number; lng: number } | null
+interface ErrorTimelineProps {
+  errors: ErrorLog[]
+  loading: boolean
+  onSelectError: (error: ErrorLog) => void
+  onResolve: (errorId: string) => void
+  onAddStep: (errorId: string) => void
 }
 ```
 
-- **Tile layer:** CartoDB dark_all:
-  `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`
-  Attribution: `&copy; OpenStreetMap contributors &copy; CARTO`
-- Default center: `[48.856, 2.352]` (Paris — where seed data is)
-- Default zoom: 13
-- Renders `<DeviceMarker>` for each marker in `markers` array
-- Renders `<LocationTrail>` if `trail` has entries
-- If `pickerMode`: renders a draggable marker at `pickerPosition` and listens for map clicks
-- On initial load: fit bounds to show all markers (use `map.fitBounds`)
-- Map container: `border-radius: 12px`, subtle glass border
-
-**Leaflet CSS:** Must import leaflet CSS. Add to the component or to global.css:
-```typescript
-import 'leaflet/dist/leaflet.css'
-```
-
-**Leaflet icon fix:** Default Leaflet icons break with bundlers. Either:
-- Use custom SVG markers (preferred — matches our design)
-- Or fix default icon paths
-
-We use custom SVG markers via `DeviceMarker`, so default icons are not needed.
+- Each entry is a GlassCard on the timeline:
+  - Left: severity dot (colored circle on timeline line)
+    - LOW: `#6E6E6E`, MEDIUM: `#B68A3C`, HIGH: `#9B3E3E`, CRITICAL: `#6E2C2C`
+  - Right card content:
+    - Top row: error_type (bold) + severity badge (colored pill) + resolved/open tag
+    - Description (truncated to 2 lines, expandable on click)
+    - Entity reference: "Device IU-00001" or "Couple A1" or "Pair 01" — as a clickable link
+    - Reporter + date (muted text)
+    - Expand section (on click): shows troubleshoot steps
+      - Each step: step number, description, action taken, resolution, performer, date
+    - Action buttons: "Add Step" (if open), "Resolve" (if open)
+- Timeline line: `2px solid #2C2C2C`, vertical, connecting severity dots
+- Most recent at top
+- Empty state if no errors
 
 ---
 
-### modules/map/components/DeviceMarker.tsx
+### modules/troubleshooting/components/TroubleshootForm.tsx
 
-Custom Leaflet marker for each couple on the map:
+Multi-mode form:
 
 ```typescript
-interface DeviceMarkerProps {
-  point: MapDataPoint
-  isSelected: boolean
-  onClick: () => void
+interface TroubleshootFormProps {
+  open: boolean
+  onClose: () => void
+  mode: 'create' | 'add-step' | 'resolve'
+  errorId?: string  // for add-step and resolve modes
 }
 ```
 
-- Uses Leaflet `DivIcon` for a custom HTML marker (not default pin)
-- Marker is a colored circle with glow:
-  ```html
-  <div style="
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: ${statusColor};
-    box-shadow: 0 0 8px ${statusColor}, 0 0 16px ${statusColor}40;
-    border: 2px solid rgba(255,255,255,0.3);
-  "></div>
-  ```
-- Status colors: Working `#5F8F6B`, Not Working `#B68A3C`, Faulty `#9B3E3E`
-- Selected state: white ring (`#F2F2F2`) and larger glow
-- Has RF indicator: smaller dot above/beside the main circle (optional visual)
-- Tooltip on hover: couple name (use Leaflet `Tooltip`)
-- Click: calls `onClick` which triggers popup and trail loading
-- Uses React-Leaflet `Marker` component with `icon` prop set to a `DivIcon`
+**Mode: create (New Error)**
+- Entity type selector (radio: Device / Couple / Pair)
+- Entity selector (Ant Design Select, searchable — fetches from appropriate endpoint based on type)
+- Error type (GlassInput with text — free text)
+- Severity (Select: Low, Medium, High, Critical — with colored dots)
+- Description (GlassInput textarea)
+- Reported by (Select, fetch from personnel)
+- Custom fields (key-value editor)
 
-**Creating the DivIcon:**
-```typescript
-import L from 'leaflet'
+**Mode: add-step**
+- Step description (textarea, required)
+- Action taken (textarea, optional)
+- Resolution (textarea, optional)
+- Performed by (Select, personnel)
+- Custom fields
 
-const icon = L.divIcon({
-  className: '', // clear default leaflet class
-  html: `<div style="..."></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-})
-```
+**Mode: resolve**
+- Resolution notes (textarea)
+- Resolved by (Select, personnel)
+
+All glass-styled. GlassModal wrapper. Submit calls appropriate hook mutation.
 
 ---
 
-### modules/map/components/DevicePopup.tsx
+### modules/troubleshooting/components/ErrorFilters.tsx
 
-Leaflet popup with glass styling:
+Filter bar:
 
 ```typescript
-interface DevicePopupProps {
-  point: MapDataPoint
-  couple: Couple | null  // full couple data if loaded
-  onViewDetail: () => void
-  onViewHistory: () => void
+interface ErrorFiltersProps {
+  filters: ErrorFilterState
+  onChange: (filters: ErrorFilterState) => void
+}
+
+interface ErrorFilterState {
+  severity: string[]  // multi-select
+  resolved: boolean | null  // null=all, true=resolved, false=open
+  error_type: string  // search text
+  entity_type: string  // all, device, couple, pair
+  reported_at_gte: string | null  // date range start
+  reported_at_lte: string | null  // date range end
 }
 ```
 
-- Uses React-Leaflet `Popup` component
-- Override popup styles to match glass theme:
-  ```css
-  .leaflet-popup-content-wrapper {
-    background: rgba(20, 20, 20, 0.9);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    color: #F2F2F2;
-  }
-  .leaflet-popup-tip {
-    background: rgba(20, 20, 20, 0.9);
-  }
-  ```
-  Add these overrides to global.css or as a style tag in the component.
-
-- Content:
-  - Couple name (bold, 16px)
-  - StatusBadge
-  - Has RF indicator
-  - Coordinates (formatted)
-  - If full couple data loaded:
-    - Device list (serial + type for each)
-    - Handling person
-  - Quick action links: "View Detail" (→ /couples/{id}), "Show Trail" (triggers trail load)
-
-- Popup opens when marker is clicked
-- Compact layout, max-width ~280px
-
----
-
-### modules/map/components/LocationPicker.tsx
-
-Component for picking a location by clicking the map:
-
-```typescript
-interface LocationPickerProps {
-  value: { latitude: number; longitude: number } | null
-  onChange: (coords: { latitude: number; longitude: number }) => void
-  height?: string  // default '300px'
-}
-```
-
-- Renders a smaller Leaflet map (for use inside forms/modals)
-- Same dark tile layer
-- If `value` is set: shows a marker at that position (draggable)
-- Clicking the map sets the marker position and calls `onChange`
-- Dragging the marker also calls `onChange`
-- Below the map: display selected coordinates as text (`Lat: 48.8566, Lng: 2.3522`)
-- Also show two small number inputs for manual lat/lng entry (synced with map)
-- If no value: show instruction text "Click on the map to set location"
-
-This component replaces the plain lat/lng inputs in CoupleForm.
-
----
-
-### modules/map/components/MapFilters.tsx
-
-Floating glass panel for map filters:
-
-```typescript
-interface MapFiltersProps {
-  filters: MapFilters
-  onChange: (filters: MapFilters) => void
-  pairs: Pair[]  // for pair filter dropdown
-}
-```
-
-- Position: absolute, top-right of map container
-- Glass card: `background: rgba(20, 20, 20, 0.85)`, `backdrop-filter: blur(20px)`, `border-radius: 12px`
-- Collapsible (toggle button: filter icon)
-- Content when expanded:
-  - **Status** section: three checkboxes with colored dots
-    - ✅ Working (green dot)
-    - ✅ Not Working (amber dot)
-    - ✅ Faulty (red dot)
-  - **RF** toggle: "RF Only" switch
-  - **Pair** dropdown: filter to show only couples in a specific pair (or "All")
-  - **Trails** toggle: "Show Location Trails" switch
-- All checkboxes default to checked (show all)
-- Changes apply immediately (no "Apply" button)
-
----
-
-### modules/map/components/LocationTrail.tsx
-
-Polyline showing a couple's location history on the map:
-
-```typescript
-interface LocationTrailProps {
-  history: LocationHistory[]
-  currentLocation: { latitude: number; longitude: number } | null
-}
-```
-
-- Renders a React-Leaflet `Polyline` connecting all historical points + current location
-- Line color: `#7C7C7C`
-- Line weight: 2, dashArray for dashed line effect
-- Each historical point: small circle marker (React-Leaflet `CircleMarker`)
-  - Radius: 4px
-  - Color: `#7C7C7C`
-  - On hover tooltip: date of move + distance
-  - Opacity fades: oldest point most transparent, newest most opaque
-- Current location: shown with the full DeviceMarker (handled by parent, not this component)
-- Connect points chronologically (oldest → newest → current)
-- If only 1 history point: show just the circle, no line
-
----
-
-### modules/map/components/MapSidePanel.tsx
-
-Left side panel listing all couples:
-
-```typescript
-interface MapSidePanelProps {
-  couples: MapDataPoint[]
-  selectedCoupleId: string | null
-  onSelectCouple: (coupleId: string) => void
-  collapsed: boolean
-  onToggleCollapse: () => void
-}
-```
-
-- Glass sidebar panel: `background: rgba(15, 15, 15, 0.9)`, `backdrop-filter: blur(20px)`
-- Width: 280px expanded, 0px collapsed
-- Toggle button: chevron icon on the edge
-- Content:
-  - Title: "Locations" (small, muted)
-  - Search input (filter couples by name, client-side)
-  - Scrollable list of couples:
-    - Each item: couple name, status dot (colored), coordinates (small muted text)
-    - Selected item: `#1E1E1E` background, left accent border
-    - Hover: `#1A1A1A` background
-    - Click: calls `onSelectCouple` → map zooms to that couple, trail loads
-  - Count badge: "4 locations"
-- Transition: smooth slide in/out
-
----
-
-### Updated CoupleForm.tsx
-
-Replace the plain latitude/longitude number inputs with the `<LocationPicker>` component:
-
-- In the location section of the form, render `<LocationPicker value={locationValue} onChange={setLocationValue} height="250px" />`
-- Keep the address_note text input below the map
-- In create mode: LocationPicker starts with no marker
-- In edit mode: LocationPicker starts with the couple's current coordinates
-- The `onChange` callback updates the form's latitude/longitude state
-- Keep ALL other form functionality exactly as Phase 6 (name, RF, status, person, devices, materials, config, notes, custom fields)
-
-Output the COMPLETE file — do not abbreviate the non-location parts.
+- GlassCard container
+- Severity multi-select (checkboxes with colored dots)
+- Status: All / Open / Resolved (radio or segmented)
+- Entity type: All / Device / Couple / Pair (segmented)
+- Error type search (GlassInput with debounce)
+- Date range: two date pickers (Ant Design DatePicker)
+- Active filters shown as removable tags below the filter bar
 
 ---
 
 ### Updated routes.tsx
 
-Replace map placeholder:
+Replace troubleshooting placeholder:
 ```typescript
-<Route path="map" element={<MapViewPage />} />
+<Route path="troubleshooting" element={<TroubleshootingPage />} />
 ```
 
 Keep all other routes. Output COMPLETE file.
 
 ---
 
-## LEAFLET CSS CONSIDERATIONS
-
-Leaflet requires its CSS to be loaded. The simplest approach:
-
-In `MainMap.tsx` (and `LocationPicker.tsx`), import:
-```typescript
-import 'leaflet/dist/leaflet.css'
-```
-
-Also add these global overrides in `global.css` for glass-themed popups:
-```css
-/* Leaflet glass popup overrides */
-.leaflet-popup-content-wrapper {
-  background: rgba(20, 20, 20, 0.9) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
-  color: #F2F2F2 !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
-}
-
-.leaflet-popup-tip {
-  background: rgba(20, 20, 20, 0.9) !important;
-}
-
-.leaflet-popup-close-button {
-  color: #7A7A7A !important;
-}
-
-.leaflet-popup-close-button:hover {
-  color: #F2F2F2 !important;
-}
-
-/* Dark map controls */
-.leaflet-control-zoom a {
-  background: rgba(20, 20, 20, 0.8) !important;
-  color: #F2F2F2 !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.leaflet-control-attribution {
-  background: rgba(20, 20, 20, 0.6) !important;
-  color: #7A7A7A !important;
-}
-
-.leaflet-control-attribution a {
-  color: #9FA3A8 !important;
-}
-```
-
-Include these in the updated `global.css`. Output global.css ONLY if you need to add these overrides — otherwise just put them in MainMap.tsx as a style tag or side-effect import.
-
-Actually, to keep it simple: add the Leaflet popup/control overrides directly in `global.css`. Output the COMPLETE updated `global.css` as an additional file:
-
-13. `NavDashboard/frontend/src/styles/global.css` (REPLACE)
-
-**Updated total: 13 files.**
-
----
-
 ## RULES
 
-- Output ALL 13 files
-- Output COMPLETE contents — no abbreviations
-- Leaflet `DivIcon` for custom markers — no default blue pins
-- Dark CartoDB tiles: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`
-- WKT/Leaflet coordinate order: Leaflet uses `[latitude, longitude]` (opposite of WKT)
-- All glass styling: transparent backgrounds, backdrop-filter blur, rgba colors
-- Status colors exact: Working `#5F8F6B`, Not Working `#B68A3C`, Faulty `#9B3E3E`
-- Selected marker: `#F2F2F2` ring
-- Trail line: `#7C7C7C`
+- Output ALL 20 files
+- Output COMPLETE contents — no abbreviations, no stubs
+- Severity colors exact: LOW `#6E6E6E`, MEDIUM `#B68A3C`, HIGH `#9B3E3E`, CRITICAL `#6E2C2C`
+- custom_fields JSONB on both ErrorLog and TroubleshootEntry — high customizability
+- Business Rule #7: status changes create StatusChangeLog
+- Status module's change_status handles all entity types centrally
+- Seed errors reference actual device/couple/pair IDs from existing seed data (query by name/serial)
+- Timeline line color: `#2C2C2C`
+- All glass-styled components
 - No `any` types in TypeScript
-- Import leaflet CSS properly
-- LocationPicker must work inside GlassModal (the CoupleForm renders in a modal)
+- All mutations call record_audit
 
 ---
 
@@ -508,61 +609,110 @@ Actually, to keep it simple: add the Leaflet popup/control overrides directly in
 ## VERIFICATION STEPS
 
 ```bash
-# Step 1: Rebuild frontend (new leaflet dependency)
+# Step 1: Rebuild
 cd NavDashboard
-docker compose up -d --build frontend
+docker compose up -d --build backend frontend
 
-# Step 2: Check frontend built without errors
-docker compose logs -f frontend
-# Expected: Vite ready, no TypeScript errors, no missing module errors
-# leaflet and react-leaflet should resolve
+# Step 2: Migration
+docker compose exec backend alembic revision --autogenerate -m "add_troubleshooting_status"
+docker compose exec backend alembic upgrade head
 
-# Step 3: Open browser → login → click "Map" in sidebar
+# Step 3: Verify tables
+docker compose exec db psql -U navdashboard -d navdashboard -c "\dt"
+# Expected: error_logs, troubleshoot_entries, status_change_logs (plus all existing)
+
+# Step 4: Get token
+TOKEN=$(curl -s -X POST http://localhost/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@navdashboard.com","password":"admin123"}' | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# Step 5: Seed errors
+curl -X POST http://localhost/api/v1/troubleshooting/seed \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: 5 error logs with steps
+
+# Step 6: List errors
+curl "http://localhost/api/v1/troubleshooting/" \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: PaginatedResponse with 5 errors
+
+# Step 7: Get single error with steps
+ERROR_ID=$(curl -s "http://localhost/api/v1/troubleshooting/" \
+  -H "Authorization: Bearer $TOKEN" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['items'][0]['id'])")
+
+curl "http://localhost/api/v1/troubleshooting/$ERROR_ID" \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: error with steps array
+
+# Step 8: Test add step
+curl -X POST "http://localhost/api/v1/troubleshooting/$ERROR_ID/steps" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"step_description":"Tested new step","action_taken":"Verified connections"}'
+# Expected: new step with incremented step_number
+
+# Step 9: Test resolve
+OPEN_ERROR=$(curl -s "http://localhost/api/v1/troubleshooting/?resolved=false" \
+  -H "Authorization: Bearer $TOKEN" | \
+  python3 -c "import sys,json; items=[i for i in json.load(sys.stdin)['items'] if not i['resolved']]; print(items[0]['id'] if items else '')")
+
+curl -X PUT "http://localhost/api/v1/troubleshooting/$OPEN_ERROR/resolve" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"resolution_notes":"Issue resolved after firmware update"}'
+# Expected: error with resolved=true, resolved_at set
+
+# Step 10: Error stats
+curl "http://localhost/api/v1/troubleshooting/stats" \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: {"total":5,"open":...,"resolved":...,"by_severity":{...},"by_type":{...}}
+
+# Step 11: Test status change via status module
+DEVICE_ID=$(curl -s "http://localhost/api/v1/devices/?size=1" \
+  -H "Authorization: Bearer $TOKEN" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['items'][0]['id'])")
+
+curl -X POST "http://localhost/api/v1/status/change" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"entity_type\":\"device\",\"entity_id\":\"$DEVICE_ID\",\"new_status\":\"NOT_WORKING\",\"reason\":\"Testing status module\"}"
+# Expected: StatusChangeLogResponse
+
+# Step 12: Check status history
+curl "http://localhost/api/v1/status/history/device/$DEVICE_ID" \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: array with status change entries
+
+# Step 13: Status stats
+curl "http://localhost/api/v1/status/stats" \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: {"devices":{...},"couples":{...},"pairs":{...}}
+
+# Step 14: Frontend — open browser
 open http://localhost
-# Expected: Full-page map with dark tiles loads
+# Login → click "Troubleshooting" in sidebar
+# Expected: Troubleshooting page with stats bar, timeline, filters
 
-# Step 4: Verify markers
-# Expected: 4 markers visible on map (Paris area)
-# Colors: green (Working), amber (Not Working), red (Faulty)
-# Markers are glowing colored circles, not default blue pins
+# Step 15: Frontend features
+# - Stats bar shows correct counts (open, resolved, critical)
+# - Timeline shows 5 errors with severity dots and colored line
+# - Click an error → expands to show steps
+# - Click "Report Error" → form modal with entity selector, severity, description
+# - Submit → new error appears in timeline
+# - Click "Add Step" on an open error → step form
+# - Click "Resolve" → resolve form → error marked resolved
+# - Filters work: severity, open/resolved, entity type, date range
+# - Toggle table view → DataTable with error data
 
-# Step 5: Click a marker
-# Expected: Glass popup appears with couple name, status, devices, coordinates
-# "View Detail" link works (opens /couples/{id})
-
-# Step 6: Side panel
-# Expected: Left panel lists all 4 couples with status dots
-# Clicking a couple zooms map to that location
-# Selected couple is highlighted
-
-# Step 7: Filters
-# Expected: Top-right filter panel is collapsible
-# Unchecking "Working" hides green markers
-# "RF Only" toggle filters to RF couples only
-# Pair dropdown filters to couples in a specific pair
-
-# Step 8: Location trail
-# Expected: Select a couple that has location history
-# Trail polyline appears connecting historical positions
-# Historical points are small gray circles with hover tooltips
-
-# Step 9: Side panel collapse
-# Expected: Clicking chevron collapses panel, map expands
-
-# Step 10: LocationPicker in CoupleForm
-# Go to /couples → Add Couple → form modal opens
-# Expected: Mini map in the location section
-# Click on mini map → marker appears, lat/lng update
-# Drag marker → lat/lng update
-# Manual lat/lng input → marker moves
-
-# Step 11: Existing features still work
-# Navigate to /devices, /couples, /pairs → all still functional
+# Step 16: Existing features
 curl http://localhost/api/v1/health
-# Expected: ok
+curl "http://localhost/api/v1/devices/stats" -H "Authorization: Bearer $TOKEN"
+# Expected: all still working
 ```
 
-**ALL 11 steps must pass.**
+**ALL 16 steps must pass.**
 
 ---
 
@@ -570,17 +720,19 @@ curl http://localhost/api/v1/health
 
 After verification, produce concise report:
 1. **Files created/modified** — count
-2. **Map features working** — markers, popups, filters, trails, picker
-3. **Visual quality** — dark tiles, glass popups, colored markers
-4. **Issues and fixes**
-5. **Phase 9 needs** — what Troubleshooting + Status module will use
+2. **Database state** — new tables
+3. **API surface** — new endpoints for both modules
+4. **Business rules verified** — #7
+5. **Frontend pages** — what works
+6. **Seed data** — errors created
+7. **Issues and fixes**
+8. **Phase 10 needs** — what Dashboard module will use
 ```
-
 
 you will need to write code as mentioned above
 this is the current directory structure :
 
-madhur@Rajs-MacBook-Pro NavDashboard % tree  
+madhur@Rajs-MacBook-Pro NavDashboard % tree
 .
 ├── Makefile
 ├── backend
@@ -778,6 +930,19 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   │   └── pages
 │   │   │   │       ├── DeviceDetailPage.tsx
 │   │   │   │       └── DeviceListPage.tsx
+│   │   │   ├── map
+│   │   │   │   ├── components
+│   │   │   │   │   ├── DeviceMarker.tsx
+│   │   │   │   │   ├── DevicePopup.tsx
+│   │   │   │   │   ├── LocationPicker.tsx
+│   │   │   │   │   ├── LocationTrail.tsx
+│   │   │   │   │   ├── MainMap.tsx
+│   │   │   │   │   ├── MapFilters.tsx
+│   │   │   │   │   └── MapSidePanel.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useMapData.ts
+│   │   │   │   └── pages
+│   │   │   │       └── MapViewPage.tsx
 │   │   │   └── pairs
 │   │   │       ├── components
 │   │   │       │   ├── PairCard.tsx
@@ -835,21 +1000,17 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   ├── Dockerfile
 │   └── default.conf
 └── temp
+    ├── Example 
     ├── Phase 5 report.md
-    ├── Phase 6 report
-    ├── data
+    ├── Phase 6 report.md
+    ├── Phase 8 report.md
+    ├── data.md
     ├── phase 1 report.md
-    ├── phase 2 reports .ms
+    ├── phase 2 reports.md
     ├── phase 3 report.md
     ├── phase 4 report.md
-    ├── phase 7 report 
-    ├── som
-    ├── tatatemp
-    └── temp12
-
-61 directories, 204 files
-
+    ├── phase 7 report .md
+    └── temp
+65 directories, 213 Files
 you have 2 options 1: get the whole file 2:write a prompt to get what you want from ai from that file (easy to understand for less important files)
 tell me which files will you need as soon as possible for this phase 
-
-

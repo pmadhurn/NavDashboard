@@ -1,45 +1,1217 @@
-## Full Files Needed (11 files)
+## Option 1 — Full files (must see completely):
 
-These I need complete — they're either being REPLACED or contain types/APIs I must match exactly:
+**Backend — Core & Shared (5 files):**
+1. `backend/core/database.py`
+import logging
+from datetime import datetime
+from typing import AsyncGenerator, Optional
+from uuid import uuid4
 
-1. **`frontend/package.json`** — must REPLACE, need all current deps
-{
-  "name": "navdashboard-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
-    "antd": "^5.22.0",
-    "@ant-design/icons": "^5.5.0",
-    "axios": "^1.7.0",
-    "zustand": "^5.0.0",
-    "@tanstack/react-query": "^5.60.0",
-    "dayjs": "^1.11.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.6.3",
-    "vite": "^6.0.0"
-  }
-}
+from sqlalchemy import Column, DateTime, func, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from core.config import settings
+
+logger = logging.getLogger(__name__)
+
+engine = create_async_engine(
+    settings.async_database_url,
+    echo=(settings.ENVIRONMENT == "development"),
+    pool_size=20,
+    max_overflow=10,
+)
+
+async_session_factory = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
 
+class Base(DeclarativeBase):
+    __abstract__ = True
 
-2. **`frontend/src/app/routes.tsx`** — must REPLACE
+    id: Mapped[uuid4] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        nullable=True,
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class SoftDeleteMixin:
+    @classmethod
+    def not_deleted(cls):
+        return cls.deleted_at.is_(None)
+
+
+class CustomFieldsMixin:
+    custom_fields = Column(JSONB, nullable=True, default=None)
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    session = async_session_factory()
+    try:
+        yield session
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+
+
+async def check_db_connection() -> bool:
+    try:
+        async with async_session_factory() as session:
+            await session.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        logger.error("Database connection check failed: %s", e)
+        return False
+
+2. `backend/core/dependencies.py`
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import get_db
+from core.security import decode_access_token
+from core.exceptions import UnauthorizedException, ForbiddenException
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    from modules.auth.models import User
+
+    try:
+        payload = decode_access_token(token)
+    except JWTError:
+        raise UnauthorizedException("Invalid or expired token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise UnauthorizedException("Invalid token payload")
+
+    from sqlalchemy import select
+
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user or user.deleted_at is not None:
+        raise UnauthorizedException("User not found")
+
+    if not user.is_active:
+        raise UnauthorizedException("Account disabled")
+
+    return user
+
+
+def require_role(*roles: str):
+    async def role_checker(current_user=Depends(get_current_user)):
+        if current_user.role not in roles:
+            raise ForbiddenException("Insufficient permissions")
+        return current_user
+
+    return role_checker
+
+3. `backend/core/exceptions.py`
+import logging
+
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from starlette.requests import Request
+
+logger = logging.getLogger(__name__)
+
+
+class NotFoundException(Exception):
+    def __init__(self, detail: str = "Resource not found"):
+        self.detail = detail
+
+
+class BadRequestException(Exception):
+    def __init__(self, detail: str = "Bad request"):
+        self.detail = detail
+
+
+class UnauthorizedException(Exception):
+    def __init__(self, detail: str = "Unauthorized"):
+        self.detail = detail
+
+
+class ForbiddenException(Exception):
+    def __init__(self, detail: str = "Forbidden"):
+        self.detail = detail
+
+
+class ConflictException(Exception):
+    def __init__(self, detail: str = "Conflict"):
+        self.detail = detail
+
+
+def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(NotFoundException)
+    async def not_found_handler(request: Request, exc: NotFoundException) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": exc.detail})
+
+    @app.exception_handler(BadRequestException)
+    async def bad_request_handler(request: Request, exc: BadRequestException) -> JSONResponse:
+        return JSONResponse(status_code=400, content={"detail": exc.detail})
+
+    @app.exception_handler(UnauthorizedException)
+    async def unauthorized_handler(request: Request, exc: UnauthorizedException) -> JSONResponse:
+        return JSONResponse(status_code=401, content={"detail": exc.detail})
+
+    @app.exception_handler(ForbiddenException)
+    async def forbidden_handler(request: Request, exc: ForbiddenException) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": exc.detail})
+
+    @app.exception_handler(ConflictException)
+    async def conflict_handler(request: Request, exc: ConflictException) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": exc.detail})
+
+    @app.exception_handler(Exception)
+    async def generic_handler(request: Request, exc: Exception) -> JSONResponse:
+        logger.error("Unhandled exception: %s", exc, exc_info=True)
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+4. `backend/shared/audit.py`
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import DateTime, String, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    entity_type: Mapped[str] = mapped_column(String, nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    changed_by: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    old_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    new_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+
+async def record_audit(
+    db: AsyncSession,
+    action: str,
+    entity_type: str,
+    entity_id: UUID,
+    user_id: UUID,
+    old_values: dict | None = None,
+    new_values: dict | None = None,
+) -> None:
+    entry = AuditLog(
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changed_by=user_id,
+        old_values=old_values,
+        new_values=new_values,
+    )
+    db.add(entry)
+    await db.flush()
+
+5. `backend/shared/pagination.py`
+from math import ceil
+from typing import Generic, Type, TypeVar
+
+from pydantic import BaseModel, Field
+from sqlalchemy import Select, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+T = TypeVar("T", bound=BaseModel)
+
+
+class PaginationParams(BaseModel):
+    page: int = Field(default=1, ge=1)
+    size: int = Field(default=20, ge=1, le=100)
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+async def paginate(
+    db: AsyncSession,
+    query: Select,
+    params: PaginationParams,
+    response_schema: Type[T],
+) -> PaginatedResponse[T]:
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+
+    offset = (params.page - 1) * params.size
+    paginated_query = query.offset(offset).limit(params.size)
+    result = await db.execute(paginated_query)
+    rows = result.all()
+
+    items = []
+    for row in rows:
+        obj = row[0] if len(row) == 1 else row
+        if hasattr(obj, "__dict__") and hasattr(obj, "__table__"):
+            items.append(response_schema.model_validate(obj, from_attributes=True))
+        else:
+            items.append(response_schema.model_validate(obj._mapping))
+
+    pages = ceil(total / params.size) if params.size > 0 else 0
+
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
+    )
+
+
+**Backend — Files I'm REPLACING (2 files):**
+6. `backend/main.py`
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+
+from core.config import settings
+from core.database import async_session_factory, engine
+from core.exceptions import (
+    NotFoundException,
+    BadRequestException,
+    UnauthorizedException,
+    ForbiddenException,
+    ConflictException,
+)
+from modules.auth.router import router as auth_router
+from modules.devices.router import router as devices_router
+from modules.personnel.router import router as personnel_router
+from modules.inventory.router import router as inventory_router
+from modules.locations.router import router as locations_router
+from modules.couples.router import router as couples_router
+from modules.pairs.router import router as pairs_router
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("NavDashboard API starting...")
+
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        logger.info("Database connection verified.")
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+
+    try:
+        async with async_session_factory() as db:
+            from modules.auth.service import ensure_default_admin
+
+            await ensure_default_admin(db)
+    except Exception as e:
+        logger.error(f"Default admin creation failed: {e}")
+
+    logger.info("Startup complete.")
+    yield
+    logger.info("NavDashboard API shutting down...")
+
+
+app = FastAPI(
+    title="NavDashboard API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.exception_handler(NotFoundException)
+async def not_found_handler(request: Request, exc: NotFoundException):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(BadRequestException)
+async def bad_request_handler(request: Request, exc: BadRequestException):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(UnauthorizedException)
+async def unauthorized_handler(request: Request, exc: UnauthorizedException):
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
+
+
+@app.exception_handler(ForbiddenException)
+async def forbidden_handler(request: Request, exc: ForbiddenException):
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(ConflictException)
+async def conflict_handler(request: Request, exc: ConflictException):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+app.include_router(auth_router, prefix=settings.API_V1_PREFIX + "/auth", tags=["auth"])
+app.include_router(devices_router, prefix=settings.API_V1_PREFIX + "/devices", tags=["devices"])
+app.include_router(personnel_router, prefix=settings.API_V1_PREFIX + "/personnel", tags=["personnel"])
+app.include_router(inventory_router, prefix=settings.API_V1_PREFIX + "/inventory", tags=["inventory"])
+app.include_router(locations_router, prefix=settings.API_V1_PREFIX + "/locations", tags=["locations"])
+app.include_router(couples_router, prefix=settings.API_V1_PREFIX + "/couples", tags=["couples"])
+app.include_router(pairs_router, prefix=settings.API_V1_PREFIX + "/pairs", tags=["pairs"])
+
+
+@app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
+async def health_check():
+    db_status = "disconnected"
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception:
+        pass
+
+    return {
+        "status": "ok",
+        "environment": settings.ENVIRONMENT,
+        "database": db_status,
+        "version": "0.1.0",
+    }
+
+7. `backend/migrations/env.py`
+import asyncio
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from core.config import settings
+from core.database import Base
+
+# Model imports for autogenerate
+from shared.audit import AuditLog  # noqa
+from modules.auth.models import User  # noqa
+from modules.devices.models import Device, DeviceStatusHistory  # noqa
+from modules.personnel.models import Person, AssignmentHistory  # noqa
+from modules.inventory.models import FittingMaterial, MaterialTemplate  # noqa
+from modules.locations.models import Location, LocationHistory  # noqa
+from modules.couples.models import Couple  # noqa
+from modules.pairs.models import Pair  # noqa
+
+config = context.config
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+target_metadata = Base.metadata
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name == "spatial_ref_sys":
+        return False
+    if type_ == "table" and reflected and compare_to is None:
+        return False
+    return True
+
+
+def run_migrations_offline() -> None:
+    url = settings.async_database_url
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection):
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    connectable = create_async_engine(
+        settings.async_database_url,
+        poolclass=pool.NullPool,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    asyncio.run(run_async_migrations())
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+
+24. `backend/requirements.txt`
+import asyncio
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from core.config import settings
+from core.database import Base
+
+# Model imports for autogenerate
+from shared.audit import AuditLog  # noqa
+from modules.auth.models import User  # noqa
+from modules.devices.models import Device, DeviceStatusHistory  # noqa
+from modules.personnel.models import Person, AssignmentHistory  # noqa
+from modules.inventory.models import FittingMaterial, MaterialTemplate  # noqa
+from modules.locations.models import Location, LocationHistory  # noqa
+from modules.couples.models import Couple  # noqa
+from modules.pairs.models import Pair  # noqa
+
+config = context.config
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+target_metadata = Base.metadata
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name == "spatial_ref_sys":
+        return False
+    if type_ == "table" and reflected and compare_to is None:
+        return False
+    return True
+
+
+def run_migrations_offline() -> None:
+    url = settings.async_database_url
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection):
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    connectable = create_async_engine(
+        settings.async_database_url,
+        poolclass=pool.NullPool,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    asyncio.run(run_async_migrations())
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+
+
+**Backend — Models + Repos for status integration (6 files):**
+
+8. `backend/modules/devices/models.py`
+from datetime import datetime
+from typing import Optional
+from uuid import UUID, uuid4
+
+from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
+
+
+class Device(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "devices"
+
+    serial_number: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )
+    device_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    couple_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )  # FK added in Phase 6 when couples table exists
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="WORKING"
+    )
+    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )  # FK added in Phase 5
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+
+class DeviceStatusHistory(Base):
+    __tablename__ = "device_status_history"
+
+    device_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        nullable=False,
+        index=True,
+    )
+    old_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    new_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    changed_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+9. `backend/modules/devices/repository.py`
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from modules.devices.models import Device, DeviceStatusHistory
+from modules.devices.schemas import DeviceCreate, DeviceUpdate
+from shared.filters import apply_filters
+
+
+async def get_by_id(db: AsyncSession, id: UUID) -> Optional[Device]:
+    stmt = select(Device).where(Device.id == id, Device.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_multi(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 100,
+    filters: dict | None = None,
+) -> list[Device]:
+    stmt = select(Device).where(Device.deleted_at.is_(None))
+    if filters:
+        stmt = apply_filters(stmt, Device, filters)
+    stmt = stmt.offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create(db: AsyncSession, obj_in: DeviceCreate) -> Device:
+    device = Device(
+        serial_number=obj_in.serial_number,
+        device_type=obj_in.device_type,
+        status=obj_in.status,
+        couple_id=obj_in.couple_id,
+        handling_person_id=obj_in.handling_person_id,
+        notes=obj_in.notes,
+        custom_fields=obj_in.custom_fields,
+        metadata_json=obj_in.metadata_json,
+    )
+    db.add(device)
+    await db.flush()
+    await db.refresh(device)
+    return device
+
+
+async def update(db: AsyncSession, id: UUID, obj_in: DeviceUpdate) -> Device:
+    stmt = select(Device).where(Device.id == id, Device.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    device = result.scalar_one_or_none()
+    if not device:
+        return None  # type: ignore
+    update_data = obj_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(device, field, value)
+    await db.flush()
+    await db.refresh(device)
+    return device
+
+
+async def soft_delete(db: AsyncSession, id: UUID) -> Optional[Device]:
+    stmt = select(Device).where(Device.id == id, Device.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    device = result.scalar_one_or_none()
+    if not device:
+        return None
+    from datetime import datetime, timezone
+
+    device.deleted_at = datetime.now(timezone.utc)
+    device.couple_id = None
+    await db.flush()
+    await db.refresh(device)
+    return device
+
+
+async def find_by_serial(db: AsyncSession, serial_number: str) -> Optional[Device]:
+    stmt = select(Device).where(
+        Device.serial_number == serial_number, Device.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def search_by_serial(db: AsyncSession, query: str) -> list[Device]:
+    stmt = select(Device).where(
+        Device.serial_number.ilike(f"%{query}%"), Device.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_stats(db: AsyncSession) -> dict:
+    base = select(Device).where(Device.deleted_at.is_(None))
+
+    total_result = await db.execute(
+        select(func.count()).select_from(base.subquery())
+    )
+    total = total_result.scalar_one()
+
+    type_result = await db.execute(
+        select(Device.device_type, func.count())
+        .where(Device.deleted_at.is_(None))
+        .group_by(Device.device_type)
+    )
+    by_type = {row[0]: row[1] for row in type_result.all()}
+
+    status_result = await db.execute(
+        select(Device.status, func.count())
+        .where(Device.deleted_at.is_(None))
+        .group_by(Device.status)
+    )
+    by_status = {row[0]: row[1] for row in status_result.all()}
+
+    return {"total": total, "by_type": by_type, "by_status": by_status}
+
+
+async def get_status_history(
+    db: AsyncSession, device_id: UUID
+) -> list[DeviceStatusHistory]:
+    stmt = (
+        select(DeviceStatusHistory)
+        .where(DeviceStatusHistory.device_id == device_id)
+        .order_by(DeviceStatusHistory.changed_at.desc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create_status_history(
+    db: AsyncSession, entry: DeviceStatusHistory
+) -> DeviceStatusHistory:
+    db.add(entry)
+    await db.flush()
+    await db.refresh(entry)
+    return entry
+
+
+async def count_all(db: AsyncSession) -> int:
+    stmt = select(func.count()).select_from(
+        select(Device).where(Device.deleted_at.is_(None)).subquery()
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one()
+
+10. `backend/modules/couples/models.py`
+  from __future__ import annotations
+
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+
+
+class Couple(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "couples"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    pair_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )
+    has_rf: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
+    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("personnel.id"),
+        nullable=True,
+    )
+    location_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("locations.id"),
+        nullable=True,
+    )
+    configuration: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    handling_person = relationship(
+        "Person", foreign_keys=[handling_person_id], lazy="selectin"
+    )
+    location = relationship(
+        "Location", foreign_keys=[location_id], lazy="selectin"
+    )
+    
+
+11. `backend/modules/couples/repository.py`
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from shared.filters import apply_filters
+
+from .models import Couple
+
+
+async def get_by_id(db: AsyncSession, id: UUID) -> Optional[Couple]:
+    stmt = select(Couple).where(Couple.id == id, Couple.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_multi(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 100,
+    filters: dict | None = None,
+) -> list[Couple]:
+    stmt = select(Couple).where(Couple.deleted_at.is_(None))
+    if filters:
+        stmt = apply_filters(stmt, Couple, filters)
+    stmt = stmt.order_by(Couple.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create(db: AsyncSession, obj_in: dict) -> Couple:
+    couple = Couple(**obj_in)
+    db.add(couple)
+    await db.flush()
+    await db.refresh(couple)
+    return couple
+
+
+async def update(
+    db: AsyncSession, id: UUID, obj_in: dict
+) -> Optional[Couple]:
+    couple = await get_by_id(db, id)
+    if not couple:
+        return None
+    for field, value in obj_in.items():
+        setattr(couple, field, value)
+    couple.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(couple)
+    return couple
+
+
+async def soft_delete(db: AsyncSession, id: UUID) -> Optional[Couple]:
+    couple = await get_by_id(db, id)
+    if not couple:
+        return None
+    couple.deleted_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(couple)
+    return couple
+
+
+async def get_by_pair_id(db: AsyncSession, pair_id: UUID) -> list[Couple]:
+    stmt = select(Couple).where(
+        Couple.pair_id == pair_id, Couple.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_map_data(db: AsyncSession) -> list[dict]:
+    from modules.locations.models import Location
+
+    stmt = (
+        select(
+            Couple.id,
+            Couple.name,
+            Location.latitude,
+            Location.longitude,
+            Couple.status,
+            Couple.has_rf,
+        )
+        .join(Location, Couple.location_id == Location.id)
+        .where(Couple.deleted_at.is_(None))
+        .where(Couple.location_id.isnot(None))
+    )
+    result = await db.execute(stmt)
+    return [
+        {
+            "couple_id": row[0],
+            "couple_name": row[1],
+            "latitude": row[2],
+            "longitude": row[3],
+            "status": row[4],
+            "has_rf": row[5],
+        }
+        for row in result.all()
+    ]
+
+
+async def count_all(db: AsyncSession) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(Couple)
+        .where(Couple.deleted_at.is_(None))
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one()
+
+
+12. `backend/modules/pairs/models.py`
+from __future__ import annotations
+
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import Boolean, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+
+
+class Pair(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "pairs"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
+    status_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+13. `backend/modules/pairs/repository.py`
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from shared.filters import apply_filters
+
+from .models import Pair
+
+
+async def get_by_id(db: AsyncSession, pair_id: UUID) -> Optional[Pair]:
+    stmt = select(Pair).where(Pair.id == pair_id, Pair.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_multi(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 100,
+    filters: dict | None = None,
+) -> list[Pair]:
+    stmt = select(Pair).where(Pair.deleted_at.is_(None))
+    if filters:
+        stmt = apply_filters(stmt, Pair, filters)
+    stmt = stmt.order_by(Pair.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create(db: AsyncSession, obj_in: dict) -> Pair:
+    pair = Pair(**obj_in)
+    db.add(pair)
+    await db.flush()
+    await db.refresh(pair)
+    return pair
+
+
+async def update(db: AsyncSession, pair_id: UUID, obj_in: dict) -> Optional[Pair]:
+    pair = await get_by_id(db, pair_id)
+    if not pair:
+        return None
+    for key, value in obj_in.items():
+        setattr(pair, key, value)
+    await db.flush()
+    await db.refresh(pair)
+    return pair
+
+
+async def soft_delete(db: AsyncSession, pair_id: UUID) -> Optional[Pair]:
+    pair = await get_by_id(db, pair_id)
+    if not pair:
+        return None
+    pair.deleted_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(pair)
+    return pair
+
+
+async def count_all(db: AsyncSession) -> int:
+    stmt = select(func.count()).select_from(Pair).where(Pair.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    return result.scalar_one()
+
+
+async def get_stats(db: AsyncSession) -> dict:
+    total = await count_all(db)
+    stmt = (
+        select(Pair.status, func.count())
+        .where(Pair.deleted_at.is_(None))
+        .group_by(Pair.status)
+    )
+    result = await db.execute(stmt)
+    by_status = {row[0]: row[1] for row in result.all()}
+    return {"total": total, "by_status": by_status}
+
+
+
+**Backend — Personnel for name lookups (2 files):**
+14. `backend/modules/personnel/models.py`
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+
+
+class Person(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "personnel"
+
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class AssignmentHistory(Base):
+    __tablename__ = "assignment_history"
+
+    person_id: Mapped[UUID] = mapped_column(
+        ForeignKey("personnel.id"), index=True, nullable=False
+    )
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(index=True, nullable=False)
+    assigned_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    unassigned_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+15. `backend/modules/personnel/repository.py`
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from shared.filters import apply_filters
+
+from .models import AssignmentHistory, Person
+from .schemas import PersonCreate, PersonUpdate
+
+
+async def get_by_id(db: AsyncSession, id: UUID) -> Optional[Person]:
+    stmt = select(Person).where(Person.id == id, Person.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_multi(
+    db: AsyncSession, skip: int = 0, limit: int = 100, filters: dict | None = None
+) -> list[Person]:
+    stmt = select(Person).where(Person.deleted_at.is_(None))
+    if filters:
+        stmt = apply_filters(stmt, Person, filters)
+    stmt = stmt.order_by(Person.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create(db: AsyncSession, obj_in: PersonCreate) -> Person:
+    person = Person(**obj_in.model_dump())
+    db.add(person)
+    await db.flush()
+    await db.refresh(person)
+    return person
+
+
+async def update(db: AsyncSession, id: UUID, obj_in: PersonUpdate) -> Optional[Person]:
+    person = await get_by_id(db, id)
+    if not person:
+        return None
+    update_data = obj_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(person, field, value)
+    person.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(person)
+    return person
+
+
+async def soft_delete(db: AsyncSession, id: UUID) -> Optional[Person]:
+    person = await get_by_id(db, id)
+    if not person:
+        return None
+    person.deleted_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(person)
+    return person
+
+
+async def search_by_name(db: AsyncSession, query: str) -> list[Person]:
+    stmt = (
+        select(Person)
+        .where(Person.deleted_at.is_(None))
+        .where(Person.full_name.ilike(f"%{query}%"))
+        .order_by(Person.full_name)
+        .limit(20)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_assignments(db: AsyncSession, person_id: UUID) -> list[AssignmentHistory]:
+    stmt = (
+        select(AssignmentHistory)
+        .where(AssignmentHistory.person_id == person_id)
+        .order_by(AssignmentHistory.assigned_at.desc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def create_assignment(
+    db: AsyncSession, person_id: UUID, entity_type: str, entity_id: UUID
+) -> AssignmentHistory:
+    assignment = AssignmentHistory(
+        person_id=person_id,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
+    db.add(assignment)
+    await db.flush()
+    await db.refresh(assignment)
+    return assignment
+
+
+async def end_assignment(
+    db: AsyncSession, person_id: UUID, entity_type: str, entity_id: UUID
+) -> Optional[AssignmentHistory]:
+    stmt = select(AssignmentHistory).where(
+        AssignmentHistory.person_id == person_id,
+        AssignmentHistory.entity_type == entity_type,
+        AssignmentHistory.entity_id == entity_id,
+        AssignmentHistory.unassigned_at.is_(None),
+    )
+    result = await db.execute(stmt)
+    assignment = result.scalar_one_or_none()
+    if not assignment:
+        return None
+    assignment.unassigned_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(assignment)
+    return assignment
+
+
+async def count_all(db: AsyncSession) -> int:
+    stmt = select(func.count()).select_from(Person).where(Person.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    return result.scalar_one()
+
+
+**Frontend — File I'm REPLACING (1 file):**
+16. `frontend/src/app/routes.tsx`
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import {
@@ -68,6 +1240,7 @@ import CoupleListPage from '@/modules/couples/pages/CoupleListPage';
 import CoupleDetailPage from '@/modules/couples/pages/CoupleDetailPage';
 import PairListPage from '@/modules/pairs/pages/PairListPage';
 import PairDetailPage from '@/modules/pairs/pages/PairDetailPage';
+import MapViewPage from '@/modules/map/pages/MapViewPage';
 
 export function AppRoutes() {
   return (
@@ -80,7 +1253,7 @@ export function AppRoutes() {
         <Route path="couples/:id" element={<CoupleDetailPage />} />
         <Route path="pairs" element={<PairListPage />} />
         <Route path="pairs/:id" element={<PairDetailPage />} />
-        <Route path="map" element={<PlaceholderPage title="Map" icon={<EnvironmentOutlined />} />} />
+        <Route path="map" element={<MapViewPage />} />
         <Route path="troubleshooting" element={<PlaceholderPage title="Troubleshooting" icon={<ToolOutlined />} />} />
         <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
         <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
@@ -99,813 +1272,10 @@ export function AppRoutes() {
 }
 
 
+**Frontend — API + Types (2 files):**
 
-3. **`frontend/src/modules/couples/components/CoupleForm.tsx`** — must REPLACE entirely
-import React, { useEffect, useState } from 'react'
-import { Form, Select, Input, Button, Space, Switch, message } from 'antd'
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
-import GlassModal from '@/shared/components/GlassModal'
-import GlassButton from '@/shared/components/GlassButton'
-import GlassInput from '@/shared/components/GlassInput'
-import MaterialSelector from './MaterialSelector'
-import { useCreateCouple, useUpdateCouple } from '../hooks/useCouples'
-import { api } from '@/shared/api/client'
-import type { Couple, MaterialCreateInline } from '@/shared/types/couples'
-import type { PaginatedResponse } from '@/shared/types/common'
-import type { Device } from '@/shared/types/devices'
 
-interface PersonOption {
-  id: string
-  full_name: string
-}
-
-interface CoupleFormProps {
-  open: boolean
-  onClose: () => void
-  couple?: Couple | null
-}
-
-interface CustomFieldRow {
-  key: string
-  value: string
-}
-
-export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
-  const [form] = Form.useForm()
-  const createCouple = useCreateCouple()
-  const updateCouple = useUpdateCouple()
-  const isEdit = !!couple
-
-  const [hasRf, setHasRf] = useState(false)
-  const [materials, setMaterials] = useState<MaterialCreateInline[]>([])
-  const [customFields, setCustomFields] = useState<CustomFieldRow[]>([])
-  const [personnelOptions, setPersonnelOptions] = useState<PersonOption[]>([])
-  const [deviceOptions, setDeviceOptions] = useState<Device[]>([])
-  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([])
-
-  useEffect(() => {
-    if (!open) return
-    api
-      .get<PaginatedResponse<PersonOption>>('/personnel', { size: 100 })
-      .then((res) => setPersonnelOptions(res.items))
-      .catch(() => {})
-    api
-      .get<PaginatedResponse<Device>>('/devices', { size: 100 })
-      .then((res) => setDeviceOptions(res.items))
-      .catch(() => {})
-  }, [open])
-
-  useEffect(() => {
-    if (open) {
-      if (couple) {
-        form.setFieldsValue({
-          name: couple.name,
-          status: couple.status,
-          handling_person_id: couple.handling_person_id || undefined,
-          latitude: couple.location?.latitude ?? '',
-          longitude: couple.location?.longitude ?? '',
-          address_note: couple.location?.address_note || '',
-          configuration: couple.configuration ? JSON.stringify(couple.configuration, null, 2) : '',
-          notes: couple.notes || '',
-        })
-        setHasRf(couple.has_rf)
-        setMaterials([])
-        setSelectedDeviceIds([])
-        if (couple.custom_fields) {
-          setCustomFields(
-            Object.entries(couple.custom_fields).map(([k, v]) => ({
-              key: k,
-              value: String(v),
-            }))
-          )
-        } else {
-          setCustomFields([])
-        }
-      } else {
-        form.resetFields()
-        form.setFieldsValue({ status: 'WORKING' })
-        setHasRf(false)
-        setMaterials([])
-        setCustomFields([])
-        setSelectedDeviceIds([])
-      }
-    }
-  }, [open, couple, form])
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields()
-
-      const cfObj: Record<string, string> | null =
-        customFields.length > 0
-          ? customFields.reduce((acc, row) => {
-              if (row.key.trim()) acc[row.key.trim()] = row.value
-              return acc
-            }, {} as Record<string, string>)
-          : null
-
-      let configuration: Record<string, unknown> | null = null
-      if (values.configuration) {
-        try {
-          configuration = JSON.parse(values.configuration)
-        } catch {
-          message.error('Invalid JSON in configuration')
-          return
-        }
-      }
-
-      const hasLocation = values.latitude !== '' && values.longitude !== ''
-
-      if (isEdit && couple) {
-        await updateCouple.mutateAsync({
-          id: couple.id,
-          data: {
-            name: values.name,
-            status: values.status,
-            has_rf: hasRf,
-            handling_person_id: values.handling_person_id || null,
-            configuration,
-            notes: values.notes || null,
-            custom_fields: cfObj,
-          },
-        })
-        message.success('Couple updated')
-      } else {
-        await createCouple.mutateAsync({
-          name: values.name,
-          status: values.status,
-          has_rf: hasRf,
-          handling_person_id: values.handling_person_id || null,
-          location: hasLocation
-            ? {
-                latitude: parseFloat(values.latitude),
-                longitude: parseFloat(values.longitude),
-                address_note: values.address_note || null,
-              }
-            : null,
-          device_ids: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
-          fitting_materials: materials.length > 0 ? materials : undefined,
-          configuration,
-          notes: values.notes || null,
-          custom_fields: cfObj,
-        })
-        message.success('Couple created')
-      }
-      onClose()
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosErr = err as { response?: { data?: { detail?: string } } }
-        message.error(axiosErr.response?.data?.detail || 'Operation failed')
-      }
-    }
-  }
-
-  const addCustomField = () => setCustomFields([...customFields, { key: '', value: '' }])
-  const removeCustomField = (idx: number) => setCustomFields(customFields.filter((_, i) => i !== idx))
-  const updateCustomField = (idx: number, field: 'key' | 'value', val: string) => {
-    const updated = [...customFields]
-    updated[idx] = { ...updated[idx], [field]: val }
-    setCustomFields(updated)
-  }
-
-  const isLoading = createCouple.isPending || updateCouple.isPending
-
-  const inputStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F2F2F2',
-    borderRadius: 8,
-  }
-
-  return (
-    <GlassModal
-      open={open}
-      onClose={onClose}
-      title={isEdit ? 'Edit Couple' : 'Add Couple'}
-      width={640}
-      footer={
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <GlassButton variant="ghost" onClick={onClose}>Cancel</GlassButton>
-          <GlassButton onClick={handleSubmit} loading={isLoading}>
-            {isEdit ? 'Update' : 'Create'}
-          </GlassButton>
-        </div>
-      }
-    >
-      <Form form={form} layout="vertical" requiredMark={false}>
-        <Form.Item
-          name="name"
-          label={<span style={{ color: '#B8B8B8' }}>Name</span>}
-          rules={[{ required: true, message: 'Name is required' }]}
-        >
-          <GlassInput placeholder="e.g. Couple A1" />
-        </Form.Item>
-
-        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-          <div>
-            <span style={{ color: '#B8B8B8', fontSize: 14 }}>Has RF</span>
-            <div style={{ marginTop: 8 }}>
-              <Switch checked={hasRf} onChange={setHasRf} />
-            </div>
-          </div>
-          <Form.Item
-            name="status"
-            label={<span style={{ color: '#B8B8B8' }}>Status</span>}
-            style={{ flex: 1 }}
-          >
-            <Select
-              options={[
-                { label: 'Working', value: 'WORKING' },
-                { label: 'Not Working', value: 'NOT_WORKING' },
-                { label: 'Faulty', value: 'FAULTY' },
-              ]}
-            />
-          </Form.Item>
-        </div>
-
-        <Form.Item
-          name="handling_person_id"
-          label={<span style={{ color: '#B8B8B8' }}>Handling Person</span>}
-        >
-          <Select
-            placeholder="Select person"
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            options={personnelOptions.map((p) => ({
-              label: p.full_name,
-              value: p.id,
-            }))}
-          />
-        </Form.Item>
-
-        <div style={{ marginBottom: 16 }}>
-          <span style={{ color: '#B8B8B8', fontSize: 14, display: 'block', marginBottom: 8 }}>Location</span>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Form.Item name="latitude" style={{ flex: 1, marginBottom: 0 }}>
-              <Input type="number" placeholder="Latitude" style={inputStyle} step="0.0001" />
-            </Form.Item>
-            <Form.Item name="longitude" style={{ flex: 1, marginBottom: 0 }}>
-              <Input type="number" placeholder="Longitude" style={inputStyle} step="0.0001" />
-            </Form.Item>
-          </div>
-          <Form.Item name="address_note" style={{ marginTop: 8, marginBottom: 0 }}>
-            <Input placeholder="Address note" style={inputStyle} />
-          </Form.Item>
-        </div>
-
-        {!isEdit && (
-          <div style={{ marginBottom: 16 }}>
-            <span style={{ color: '#B8B8B8', fontSize: 14, display: 'block', marginBottom: 8 }}>
-              Assign Devices
-            </span>
-            <Select
-              mode="multiple"
-              placeholder="Select devices..."
-              value={selectedDeviceIds}
-              onChange={setSelectedDeviceIds}
-              style={{ width: '100%' }}
-              optionFilterProp="label"
-              options={deviceOptions.map((d) => ({
-                label: `${d.serial_number} (${d.device_type})`,
-                value: d.id,
-              }))}
-            />
-          </div>
-        )}
-
-        {!isEdit && (
-          <div style={{ marginBottom: 16 }}>
-            <span style={{ color: '#B8B8B8', fontSize: 14, display: 'block', marginBottom: 8 }}>
-              Fitting Materials
-            </span>
-            <MaterialSelector value={materials} onChange={setMaterials} />
-          </div>
-        )}
-
-        <Form.Item
-          name="configuration"
-          label={<span style={{ color: '#B8B8B8' }}>Configuration (JSON)</span>}
-        >
-          <Input.TextArea rows={3} placeholder='{"key": "value"}' style={inputStyle} />
-        </Form.Item>
-
-        <Form.Item
-          name="notes"
-          label={<span style={{ color: '#B8B8B8' }}>Notes</span>}
-        >
-          <Input.TextArea rows={3} placeholder="Optional notes..." style={inputStyle} />
-        </Form.Item>
-
-        <div style={{ marginBottom: 8 }}>
-          <span style={{ color: '#B8B8B8', fontSize: 14 }}>Custom Fields</span>
-        </div>
-        {customFields.map((cf, idx) => (
-          <Space key={idx} style={{ display: 'flex', marginBottom: 8 }} align="start">
-            <Input
-              placeholder="Key"
-              value={cf.key}
-              onChange={(e) => updateCustomField(idx, 'key', e.target.value)}
-              style={{ ...inputStyle, width: 150 }}
-            />
-            <Input
-              placeholder="Value"
-              value={cf.value}
-              onChange={(e) => updateCustomField(idx, 'value', e.target.value)}
-              style={{ ...inputStyle, width: 200 }}
-            />
-            <Button
-              type="text"
-              icon={<MinusCircleOutlined />}
-              onClick={() => removeCustomField(idx)}
-              style={{ color: '#9B3E3E' }}
-            />
-          </Space>
-        ))}
-        <Button
-          type="dashed"
-          onClick={addCustomField}
-          icon={<PlusOutlined />}
-          style={{ width: '100%', borderColor: 'rgba(255,255,255,0.1)', color: '#B8B8B8', borderRadius: 8 }}
-        >
-          Add Field
-        </Button>
-      </Form>
-    </GlassModal>
-  )
-}
-
-
-4. **`frontend/src/styles/global.css`** — must REPLACE
-@import './glass.css';
-
-/* ═══════════════════════════════════════════════════ */
-/* GLOBAL RESET + BASE STYLES                          */
-/* ═══════════════════════════════════════════════════ */
-
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body, #root {
-  height: 100%;
-  width: 100%;
-}
-
-body {
-  background: #0A0A0A;
-  color: #F2F2F2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2A2A2A;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #3A3A3A;
-}
-
-/* Selection */
-::selection {
-  background: rgba(230, 230, 230, 0.2);
-  color: #F2F2F2;
-}
-
-/* ═══════════════════════════════════════════════════ */
-/* ANT DESIGN OVERRIDES                                */
-/* ═══════════════════════════════════════════════════ */
-
-/* Transitions */
-.ant-btn,
-.ant-input,
-.ant-input-affix-wrapper,
-.ant-select,
-.ant-menu-item,
-.ant-table-row {
-  transition: all 0.3s ease !important;
-}
-
-/* ─── Input overrides ─── */
-.ant-input,
-.ant-input-affix-wrapper,
-.ant-input-password,
-.ant-input-affix-wrapper-lg,
-.ant-input-affix-wrapper-sm,
-.ant-input-lg,
-.ant-input-sm {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid #2A2A2A !important;
-  color: #F2F2F2 !important;
-  border-radius: 8px !important;
-}
-
-.ant-input::placeholder,
-.ant-input-affix-wrapper .ant-input::placeholder {
-  color: #7A7A7A !important;
-}
-
-.ant-input:hover,
-.ant-input-affix-wrapper:hover {
-  border-color: rgba(255, 255, 255, 0.15) !important;
-}
-
-.ant-input:focus,
-.ant-input-focused,
-.ant-input-affix-wrapper:focus,
-.ant-input-affix-wrapper-focused,
-.ant-input-affix-wrapper:focus-within {
-  border-color: #C9C9C9 !important;
-  box-shadow: 0 0 0 2px rgba(201, 201, 201, 0.1) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* Inner input inside affix wrapper (password, prefix inputs) */
-.ant-input-affix-wrapper .ant-input {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: #F2F2F2 !important;
-}
-
-/* Password eye icon */
-.ant-input-password-icon,
-.ant-input-suffix {
-  color: #7A7A7A !important;
-}
-
-.ant-input-password-icon:hover {
-  color: #B8B8B8 !important;
-}
-
-/* Prefix icon */
-.ant-input-prefix {
-  color: #7A7A7A !important;
-  margin-inline-end: 8px !important;
-}
-
-/* ─── Button overrides ─── */
-.ant-btn-primary {
-  background: #E6E6E6 !important;
-  color: #0A0A0A !important;
-  border: 1px solid #E6E6E6 !important;
-  font-weight: 500 !important;
-}
-
-.ant-btn-primary:hover {
-  background: #FFFFFF !important;
-  border-color: #FFFFFF !important;
-}
-
-/* ─── Table overrides ─── */
-.ant-table {
-  background: transparent !important;
-}
-
-.ant-table-thead > tr > th {
-  background: #151515 !important;
-  color: #B8B8B8 !important;
-  border-bottom: 1px solid #242424 !important;
-  font-weight: 600;
-}
-
-.ant-table-tbody > tr > td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
-}
-
-.ant-table-tbody > tr:nth-child(even) > td {
-  background: #111111;
-}
-
-.ant-table-tbody > tr:hover > td {
-  background: #1C1C1C !important;
-}
-
-.ant-table-tbody > tr.ant-table-row-selected > td {
-  background: #242424 !important;
-}
-
-.ant-table-placeholder {
-  background: transparent !important;
-}
-
-.ant-table-cell {
-  color: #F2F2F2 !important;
-}
-
-/* ─── Modal overrides ─── */
-.ant-modal-mask {
-  background: rgba(0, 0, 0, 0.7) !important;
-  backdrop-filter: blur(4px);
-}
-
-.ant-modal-content {
-  background: rgba(20, 20, 20, 0.95) !important;
-  backdrop-filter: blur(30px) !important;
-  -webkit-backdrop-filter: blur(30px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5) !important;
-}
-
-.ant-modal-header {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-}
-
-.ant-modal-title {
-  color: #F2F2F2 !important;
-}
-
-.ant-modal-close-x {
-  color: #7A7A7A !important;
-}
-
-.ant-modal-close:hover .ant-modal-close-x {
-  color: #F2F2F2 !important;
-}
-
-.ant-modal-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-}
-
-/* ─── Menu overrides (sidebar) ─── */
-.ant-menu-dark {
-  background: transparent !important;
-}
-
-.ant-menu-dark .ant-menu-item {
-  color: #B8B8B8 !important;
-  margin-inline: 8px !important;
-  border-radius: 8px !important;
-}
-
-.ant-menu-dark .ant-menu-item:hover {
-  background: #1A1A1A !important;
-  color: #F2F2F2 !important;
-}
-
-.ant-menu-dark .ant-menu-item-selected {
-  background: #1E1E1E !important;
-  color: #F2F2F2 !important;
-  border-left: 3px solid #E6E6E6;
-}
-
-.ant-menu-dark .ant-menu-item .ant-menu-item-icon {
-  color: #C8C8C8 !important;
-}
-
-/* ─── Dropdown overrides ─── */
-.ant-dropdown-menu {
-  background: rgba(31, 31, 31, 0.95) !important;
-  backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
-}
-
-.ant-dropdown-menu-item {
-  color: #F2F2F2 !important;
-}
-
-.ant-dropdown-menu-item:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-}
-
-/* ─── Pagination ─── */
-.ant-pagination-item {
-  background: transparent !important;
-  border-color: #242424 !important;
-}
-
-.ant-pagination-item a {
-  color: #B8B8B8 !important;
-}
-
-.ant-pagination-item-active {
-  background: rgba(230, 230, 230, 0.1) !important;
-  border-color: #E6E6E6 !important;
-}
-
-.ant-pagination-item-active a {
-  color: #E6E6E6 !important;
-}
-
-/* ─── Misc ─── */
-.ant-spin-text {
-  color: #B8B8B8 !important;
-}
-
-.ant-empty-description {
-  color: #7A7A7A !important;
-}
-
-.ant-breadcrumb-separator {
-  color: #7A7A7A !important;
-}
-
-.ant-tooltip-inner {
-  background: rgba(31, 31, 31, 0.95) !important;
-  backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-}
-
-.ant-message-notice-content {
-  background: rgba(31, 31, 31, 0.95) !important;
-  backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
-  color: #F2F2F2 !important;
-}
-
-5. **`frontend/src/shared/types/couples.ts`** — need exact types (MapDataPoint, Couple)
-import type { Device } from './devices'
-import type { Location, LocationCreate } from './locations'
-
-export interface MaterialCreateInline {
-  name: string
-  quantity: number
-  unit?: string | null
-}
-
-export interface CoupleCreate {
-  name: string
-  pair_id?: string | null
-  has_rf?: boolean
-  status?: string
-  handling_person_id?: string | null
-  location?: LocationCreate | null
-  device_ids?: string[]
-  fitting_materials?: MaterialCreateInline[]
-  configuration?: Record<string, unknown> | null
-  notes?: string | null
-  custom_fields?: Record<string, unknown> | null
-  copy_materials_from?: string | null
-  template_id?: string | null
-}
-
-export interface CoupleUpdate {
-  name?: string | null
-  pair_id?: string | null
-  has_rf?: boolean | null
-  status?: string | null
-  handling_person_id?: string | null
-  configuration?: Record<string, unknown> | null
-  notes?: string | null
-  custom_fields?: Record<string, unknown> | null
-}
-
-export interface Material {
-  id: string
-  couple_id: string | null
-  name: string
-  description: string | null
-  quantity: number
-  unit: string | null
-  is_template: boolean
-  custom_fields: Record<string, unknown> | null
-  created_at: string
-  updated_at: string | null
-}
-
-export interface Couple {
-  id: string
-  name: string
-  pair_id: string | null
-  has_rf: boolean
-  status: string
-  status_color: string
-  handling_person_id: string | null
-  handling_person_name: string | null
-  location_id: string | null
-  location: Location | null
-  devices: Device[]
-  materials: Material[]
-  configuration: Record<string, unknown> | null
-  notes: string | null
-  custom_fields: Record<string, unknown> | null
-  created_at: string
-  updated_at: string | null
-}
-
-export interface CoupleSummary {
-  id: string
-  name: string
-  status: string
-  status_color: string
-  has_rf: boolean
-  location: Location | null
-  device_count: number
-}
-
-export interface LocationChangeRequest {
-  latitude: number
-  longitude: number
-  address_note?: string | null
-  notes?: string | null
-}
-
-
-
-6. **`frontend/src/shared/types/locations.ts`** — need LocationHistory type
-export interface Location {
-  id: string
-  latitude: number
-  longitude: number
-  address_note: string | null
-  created_at: string
-  updated_at: string | null
-}
-
-export interface LocationHistory {
-  id: string
-  couple_id: string
-  old_latitude: number
-  old_longitude: number
-  new_latitude: number
-  new_longitude: number
-  moved_at: string
-  handled_by: string | null
-  had_rf: boolean
-  distance_meters: number | null
-  fitting_materials_snapshot: Array<Record<string, unknown>> | null
-  configuration_snapshot: Record<string, unknown> | null
-  notes: string | null
-  created_at: string
-}
-
-export interface LocationCreate {
-  latitude: number
-  longitude: number
-  address_note?: string | null
-}
-
-export interface MapDataPoint {
-  couple_id: string
-  couple_name: string
-  latitude: number
-  longitude: number
-  status: string
-  has_rf: boolean
-}
-
-7. **`frontend/src/shared/types/pairs.ts`** — need Pair type
-import type { Couple } from './couples'
-
-export interface PairCreate {
-  name: string
-  couple_ids: string[]
-  handling_person_id?: string | null
-  notes?: string | null
-  custom_fields?: Record<string, unknown> | null
-}
-
-export interface PairUpdate {
-  name?: string | null
-  status?: string | null
-  status_override?: boolean | null
-  handling_person_id?: string | null
-  notes?: string | null
-  custom_fields?: Record<string, unknown> | null
-}
-
-export interface Pair {
-  id: string
-  name: string
-  status: string
-  status_color: string
-  status_override: boolean
-  handling_person_id: string | null
-  handling_person_name: string | null
-  couples: Couple[]
-  notes: string | null
-  custom_fields: Record<string, unknown> | null
-  created_at: string
-  updated_at: string | null
-}
-
-export interface PairStats {
-  total: number
-  by_status: Record<string, number>
-}
-
-8. **`frontend/src/shared/api/client.ts`** — need API call patterns
+17. `frontend/src/shared/api/client.ts`
 import axios from 'axios'
 
 const axiosInstance = axios.create({
@@ -943,301 +1313,7 @@ export const api = {
     axiosInstance.delete(url).then(res => res.data),
 }
 
-9. **`frontend/src/shared/stores/uiStore.ts`** — used in MapViewPage
-import { create } from 'zustand';
-
-interface UiState {
-  sidebarCollapsed: boolean;
-  currentPageTitle: string;
-  toggleSidebar: () => void;
-  setSidebarCollapsed: (collapsed: boolean) => void;
-  setPageTitle: (title: string) => void;
-}
-
-function getStoredCollapsed(): boolean {
-  try {
-    const stored = localStorage.getItem('sidebar_collapsed');
-    return stored === 'true';
-  } catch {
-    return false;
-  }
-}
-
-export const useUiStore = create<UiState>((set) => ({
-  sidebarCollapsed: getStoredCollapsed(),
-  currentPageTitle: 'Dashboard',
-  toggleSidebar: () =>
-    set((state) => {
-      const next = !state.sidebarCollapsed;
-      localStorage.setItem('sidebar_collapsed', String(next));
-      return { sidebarCollapsed: next };
-    }),
-  setSidebarCollapsed: (collapsed: boolean) => {
-    localStorage.setItem('sidebar_collapsed', String(collapsed));
-    set({ sidebarCollapsed: collapsed });
-  },
-  setPageTitle: (title: string) => set({ currentPageTitle: title }),
-}));
-
-10. **`frontend/src/shared/components/Layout.tsx`** — need to understand content area structure for full-height map
-import React, { useEffect } from 'react';
-import { Layout as AntLayout } from 'antd';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import Sidebar from './Sidebar';
-import { useUiStore } from '@/shared/stores/uiStore';
-import { useAuthStore } from '@/shared/stores/authStore';
-import { useLogout } from '@/modules/auth/hooks/useAuth';
-import { getRoleColor } from '@/shared/utils/colors';
-import ErrorBoundary from './ErrorBoundary';
-
-const { Sider, Header, Content } = AntLayout;
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
-}
-
-export default function Layout() {
-  const navigate = useNavigate();
-  const collapsed = useUiStore((s) => s.sidebarCollapsed);
-  const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
-  const currentPageTitle = useUiStore((s) => s.currentPageTitle);
-  const token = useAuthStore((s) => s.token);
-  const user = useAuthStore((s) => s.user);
-  const logout = useLogout();
-
-  useEffect(() => {
-    if (!token) {
-      navigate('/login', { replace: true });
-    }
-  }, [token, navigate]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setSidebarCollapsed(true);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [setSidebarCollapsed]);
-
-  if (!token) {
-    return null;
-  }
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  const roleColor = user?.role ? getRoleColor(user.role) : '#7A7A7A';
-
-  return (
-    <AntLayout style={{ minHeight: '100vh', background: '#0A0A0A' }}>
-      <Sider
-        collapsed={collapsed}
-        width={240}
-        collapsedWidth={64}
-        style={{
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 100,
-          background: 'transparent',
-          borderRight: '1px solid rgba(255, 255, 255, 0.04)',
-          overflow: 'hidden',
-        }}
-        trigger={null}
-      >
-        <Sidebar />
-      </Sider>
-      <AntLayout
-        style={{
-          marginLeft: collapsed ? 64 : 240,
-          transition: 'margin-left 0.3s ease',
-          background: '#0A0A0A',
-        }}
-      >
-        <Header
-          className="glass-header"
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 50,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 24px',
-            height: 56,
-            lineHeight: '56px',
-            background: 'rgba(10, 10, 10, 0.8)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-          }}
-        >
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#F2F2F2' }}>
-            {currentPageTitle}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <UserOutlined style={{ color: '#B8B8B8', fontSize: 14 }} />
-              <span style={{ color: '#F2F2F2', fontSize: 13, fontWeight: 500 }}>
-                {user?.full_name || user?.username || 'User'}
-              </span>
-              {user?.role && (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    padding: '2px 10px',
-                    borderRadius: 20,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    lineHeight: '18px',
-                    color: roleColor,
-                    background: `rgba(${hexToRgb(roleColor)}, 0.12)`,
-                    border: 'none',
-                  }}
-                >
-                  {user.role}
-                </span>
-              )}
-            </div>
-            <div
-              onClick={handleLogout}
-              style={{
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 12px',
-                borderRadius: 6,
-                color: '#7A7A7A',
-                transition: 'all 0.3s ease',
-                fontSize: 13,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#F2F2F2';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#7A7A7A';
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              <LogoutOutlined style={{ fontSize: 14 }} />
-              <span>Logout</span>
-            </div>
-          </div>
-        </Header>
-        <Content
-          style={{
-            padding: 24,
-            minHeight: 'calc(100vh - 56px)',
-            background: '#0A0A0A',
-          }}
-        >
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </Content>
-      </AntLayout>
-    </AntLayout>
-  );
-}
-
-11. **`frontend/src/shared/components/StatusBadge.tsx`** — used in popups
-import React from 'react';
-import { getStatusColor } from '@/shared/utils/colors';
-
-interface StatusBadgeProps {
-  status: 'WORKING' | 'NOT_WORKING' | 'FAULTY';
-  size?: 'sm' | 'md';
-}
-
-const statusLabels: Record<string, string> = {
-  WORKING: 'Working',
-  NOT_WORKING: 'Not Working',
-  FAULTY: 'Faulty',
-};
-
-export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
-  const color = getStatusColor(status);
-  const isSmall = size === 'sm';
-
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: isSmall ? '2px 8px' : '4px 12px',
-        borderRadius: 20,
-        background: `rgba(${hexToRgb(color)}, 0.1)`,
-        fontSize: isSmall ? 11 : 13,
-        fontWeight: 500,
-        color,
-        lineHeight: 1,
-      }}
-    >
-      <span
-        style={{
-          width: isSmall ? 6 : 8,
-          height: isSmall ? 6 : 8,
-          borderRadius: '50%',
-          background: color,
-          animation: status === 'WORKING' ? 'pulse 2s ease-in-out infinite' : 'none',
-        }}
-      />
-      {statusLabels[status] || status}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
-    </span>
-  );
-}
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
-}
-
-
-
-## Prompt-Based (4 files — just need exports/signatures)
-
-For these, ask AI: *"Show all exported types, interfaces, constants, and function signatures (no implementation bodies) and summeries "*
-
-12. **`frontend/src/shared/types/common.ts`**
-13. **`frontend/src/shared/types/devices.ts`**
-14. **`frontend/src/shared/utils/colors.ts`**
-15. **`frontend/src/shared/utils/formatters.ts`**
-
-::::
-Viewed common.ts:1-30
-Viewed devices.ts:1-48
-Viewed colors.ts:1-66
-Viewed formatters.ts:1-47
-
-Here are the exported types, interfaces, constants, and function signatures along with a brief summary for each of the requested files:
-
-### 12. [frontend/src/shared/types/common.ts](cci:7://file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/types/common.ts:0:0-0:0)
-
-**Summary:** 
-Defines the foundational, cross-cutting TypeScript types and interfaces used throughout the application. This includes wrapper shapes for API responses and errors, along with global enums/unions (roles, severities, device states) and the core [User](cci:2://file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/types/common.ts:18:0-29:1) entity model.
-
-**Exports:**
-```typescript
+18. `frontend/src/shared/types/common.ts`
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -1268,110 +1344,288 @@ export interface User {
   updated_at: string | null;
   custom_fields: Record<string, unknown> | null;
 }
+
+
+---
+
+## Option 2 — AI prompts for remaining files:
+
+**Prompt 1:** For each of these frontend component files, give me ONLY the TypeScript props interface and the export statement (default vs named):
+- `frontend/src/shared/components/GlassCard.tsx`
+- `frontend/src/shared/components/GlassModal.tsx`
+- `frontend/src/shared/components/GlassInput.tsx`
+- `frontend/src/shared/components/GlassButton.tsx`
+- `frontend/src/shared/components/PageHeader.tsx`
+- `frontend/src/shared/components/DataTable.tsx`
+- `frontend/src/shared/components/StatusBadge.tsx`
+- `frontend/src/shared/components/EmptyState.tsx`
+- `frontend/src/shared/components/LoadingSpinner.tsx`
+
+**Prompt 2:** Give me all exported function signatures (name, params, return type) from:
+- `frontend/src/shared/utils/colors.ts`
+- `frontend/src/shared/utils/formatters.ts`
+
+**Prompt 3:** Give me the `filters.py` shared backend file content:
+- `backend/shared/filters.py`
+
+---
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassModal.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassCard.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassInput.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassButton.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/PageHeader.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/DataTable.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/StatusBadge.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/EmptyState.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/utils/colors.ts)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/LoadingSpinner.tsx)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/utils/formatters.ts)
+
+Read [](file:///Users/madhur/Projects/NavDashboard/backend/shared/filters.py)
+
+Here are the requested details and summaries for the requested files.
+
+### Prompt 1: Frontend Components
+
+**1. GlassCard.tsx**
+
+**Summary:** A reusable card component styled with a "glassmorphism" effect (translucency and blur). It supports hover effects, custom padding, click handlers, and accent side borders.
+
+```typescript
+interface GlassCardProps {
+  children: React.ReactNode;
+  className?: string;
+  hoverable?: boolean;
+  padding?: 'sm' | 'md' | 'lg';
+  onClick?: () => void;
+  accentColor?: string;
+  fullHeight?: boolean;
+  style?: React.CSSProperties;
+}
+
+export default function GlassCard({ ... }: GlassCardProps)
 ```
 
-***
+**2. GlassModal.tsx**
 
-### 13. [frontend/src/shared/types/devices.ts](cci:7://file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/types/devices.ts:0:0-0:0)
+**Summary:** A modal dialog wrapper based on Ant Design's `<Modal>`, customized to fit the application's dark glassmorphism theme, with integrated blur backdrops and styled borders.
 
-**Summary:** 
-Contains the data models specific to the devices domain. It defines the core [Device](cci:2://file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/types/devices.ts:0:0-13:1) interface, data structures for viewing device history and statistics, and the payload shapes required for creating or modifying device records.
-
-**Exports:**
 ```typescript
-export interface Device {
-  id: string
-  serial_number: string
-  device_type: 'IU' | 'OU' | 'HC' | 'RF'
-  status: 'WORKING' | 'NOT_WORKING' | 'FAULTY'
-  status_color: string
-  couple_id: string | null
-  handling_person_id: string | null
-  notes: string | null
-  custom_fields: Record<string, unknown> | null
-  metadata_json: Record<string, unknown> | null
-  created_at: string
-  updated_at: string | null
+interface GlassModalProps {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  width?: number | string;
+  closable?: boolean;
 }
 
-export interface DeviceStatusHistory {
-  id: string
-  device_id: string
-  old_status: string
-  new_status: string
-  changed_by: string
-  changed_at: string
-  reason: string | null
-}
-
-export interface DeviceStats {
-  total: number
-  by_type: Record<string, number>
-  by_status: Record<string, number>
-}
-
-export interface DeviceCreate {
-  serial_number: string
-  device_type: string
-  status?: string
-  couple_id?: string | null
-  handling_person_id?: string | null
-  notes?: string | null
-  custom_fields?: Record<string, unknown> | null
-  metadata_json?: Record<string, unknown> | null
-}
-
-export interface DeviceUpdate extends Partial<DeviceCreate> {}
-
-export interface StatusChangeRequest {
-  status: string
-  reason?: string | null
-}
+export default function GlassModal({ ... }: GlassModalProps)
 ```
 
-***
+**3. GlassInput.tsx**
 
-### 14. [frontend/src/shared/utils/colors.ts](cci:7://file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/utils/colors.ts:0:0-0:0)
+**Summary:** A versatile input component that wraps Ant Design inputs (text, password, textarea) and applies custom glass-themed styling (translucent background, muted borders) alongside error message support.
 
-**Summary:** 
-Provides utility functions and constants to manage UI colors consistently. It re-exports the base theme colors and offers helper functions that map specific domain states (like device status, severities, or user roles) directly to their corresponding theme color values, plus a utility for manipulating color opacity.
-
-**Exports:**
 ```typescript
-// Re-exports colors from '@/styles/theme'
-export { colors };
+interface GlassInputProps {
+  type?: 'text' | 'password' | 'email' | 'number' | 'textarea';
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  error?: string;
+  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+}
 
-export function getStatusColor(status: string): string;
-
-export function getSeverityColor(severity: string): string;
-
-export function getDeviceTypeColor(type: string): string;
-
-export function getRoleColor(role: string): string;
-
-export function hexToRgba(hex: string, alpha: number): string;
+export default function GlassInput({ ... }: GlassInputProps)
 ```
 
-***
+**4. GlassButton.tsx**
 
-### 15. [frontend/src/shared/utils/formatters.ts](cci:7://file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/utils/formatters.ts:0:0-0:0)
+**Summary:** A themed button wrapper for Ant Design's `<Button>` that applies glass-like visual treatments for several variants (`primary`, `secondary`, `danger`, `ghost`).
 
-**Summary:** 
-A collection of utility functions to handle data presentation. It includes wrappers around `dayjs` for consistent date and time formatting, as well as functions to uniformly format strings (truncation, serial numbers), geographical coordinates, and file sizes.
-
-**Exports:**
 ```typescript
-export function formatDate(date: string | Date | null): string;
+interface GlassButtonProps {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+  disabled?: boolean;
+  icon?: React.ReactNode;
+  onClick?: () => void;
+  fullWidth?: boolean;
+  htmlType?: 'button' | 'submit';
+}
 
-export function formatDateTime(date: string | Date | null): string;
+export default function GlassButton({ ... }: GlassButtonProps)
+```
 
-export function formatRelativeTime(date: string | Date): string;
+**5. PageHeader.tsx**
 
-export function truncateText(text: string, maxLength: number): string;
+**Summary:** Displays the page title, an optional subtitle, breadcrumbs, and extra action buttons at the top of a page. It also integrates with the global UI store to dynamically set the document/page title.
 
-export function formatSerialNumber(serial: string): string;
+```typescript
+interface PageHeaderProps {
+  title: string;
+  subtitle?: string;
+  breadcrumbs?: { label: string; path?: string }[];
+  actions?: React.ReactNode;
+}
 
-export function formatCoordinates(lat: number, lng: number): string;
+export default function PageHeader({ ... }: PageHeaderProps)
+```
 
-export function formatFileSize(bytes: number): string;
+**6. DataTable.tsx**
+
+**Summary:** A generic, styled abstraction over Ant Design's `<Table>`. It cleanly handles pagination, row selection, row clicks, loading states, and custom empty states for tabular data.
+
+```typescript
+interface DataTableProps<T> {
+  columns: ColumnsType<T>;
+  data: T[];
+  loading?: boolean;
+  pagination?: {
+    current: number;
+    pageSize: number;
+    total: number;
+    onChange: (page: number, pageSize: number) => void;
+  };
+  onRowClick?: (record: T) => void;
+  selectedRowKeys?: React.Key[];
+  onSelectionChange?: (keys: React.Key[]) => void;
+  emptyText?: string;
+  rowKey?: string | ((record: T) => string);
+}
+
+export default function DataTable<T extends object>({ ... }: DataTableProps<T>)
+```
+
+**7. StatusBadge.tsx**
+
+**Summary:** A small pill-styled badge to visually indicate the operational state of entities (e.g. WORKING, FAULTY). WORKING statuses have an animated pulsing dot.
+
+```typescript
+interface StatusBadgeProps {
+  status: 'WORKING' | 'NOT_WORKING' | 'FAULTY';
+  size?: 'sm' | 'md';
+}
+
+export default function StatusBadge({ ... }: StatusBadgeProps)
+```
+
+**8. EmptyState.tsx**
+
+**Summary:** A fallback UI placeholder used when no content/data is available. Displays an icon, title, optional description, and an optional call-to-action block.
+
+```typescript
+interface EmptyStateProps {
+  icon?: React.ReactNode;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}
+
+export default function EmptyState({ ... }: EmptyStateProps)
+```
+
+**9. LoadingSpinner.tsx**
+
+**Summary:** A centralized loading indicator using an Ant Design spinner. It can be rendered inline with optional text, or as a full-page overlay that blocks out the entire screen.
+
+```typescript
+interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
+  text?: string;
+  fullPage?: boolean;
+}
+
+export default function LoadingSpinner({ ... }: LoadingSpinnerProps)
+```
+
+---
+
+### Prompt 2: Utility Function Signatures
+
+**1. colors.ts**
+**Summary:** A collection of helper methods that map string values (like statuses, severities, device types, or roles) to consistent theme color codes, and features an alpha transparency converter for hex colors.
+
+* `export function getStatusColor(status: string): string`
+* `export function getSeverityColor(severity: string): string`
+* `export function getDeviceTypeColor(type: string): string`
+* `export function getRoleColor(role: string): string`
+* `export function hexToRgba(hex: string, alpha: number): string`
+
+**2. formatters.ts**
+**Summary:** Contains shared formatting methods for transforming raw data into user-friendly strings using `dayjs` for dates, and typical javascript formatters for sizes, coordinates, and strings.
+
+* `export function formatDate(date: string | Date | null): string`
+* `export function formatDateTime(date: string | Date | null): string`
+* `export function formatRelativeTime(date: string | Date): string`
+* `export function truncateText(text: string, maxLength: number): string`
+* `export function formatSerialNumber(serial: string): string`
+* `export function formatCoordinates(lat: number, lng: number): string`
+* `export function formatFileSize(bytes: number): string`
+
+---
+
+### Prompt 3: Backend Filters File Content
+
+**filters.py**
+**Summary:** Provides an `apply_filters` helper function that dynamically constructs map-based SQLAlchemy queries. It parses a dictionary of query parameters into operator fields (like `__contains`, `__gte`, `__in`) allowing consistent filtering on various SQLAlchemy models.
+
+```python
+from typing import Any
+
+from sqlalchemy import Select
+
+
+def apply_filters(
+    query: Select,
+    model: Any,
+    filters: dict[str, Any],
+) -> Select:
+    for key, value in filters.items():
+        if value is None:
+            continue
+
+        parts = key.split("__")
+        field_name = parts[0]
+        suffix = parts[1] if len(parts) > 1 else None
+
+        column = getattr(model, field_name, None)
+        if column is None:
+            continue
+
+        if suffix is None:
+            query = query.where(column == value)
+        elif suffix == "contains":
+            query = query.where(column.ilike(f"%{value}%"))
+        elif suffix == "gte":
+            query = query.where(column >= value)
+        elif suffix == "lte":
+            query = query.where(column <= value)
+        elif suffix == "in":
+            query = query.where(column.in_(value))
+        elif suffix == "isnull":
+            if value:
+                query = query.where(column.is_(None))
+            else:
+                query = query.where(column.isnot(None))
+
+    return query
 ```
