@@ -1,22 +1,8 @@
-These are files I'm either **replacing** or **querying against** — I need exact column names, imports, and structure:
+Good thinking to ask first. Here's exactly what I need:
 
-### Backend — REPLACING (must have exact current content):
-0. `NavDashboard/backend/requirements.txt`
-fastapi>=0.115.0
-uvicorn[standard]>=0.32.0
-sqlalchemy[asyncio]>=2.0.36
-asyncpg>=0.30.0
-alembic>=1.14.0
-pydantic>=2.10.0
-pydantic-settings>=2.6.0
-python-dotenv>=1.0.0
-geoalchemy2>=0.17.0
-shapely>=2.0.0
-python-jose[cryptography]>=3.3
-passlib[bcrypt]>=1.7
-python-multipart>=0.0.18
-pydantic[email]>=2.10
-bcrypt==4.0.1
+## Option 1 (FULL file content) — 10 files
+
+These are **critical** — I'm either replacing them or querying their exact columns:
 
 1. `backend/main.py`
 import logging
@@ -45,6 +31,7 @@ from modules.couples.router import router as couples_router
 from modules.pairs.router import router as pairs_router
 from modules.troubleshooting.router import router as troubleshooting_router
 from modules.status.router import router as status_router
+from modules.dashboard.router import router as dashboard_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -125,6 +112,7 @@ app.include_router(couples_router, prefix=settings.API_V1_PREFIX + "/couples", t
 app.include_router(pairs_router, prefix=settings.API_V1_PREFIX + "/pairs", tags=["pairs"])
 app.include_router(troubleshooting_router, prefix=settings.API_V1_PREFIX + "/troubleshooting", tags=["troubleshooting"])
 app.include_router(status_router, prefix=settings.API_V1_PREFIX + "/status", tags=["status"])
+app.include_router(dashboard_router, prefix=settings.API_V1_PREFIX + "/dashboard", tags=["dashboard"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
@@ -143,6 +131,7 @@ async def health_check():
         "database": db_status,
         "version": "0.1.0",
     }
+
 
 2. `backend/migrations/env.py`
 import asyncio
@@ -224,291 +213,174 @@ if context.is_offline_mode():
 else:
     run_migrations_online()
 
-### Backend — Database models (need exact table/column names for cross-module queries):
+3. `frontend/src/app/routes.tsx`
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import {
+  ApiOutlined,
+  LinkOutlined,
+  SwapOutlined,
+  EnvironmentOutlined,
+  ToolOutlined,
+  RobotOutlined,
+  HistoryOutlined,
+  FileOutlined,
+  BarChartOutlined,
+  AuditOutlined,
+  SearchOutlined,
+  DiffOutlined,
+  CloudDownloadOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
+import Layout from '@/shared/components/Layout';
+import PlaceholderPage from '@/shared/components/PlaceholderPage';
+import LoginPage from '@/modules/auth/pages/LoginPage';
+import DashboardPage from '@/modules/dashboard/pages/DashboardPage';
+import DeviceListPage from '@/modules/devices/pages/DeviceListPage';
+import DeviceDetailPage from '@/modules/devices/pages/DeviceDetailPage';
+import CoupleListPage from '@/modules/couples/pages/CoupleListPage';
+import CoupleDetailPage from '@/modules/couples/pages/CoupleDetailPage';
+import PairListPage from '@/modules/pairs/pages/PairListPage';
+import PairDetailPage from '@/modules/pairs/pages/PairDetailPage';
+import MapViewPage from '@/modules/map/pages/MapViewPage';
+import TroubleshootingPage from '@/modules/troubleshooting/pages/TroubleshootingPage';
 
-3. `backend/modules/devices/models.py`
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="devices" element={<DeviceListPage />} />
+        <Route path="devices/:id" element={<DeviceDetailPage />} />
+        <Route path="couples" element={<CoupleListPage />} />
+        <Route path="couples/:id" element={<CoupleDetailPage />} />
+        <Route path="pairs" element={<PairListPage />} />
+        <Route path="pairs/:id" element={<PairDetailPage />} />
+        <Route path="map" element={<MapViewPage />} />
+        <Route path="troubleshooting" element={<TroubleshootingPage />} />
+        <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
+        <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
+        <Route path="documents" element={<PlaceholderPage title="Documents" icon={<FileOutlined />} />} />
+        <Route path="reports" element={<PlaceholderPage title="Reports" icon={<BarChartOutlined />} />} />
+        <Route path="audit" element={<PlaceholderPage title="Audit Trail" icon={<AuditOutlined />} />} />
+        <Route path="search" element={<PlaceholderPage title="Search" icon={<SearchOutlined />} />} />
+        <Route path="comparison" element={<PlaceholderPage title="Comparison" icon={<DiffOutlined />} />} />
+        <Route path="backup" element={<PlaceholderPage title="Backup" icon={<CloudDownloadOutlined />} />} />
+        <Route path="settings" element={<PlaceholderPage title="Settings" icon={<SettingOutlined />} />} />
+      </Route>
+      <Route path="login" element={<LoginPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+4. `backend/shared/audit.py`
 from datetime import datetime
 from typing import Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
-
-
-class Device(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "devices"
-
-    serial_number: Mapped[str] = mapped_column(
-        String(50), unique=True, index=True, nullable=False
-    )
-    device_type: Mapped[str] = mapped_column(String(10), nullable=False)
-    couple_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )  # FK added in Phase 6 when couples table exists
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="WORKING"
-    )
-    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )  # FK added in Phase 5
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-
-
-class DeviceStatusHistory(Base):
-    __tablename__ = "device_status_history"
-
-    device_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        nullable=False,
-        index=True,
-    )
-    old_status: Mapped[str] = mapped_column(String(20), nullable=False)
-    new_status: Mapped[str] = mapped_column(String(20), nullable=False)
-    changed_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
-    changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-4. `backend/modules/couples/models.py`
-from __future__ import annotations
-
-from typing import Optional
-from uuid import UUID
-
-from sqlalchemy import Boolean, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
-
-
-class Couple(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "couples"
-
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    pair_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    has_rf: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
-    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("personnel.id"),
-        nullable=True,
-    )
-    location_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("locations.id"),
-        nullable=True,
-    )
-    configuration: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    handling_person = relationship(
-        "Person", foreign_keys=[handling_person_id], lazy="selectin"
-    )
-    location = relationship(
-        "Location", foreign_keys=[location_id], lazy="selectin"
-    )
-    
-
-
-5. `backend/modules/pairs/models.py`
-from __future__ import annotations
-
-from typing import Optional
-from uuid import UUID
-
-from sqlalchemy import Boolean, String, Text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
-
-
-class Pair(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "pairs"
-
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
-    status_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-6. `backend/modules/troubleshooting/models.py`
-from __future__ import annotations
-
-from datetime import datetime
-from typing import Optional
-from uuid import UUID
-
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
-
-
-class ErrorLog(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "error_logs"
-
-    device_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    couple_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    pair_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    error_type: Mapped[str] = mapped_column(String(200), nullable=False)
-    severity: Mapped[str] = mapped_column(String(20), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=False)
-    reported_by: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    reported_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    resolved_by: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-
-
-class TroubleshootEntry(Base, CustomFieldsMixin):
-    __tablename__ = "troubleshoot_entries"
-
-    error_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("error_logs.id"),
-        index=True,
-        nullable=False,
-    )
-    step_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    step_description: Mapped[str] = mapped_column(Text, nullable=False)
-    action_taken: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    resolution: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    performed_by: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    performed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-7. `backend/modules/auth/models.py`
-from datetime import datetime
-from typing import Optional
-
-from sqlalchemy import String, Boolean, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
-
-
-class User(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "users"
-
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    role: Mapped[str] = mapped_column(String(20), default="VIEWER", nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-
-8. `backend/modules/status/models.py`
-from __future__ import annotations
-
-from datetime import datetime
-from typing import Optional
-from uuid import UUID
-
-from sqlalchemy import DateTime, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base
 
 
-class StatusChangeLog(Base):
-    __tablename__ = "status_change_logs"
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
 
-    entity_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    entity_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=False, index=True
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    entity_type: Mapped[str] = mapped_column(String, nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    changed_by: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    old_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    new_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
-    old_status: Mapped[str] = mapped_column(String(20), nullable=False)
-    new_status: Mapped[str] = mapped_column(String(20), nullable=False)
-    changed_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
-    changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
 
-9. `backend/core/dependencies.py`
-from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
+
+async def record_audit(
+    db: AsyncSession,
+    action: str,
+    entity_type: str,
+    entity_id: UUID,
+    user_id: UUID,
+    old_values: dict | None = None,
+    new_values: dict | None = None,
+) -> None:
+    entry = AuditLog(
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changed_by=user_id,
+        old_values=old_values,
+        new_values=new_values,
+    )
+    db.add(entry)
+    await db.flush()
+
+5. `backend/shared/pagination.py`
+from math import ceil
+from typing import Generic, Type, TypeVar
+
+from pydantic import BaseModel, Field
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_db
-from core.security import decode_access_token
-from core.exceptions import UnauthorizedException, ForbiddenException
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+T = TypeVar("T", bound=BaseModel)
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db),
-):
-    from modules.auth.models import User
-
-    try:
-        payload = decode_access_token(token)
-    except JWTError:
-        raise UnauthorizedException("Invalid or expired token")
-
-    user_id = payload.get("sub")
-    if not user_id:
-        raise UnauthorizedException("Invalid token payload")
-
-    from sqlalchemy import select
-
-    stmt = select(User).where(User.id == user_id)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-
-    if not user or user.deleted_at is not None:
-        raise UnauthorizedException("User not found")
-
-    if not user.is_active:
-        raise UnauthorizedException("Account disabled")
-
-    return user
+class PaginationParams(BaseModel):
+    page: int = Field(default=1, ge=1)
+    size: int = Field(default=20, ge=1, le=100)
 
 
-def require_role(*roles: str):
-    async def role_checker(current_user=Depends(get_current_user)):
-        if current_user.role not in roles:
-            raise ForbiddenException("Insufficient permissions")
-        return current_user
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    size: int
+    pages: int
 
-    return role_checker
 
-10. `backend/core/database.py`
+async def paginate(
+    db: AsyncSession,
+    query: Select,
+    params: PaginationParams,
+    response_schema: Type[T],
+) -> PaginatedResponse[T]:
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+
+    offset = (params.page - 1) * params.size
+    paginated_query = query.offset(offset).limit(params.size)
+    result = await db.execute(paginated_query)
+    rows = result.all()
+
+    items = []
+    for row in rows:
+        obj = row[0] if len(row) == 1 else row
+        if hasattr(obj, "__dict__") and hasattr(obj, "__table__"):
+            items.append(response_schema.model_validate(obj, from_attributes=True))
+        else:
+            items.append(response_schema.model_validate(obj._mapping))
+
+    pages = ceil(total / params.size) if params.size > 0 else 0
+
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
+    )
+
+6. `backend/core/database.py`
 import logging
 from datetime import datetime
 from typing import AsyncGenerator, Optional
@@ -592,50 +464,357 @@ async def check_db_connection() -> bool:
         logger.error("Database connection check failed: %s", e)
         return False
 
+7. `backend/modules/auth/models.py`
+from datetime import datetime
+from typing import Optional
 
-### Frontend — REPLACING + API pattern:
+from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
 
 
-11. `frontend/package.json`
-{
-  "name": "navdashboard-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
-    "antd": "^5.22.0",
-    "@ant-design/icons": "^5.5.0",
-    "axios": "^1.7.0",
-    "zustand": "^5.0.0",
-    "@tanstack/react-query": "^5.60.0",
-    "dayjs": "^1.11.0",
-    "leaflet": "^1.9.4",
-    "react-leaflet": "^4.2.1"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@types/leaflet": "^1.9.12",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.6.3",
-    "vite": "^6.0.0"
-  }
+class User(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "users"
+
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), default="VIEWER", nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+8. `backend/modules/devices/models.py`
+from datetime import datetime
+from typing import Optional
+from uuid import UUID, uuid4
+
+from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
+
+
+class Device(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "devices"
+
+    serial_number: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )
+    device_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    couple_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )  # FK added in Phase 6 when couples table exists
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="WORKING"
+    )
+    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )  # FK added in Phase 5
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+
+class DeviceStatusHistory(Base):
+    __tablename__ = "device_status_history"
+
+    device_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        nullable=False,
+        index=True,
+    )
+    old_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    new_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    changed_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+9. `backend/modules/couples/models.py`
+from __future__ import annotations
+
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+
+
+class Couple(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "couples"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    pair_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )
+    has_rf: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
+    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("personnel.id"),
+        nullable=True,
+    )
+    location_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("locations.id"),
+        nullable=True,
+    )
+    configuration: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    handling_person = relationship(
+        "Person", foreign_keys=[handling_person_id], lazy="selectin"
+    )
+    location = relationship(
+        "Location", foreign_keys=[location_id], lazy="selectin"
+    )
+    
+
+10. `backend/modules/pairs/models.py`
+from __future__ import annotations
+
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import Boolean, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+
+
+class Pair(Base, SoftDeleteMixin, CustomFieldsMixin):
+    __tablename__ = "pairs"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
+    status_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+## Option 2 (Prompt to extract) — 6 files
+
+Use this prompt for each:
+
+> **"Give me all SQLAlchemy Column definitions (column name, type, ForeignKey, nullable),summery and the class name. No methods needed."**
+
+11. `backend/modules/personnel/models.py`
+12. `backend/modules/troubleshooting/models.py`
+13. `backend/modules/inventory/models.py`
+14. `backend/modules/locations/models.py`
+Here are the SQLAlchemy column definitions extracted from the requested files:
+
+1. models.py
+Class: Person
+Summary: Represents a personnel member with their contact information and assigned role.
+
+full_name: type String(200), nullable False
+role: type String(100), nullable False
+email: type String(255), nullable True
+phone: type String(50), nullable True
+notes: type Text, nullable True
+( Inherits id, created_at, updated_at, deleted_at, custom_fields from mixins )
+Class: AssignmentHistory
+Summary: Tracks the history of assignment mappings between a person and a specific entity.
+
+person_id: type UUID, ForeignKey("personnel.id"), nullable False
+entity_type: type String(50), nullable False
+entity_id: type UUID, nullable False
+assigned_at: type DateTime(timezone=True), nullable False
+unassigned_at: type DateTime(timezone=True), nullable True
+( Inherits id, created_at, updated_at, deleted_at from Base )
+2. models.py
+Class: ErrorLog
+Summary: Logs reported errors/issues related to devices, couples, or pairs along with their resolution status.
+
+device_id: type PG_UUID(as_uuid=True), nullable True
+couple_id: type PG_UUID(as_uuid=True), nullable True
+pair_id: type PG_UUID(as_uuid=True), nullable True
+error_type: type String(200), nullable False
+severity: type String(20), nullable False
+description: type Text, nullable False
+reported_by: type PG_UUID(as_uuid=True), nullable True
+reported_at: type DateTime(timezone=True), nullable False
+resolved: type Boolean, nullable False
+resolved_at: type DateTime(timezone=True), nullable True
+resolved_by: type PG_UUID(as_uuid=True), nullable True
+( Inherits id, created_at, updated_at, deleted_at, custom_fields from mixins )
+Class: TroubleshootEntry
+Summary: Records individual steps and actions taken to troubleshoot and resolve a specific logged error.
+
+error_id: type PG_UUID(as_uuid=True), ForeignKey("error_logs.id"), nullable False
+step_number: type Integer, nullable False
+step_description: type Text, nullable False
+action_taken: type Text, nullable True
+resolution: type Text, nullable True
+performed_by: type PG_UUID(as_uuid=True), nullable True
+performed_at: type DateTime(timezone=True), nullable False
+( Inherits id, created_at, updated_at, deleted_at, custom_fields from mixins )
+3. models.py
+Class: FittingMaterial
+Summary: Represents materials used for fittings, potentially associated with a couple or kept as a template material.
+
+couple_id: type UUID, nullable True
+name: type String(200), nullable False
+description: type Text, nullable True
+quantity: type Integer, nullable False
+unit: type String(50), nullable True
+is_template: type Boolean, nullable False
+( Inherits id, created_at, updated_at, deleted_at, custom_fields from mixins )
+Class: MaterialTemplate
+Summary: Stores reusable template combinations of materials as a JSON structure.
+
+template_name: type String(200), nullable False
+description: type Text, nullable True
+materials: type JSONB, nullable False
+( Inherits id, created_at, updated_at, deleted_at from Base )
+4. models.py
+Class: Location
+Summary: Represents a physical, geographical point marked by latitude/longitude and spatial coordinates.
+
+latitude: type Float, nullable False
+longitude: type Float, nullable False
+coordinate: type Geometry("POINT", srid=4326), nullable True
+address_note: type String(500), nullable True
+( Inherits id, created_at, updated_at, deleted_at from Base )
+Class: LocationHistory
+Summary: Historical audit table recording physical relocations of entities (like Couples) over time.
+
+couple_id: type PG_UUID(as_uuid=True), nullable False
+old_latitude: type Float, nullable False
+old_longitude: type Float, nullable False
+new_latitude: type Float, nullable False
+new_longitude: type Float, nullable False
+moved_at: type DateTime(timezone=True), nullable False
+handled_by: type PG_UUID(as_uuid=True), nullable True
+had_rf: type Boolean, nullable False
+distance_meters: type Float, nullable True
+fitting_materials_snapshot: type JSONB, nullable True
+configuration_snapshot: type JSONB, nullable True
+notes: type Text, nullable True
+( Inherits id, created_at, updated_at, deleted_at, custom_fields from mixins )
+
+
+
+
+
+> **"Give me the full file content"** (these are short utility files):
+
+15. `frontend/src/shared/hooks/useDebounce.ts`
+import { useState, useEffect } from 'react';
+
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+16. `frontend/src/shared/types/common.ts`
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface ApiError {
+  detail: string;
+  status_code?: number;
+}
+
+export type DeviceType = 'IU' | 'OU' | 'HC' | 'RF';
+export type DeviceStatus = 'WORKING' | 'NOT_WORKING' | 'FAULTY';
+export type Severity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type UserRole = 'ADMIN' | 'TECHNICIAN' | 'VIEWER';
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
+  updated_at: string | null;
+  custom_fields: Record<string, unknown> | null;
 }
 
 
-12. `frontend/src/shared/api/client.ts`
+---
+
+**That's 16 files total.** I can confidently infer `core/dependencies.py` :from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import get_db
+from core.security import decode_access_token
+from core.exceptions import UnauthorizedException, ForbiddenException
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    from modules.auth.models import User
+
+    try:
+        payload = decode_access_token(token)
+    except JWTError:
+        raise UnauthorizedException("Invalid or expired token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise UnauthorizedException("Invalid token payload")
+
+    from sqlalchemy import select
+
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user or user.deleted_at is not None:
+        raise UnauthorizedException("User not found")
+
+    if not user.is_active:
+        raise UnauthorizedException("Account disabled")
+
+    return user
+
+
+def require_role(*roles: str):
+    async def role_checker(current_user=Depends(get_current_user)):
+        if current_user.role not in roles:
+            raise ForbiddenException("Insufficient permissions")
+        return current_user
+
+    return role_checker
+
+
+`shared/api/client.ts` :
 import axios from 'axios'
 
 const axiosInstance = axios.create({
@@ -673,279 +852,3 @@ export const api = {
     axiosInstance.delete(url).then(res => res.data),
 }
 
-
-## AI PROMPT (5 files — just need props/exports)
-
-For these, please ask an AI:
-
-> **Prompt:** "For each of these 5 TypeScript React component files, give me ONLY the props interface (if any), the component function signature, and any named exports. No implementation details needed."
-
-13. `frontend/src/shared/components/GlassCard.tsx`
-14. `frontend/src/shared/components/PageHeader.tsx`
-15. `frontend/src/shared/components/LoadingSpinner.tsx`
-16. `frontend/src/shared/components/EmptyState.tsx`
-17. `frontend/src/shared/components/StatusBadge.tsx`
-
----
-i got you some extra : 
-
-:
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassModal.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassCard.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassInput.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/GlassButton.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/PageHeader.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/DataTable.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/StatusBadge.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/EmptyState.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/utils/colors.ts)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/components/LoadingSpinner.tsx)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/frontend/src/shared/utils/formatters.ts)
-
-Read [](file:///Users/madhur/Projects/NavDashboard/backend/shared/filters.py)
-
-Here are the requested details and summaries for the requested files.
-
-### Prompt 1: Frontend Components
-
-**1. GlassCard.tsx**
-
-**Summary:** A reusable card component styled with a "glassmorphism" effect (translucency and blur). It supports hover effects, custom padding, click handlers, and accent side borders.
-
-```typescript
-interface GlassCardProps {
-  children: React.ReactNode;
-  className?: string;
-  hoverable?: boolean;
-  padding?: 'sm' | 'md' | 'lg';
-  onClick?: () => void;
-  accentColor?: string;
-  fullHeight?: boolean;
-  style?: React.CSSProperties;
-}
-
-export default function GlassCard({ ... }: GlassCardProps)
-```
-
-**2. GlassModal.tsx**
-
-**Summary:** A modal dialog wrapper based on Ant Design's `<Modal>`, customized to fit the application's dark glassmorphism theme, with integrated blur backdrops and styled borders.
-
-```typescript
-interface GlassModalProps {
-  open: boolean;
-  onClose: () => void;
-  title?: string;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-  width?: number | string;
-  closable?: boolean;
-}
-
-export default function GlassModal({ ... }: GlassModalProps)
-```
-
-**3. GlassInput.tsx**
-
-**Summary:** A versatile input component that wraps Ant Design inputs (text, password, textarea) and applies custom glass-themed styling (translucent background, muted borders) alongside error message support.
-
-```typescript
-interface GlassInputProps {
-  type?: 'text' | 'password' | 'email' | 'number' | 'textarea';
-  placeholder?: string;
-  value?: string;
-  onChange?: (value: string) => void;
-  prefix?: React.ReactNode;
-  suffix?: React.ReactNode;
-  error?: string;
-  disabled?: boolean;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-export default function GlassInput({ ... }: GlassInputProps)
-```
-
-**4. GlassButton.tsx**
-
-**Summary:** A themed button wrapper for Ant Design's `<Button>` that applies glass-like visual treatments for several variants (`primary`, `secondary`, `danger`, `ghost`).
-
-```typescript
-interface GlassButtonProps {
-  children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  disabled?: boolean;
-  icon?: React.ReactNode;
-  onClick?: () => void;
-  fullWidth?: boolean;
-  htmlType?: 'button' | 'submit';
-}
-
-export default function GlassButton({ ... }: GlassButtonProps)
-```
-
-**5. PageHeader.tsx**
-
-**Summary:** Displays the page title, an optional subtitle, breadcrumbs, and extra action buttons at the top of a page. It also integrates with the global UI store to dynamically set the document/page title.
-
-```typescript
-interface PageHeaderProps {
-  title: string;
-  subtitle?: string;
-  breadcrumbs?: { label: string; path?: string }[];
-  actions?: React.ReactNode;
-}
-
-export default function PageHeader({ ... }: PageHeaderProps)
-```
-
-**6. DataTable.tsx**
-
-**Summary:** A generic, styled abstraction over Ant Design's `<Table>`. It cleanly handles pagination, row selection, row clicks, loading states, and custom empty states for tabular data.
-
-```typescript
-interface DataTableProps<T> {
-  columns: ColumnsType<T>;
-  data: T[];
-  loading?: boolean;
-  pagination?: {
-    current: number;
-    pageSize: number;
-    total: number;
-    onChange: (page: number, pageSize: number) => void;
-  };
-  onRowClick?: (record: T) => void;
-  selectedRowKeys?: React.Key[];
-  onSelectionChange?: (keys: React.Key[]) => void;
-  emptyText?: string;
-  rowKey?: string | ((record: T) => string);
-}
-
-export default function DataTable<T extends object>({ ... }: DataTableProps<T>)
-```
-
-**7. StatusBadge.tsx**
-
-**Summary:** A small pill-styled badge to visually indicate the operational state of entities (e.g. WORKING, FAULTY). WORKING statuses have an animated pulsing dot.
-
-```typescript
-interface StatusBadgeProps {
-  status: 'WORKING' | 'NOT_WORKING' | 'FAULTY';
-  size?: 'sm' | 'md';
-}
-
-export default function StatusBadge({ ... }: StatusBadgeProps)
-```
-
-**8. EmptyState.tsx**
-
-**Summary:** A fallback UI placeholder used when no content/data is available. Displays an icon, title, optional description, and an optional call-to-action block.
-
-```typescript
-interface EmptyStateProps {
-  icon?: React.ReactNode;
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
-}
-
-export default function EmptyState({ ... }: EmptyStateProps)
-```
-
-**9. LoadingSpinner.tsx**
-
-**Summary:** A centralized loading indicator using an Ant Design spinner. It can be rendered inline with optional text, or as a full-page overlay that blocks out the entire screen.
-
-```typescript
-interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
-  text?: string;
-  fullPage?: boolean;
-}
-
-export default function LoadingSpinner({ ... }: LoadingSpinnerProps)
-```
-
----
-
-### Prompt 2: Utility Function Signatures
-
-**1. colors.ts**
-**Summary:** A collection of helper methods that map string values (like statuses, severities, device types, or roles) to consistent theme color codes, and features an alpha transparency converter for hex colors.
-
-* `export function getStatusColor(status: string): string`
-* `export function getSeverityColor(severity: string): string`
-* `export function getDeviceTypeColor(type: string): string`
-* `export function getRoleColor(role: string): string`
-* `export function hexToRgba(hex: string, alpha: number): string`
-
-**2. formatters.ts**
-**Summary:** Contains shared formatting methods for transforming raw data into user-friendly strings using `dayjs` for dates, and typical javascript formatters for sizes, coordinates, and strings.
-
-* `export function formatDate(date: string | Date | null): string`
-* `export function formatDateTime(date: string | Date | null): string`
-* `export function formatRelativeTime(date: string | Date): string`
-* `export function truncateText(text: string, maxLength: number): string`
-* `export function formatSerialNumber(serial: string): string`
-* `export function formatCoordinates(lat: number, lng: number): string`
-* `export function formatFileSize(bytes: number): string`
-
----
-
-### Prompt 3: Backend Filters File Content
-
-**filters.py**
-**Summary:** Provides an `apply_filters` helper function that dynamically constructs map-based SQLAlchemy queries. It parses a dictionary of query parameters into operator fields (like `__contains`, `__gte`, `__in`) allowing consistent filtering on various SQLAlchemy models.
-
-```python
-from typing import Any
-
-from sqlalchemy import Select
-
-
-def apply_filters(
-    query: Select,
-    model: Any,
-    filters: dict[str, Any],
-) -> Select:
-    for key, value in filters.items():
-        if value is None:
-            continue
-
-        parts = key.split("__")
-        field_name = parts[0]
-        suffix = parts[1] if len(parts) > 1 else None
-
-        column = getattr(model, field_name, None)
-        if column is None:
-            continue
-
-        if suffix is None:
-            query = query.where(column == value)
-        elif suffix == "contains":
-            query = query.where(column.ilike(f"%{value}%"))
-        elif suffix == "gte":
-            query = query.where(column >= value)
-        elif suffix == "lte":
-            query = query.where(column <= value)
-        elif suffix == "in":
-            query = query.where(column.in_(value))
-        elif suffix == "isnull":
-            if value:
-                query = query.where(column.is_(None))
-            else:
-                query = query.where(column.isnot(None))
-
-    return query
-```

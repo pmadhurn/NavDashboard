@@ -1,0 +1,99 @@
+## PHASE 10 — TECHNICAL REPORT
+
+---
+
+### 1. Files Created/Modified — 17 total
+
+| # | File | Action |
+|---|------|--------|
+| 1 | `backend/modules/dashboard/__init__.py` | **Created** |
+| 2 | `backend/modules/dashboard/models.py` | **Created** (comment-only, no models) |
+| 3 | `backend/modules/dashboard/schemas.py` | **Created** (6 response schemas) |
+| 4 | `backend/modules/dashboard/repository.py` | **Created** (7 query functions) |
+| 5 | `backend/modules/dashboard/service.py` | **Created** (6 service functions) |
+| 6 | `backend/modules/dashboard/router.py` | **Created** (6 endpoints) |
+| 7 | `backend/main.py` | **Replaced** (added dashboard router) |
+| 8 | `backend/migrations/env.py` | **Replaced** (unchanged, consistency) |
+| 9 | `frontend/package.json` | **Replaced** (added recharts) |
+| 10 | `frontend/src/modules/dashboard/pages/DashboardPage.tsx` | **Replaced** (was placeholder) |
+| 11 | `frontend/src/modules/dashboard/components/StatsCards.tsx` | **Created** |
+| 12 | `frontend/src/modules/dashboard/components/StatusOverview.tsx` | **Created** |
+| 13 | `frontend/src/modules/dashboard/components/RecentActivity.tsx` | **Created** |
+| 14 | `frontend/src/modules/dashboard/components/DeviceChart.tsx` | **Created** |
+| 15 | `frontend/src/modules/dashboard/components/ErrorTrendChart.tsx` | **Created** |
+| 16 | `frontend/src/modules/dashboard/components/PairStatusPie.tsx` | **Created** |
+| 17 | `frontend/src/modules/dashboard/hooks/useDashboard.ts` | **Created** |
+
+---
+
+### 2. API Surface — 6 New Dashboard Endpoints
+
+| Method | Endpoint | Response | Purpose |
+|--------|----------|----------|---------|
+| GET | `/api/v1/dashboard/stats` | `DashboardStats` | Aggregated counts: pairs, couples, devices, errors, device status breakdown |
+| GET | `/api/v1/dashboard/status-distribution` | `StatusDistribution[]` | Per-entity-type (device/couple/pair) working/not_working/faulty counts |
+| GET | `/api/v1/dashboard/device-type-breakdown` | `DeviceTypeBreakdown[]` | Device counts by type (IU/OU/HC/RF) with chart colors |
+| GET | `/api/v1/dashboard/error-trends?days=30` | `ErrorTrendPoint[]` | Daily error counts with severity breakdown, gap-filled |
+| GET | `/api/v1/dashboard/recent-activity?limit=20` | `RecentActivityItem[]` | Latest audit log entries with human-readable descriptions |
+| GET | `/api/v1/dashboard/pair-status` | `PairStatusData[]` | Pair counts by status with chart colors |
+
+All endpoints require Bearer token authentication. Total API surface: **6 new + 0 modified = 6 endpoints**.
+
+---
+
+### 3. Dashboard Components — Live Data Rendering
+
+| Component | Chart Type | Data Source | Verified |
+|-----------|-----------|-------------|----------|
+| **StatsCards** | 4 numeric cards | `/dashboard/stats` | ✅ Shows 2 pairs, 9 devices, 2 active errors, 6 working |
+| **StatusOverview** | Segmented horizontal bars | `/dashboard/status-distribution` | ✅ 3 bars for device (6/2/1), couple (2/1/1), pair (1/0/1) |
+| **PairStatusPie** | Recharts donut chart | `/dashboard/pair-status` | ✅ 2 slices: WORKING (1), FAULTY (1), center shows "2 Total" |
+| **DeviceChart** | Recharts bar chart | `/dashboard/device-type-breakdown` | ✅ 3 bars: HC (2), IU (3), OU (4) with distinct colors |
+| **ErrorTrendChart** | Recharts stacked area chart | `/dashboard/error-trends` | ✅ 31 data points, spike on 2026-03-15 (6 errors across severities) |
+| **RecentActivity** | Timeline list | `/dashboard/recent-activity` | ✅ 10 entries with colored dots (CREATE/RESOLVE/STATUS_CHANGE/SEED_CREATE/ADD_STEP) |
+
+**Layout grid verified:**
+- Row 1: 4 stat cards spanning full width
+- Row 2: Status overview (8 cols) + Pair pie (4 cols)
+- Row 3: Device bar chart (6 cols) + Error trend chart (6 cols)
+- Row 4: Recent activity timeline (12 cols)
+
+---
+
+### 4. Chart Library — Recharts Integration
+
+| Detail | Status |
+|--------|--------|
+| Package | `recharts@^2.13.0` added to `package.json` |
+| Installation | Required `docker compose build --no-cache frontend` to pick up new dependency |
+| Components used | `BarChart`, `Bar`, `Cell`, `AreaChart`, `Area`, `PieChart`, `Pie`, `XAxis`, `YAxis`, `CartesianGrid`, `Tooltip`, `ResponsiveContainer` |
+| Custom tooltips | Glass-styled dark tooltips on all 3 charts |
+| Chart colors | Exact hex values from spec: device types (`#6B7F8C`, `#8C6B7C`, `#6B8C7A`, `#8C836B`), statuses (`#5F8F6B`, `#B68A3C`, `#9B3E3E`) |
+| Grid/axis styling | Grid `#262626`, axis labels `#B8B8B8`, tick `#7A7A7A`, transparent backgrounds |
+
+---
+
+### 5. Issues and Fixes
+
+| Issue | Root Cause | Fix |
+|-------|-----------|-----|
+| `AuditLog` column mismatch | Repository initially used `created_at` and `user_id` but AuditLog uses `timestamp` and `changed_by` | Corrected to `AuditLog.timestamp.desc()` and `row.changed_by` |
+| Recharts import failure in Docker | `package.json` updated but Docker layer cached old `node_modules` without recharts | `docker compose build --no-cache frontend` forced fresh `npm install` |
+| No RF devices in breakdown | Seed data only includes IU (3), OU (4), HC (2) — no RF devices seeded | Not a bug — chart correctly shows only existing types |
+| Error trends mostly zeros | All 5+1 errors were seeded/created on same day (2026-03-15) | Correct behavior — chart shows 30 zero days + 1 spike day with 6 errors |
+
+---
+
+### 6. Phase 11a Needs — Search + Audit Trail + Comparison
+
+The dashboard module provides foundation for:
+
+| Future Feature | What Phase 10 Enables |
+|---------------|----------------------|
+| **Global Search** | Dashboard queries already cross all entity tables; search can reuse same import patterns for Device, Couple, Pair, ErrorLog |
+| **Audit Trail Page** | `RecentActivity` component + `/recent-activity` endpoint already fetch audit logs; full audit page needs pagination, filtering by entity_type/action, date range |
+| **Entity Comparison** | `StatusDistribution` and `DeviceTypeBreakdown` patterns show how to aggregate and compare across entities; comparison UI can extend the same chart components |
+| **Drill-down Navigation** | Activity timeline items contain `entity_type` + `entity_id` — can be made clickable to navigate to entity detail pages |
+| **Real-time Updates** | All dashboard hooks use `refetchInterval: 60000` and `staleTime: 30000` — WebSocket support could replace polling in Phase 11+ |
+
+**Existing modules confirmed unaffected:** `/devices`, `/couples`, `/pairs`, `/map`, `/troubleshooting`, `/health` all operational.

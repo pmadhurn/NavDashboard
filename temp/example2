@@ -1,0 +1,1147 @@
+# NAVDASHBOARD — PHASE 11a: SEARCH + AUDIT TRAIL + COMPARISON
+# ═══════════════════════════════════════════════════════════════
+
+## PROJECT STATE (DO NOT REGENERATE — ALREADY EXISTS)
+
+NavDashboard is a LiFi device management system. Phases 1–10 are
+complete and working. The following infrastructure and modules exist:
+
+**Backend (FastAPI, Python 3.12, async SQLAlchemy 2.0, PostgreSQL 16 + PostGIS + pgvector):**
+- `core/config.py` — pydantic-settings, exports `settings`
+- `core/database.py` — async engine, `Base` (id, created_at, updated_at, deleted_at), `SoftDeleteMixin`, `CustomFieldsMixin`, `get_db`
+- `core/security.py` — JWT (python-jose), bcrypt (passlib)
+- `core/dependencies.py` — `get_current_user`, `require_role`
+- `core/exceptions.py` — NotFoundException, BadRequestException, UnauthorizedException, ForbiddenException, ConflictException
+- `shared/audit.py` — `AuditLog` model (columns: id, action, entity_type, entity_id, changed_by, old_values JSONB, new_values JSONB, timestamp) + `record_audit()` function
+- `shared/pagination.py` — `paginate()`, `PaginationParams`, `PaginatedResponse`
+- `shared/filters.py` — `apply_filters()`
+- `shared/utils.py` — `slugify`, `generate_serial`, `format_datetime`, `model_to_dict`
+- **Modules:** auth, devices, couples, pairs, locations, personnel, inventory, troubleshooting, status, dashboard
+
+**Database tables (15):** users, audit_logs, devices, device_status_history, personnel, assignment_history, fitting_materials, material_templates, locations, location_history, couples, pairs, error_logs, troubleshoot_entries, status_change_logs
+
+**AuditLog column names (IMPORTANT — use these exact names):**
+- `id` (UUID PK)
+- `action` (String) — values like "CREATE", "UPDATE", "DELETE", "STATUS_CHANGE", "RESOLVE", "SEED_CREATE", "ADD_STEP"
+- `entity_type` (String) — "device", "couple", "pair", "error_log", "personnel", "user", etc.
+- `entity_id` (UUID)
+- `changed_by` (UUID, nullable — FK to users.id)
+- `old_values` (JSONB, nullable)
+- `new_values` (JSONB, nullable)
+- `timestamp` (DateTime with timezone)
+
+**Frontend (React 18, TypeScript, Vite, Ant Design 5, Zustand, TanStack React Query, Recharts, Leaflet):**
+- Shared components: Layout, Sidebar, GlassCard, GlassButton, GlassInput, GlassModal, DataTable, StatusBadge, PageHeader, LoadingSpinner, EmptyState, ConfirmDialog, ErrorBoundary, PlaceholderPage
+- Modules: auth, dashboard, devices, couples, pairs, map, troubleshooting
+- API client at `src/shared/api/client.ts` — exports `api` with `get<T>`, `post<T>`, `put<T>`, `del<T>`
+- Auth store at `src/shared/stores/authStore.ts` (Zustand)
+- UI store at `src/shared/stores/uiStore.ts` (Zustand)
+- Types at `src/shared/types/common.ts` — includes `PaginatedResponse<T>`
+- Routes at `src/app/routes.tsx` — `/search`, `/audit`, `/comparison` currently show PlaceholderPage
+
+**Docker services:** nginx (reverse proxy at :80), frontend (:3000), backend (:8000), db (imresamu/postgis:16-3.5), redis
+
+**Existing main.py router includes (KEEP ALL OF THESE):**
+```python
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(devices_router, prefix="/api/v1/devices", tags=["Devices"])
+app.include_router(couples_router, prefix="/api/v1/couples", tags=["Couples"])
+app.include_router(pairs_router, prefix="/api/v1/pairs", tags=["Pairs"])
+app.include_router(locations_router, prefix="/api/v1/locations", tags=["Locations"])
+app.include_router(personnel_router, prefix="/api/v1/personnel", tags=["Personnel"])
+app.include_router(inventory_router, prefix="/api/v1/inventory", tags=["Inventory"])
+app.include_router(troubleshooting_router, prefix="/api/v1/troubleshooting", tags=["Troubleshooting"])
+app.include_router(status_router, prefix="/api/v1/status", tags=["Status"])
+app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["Dashboard"])
+```
+
+**Existing migrations/env.py model imports (KEEP ALL OF THESE):**
+```python
+from shared.audit import AuditLog
+from modules.auth.models import User
+from modules.devices.models import Device, DeviceStatusHistory
+from modules.personnel.models import Person, AssignmentHistory
+from modules.inventory.models import FittingMaterial, MaterialTemplate
+from modules.locations.models import Location, LocationHistory
+from modules.couples.models import Couple
+from modules.pairs.models import Pair
+from modules.troubleshooting.models import ErrorLog, TroubleshootEntry
+from modules.status.models import StatusChangeLog
+```
+
+---
+
+## EXISTING BACKEND PATTERNS (follow exactly)
+
+**Router pattern:**
+```python
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.database import get_db
+from core.dependencies import get_current_user, require_role
+from modules.auth.models import User
+
+router = APIRouter()
+
+@router.get("/")
+async def list_items(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # call service, return result
+```
+
+**Repository pattern:**
+```python
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, or_, and_, desc
+from uuid import UUID
+from typing import Optional
+
+async def get_by_id(db: AsyncSession, id: UUID) -> Optional[Model]:
+    result = await db.execute(select(Model).where(Model.id == id, Model.deleted_at.is_(None)))
+    return result.scalar_one_or_none()
+
+async def get_multi(db: AsyncSession, skip: int = 0, limit: int = 100, filters: dict | None = None) -> list[Model]:
+    query = select(Model).where(Model.deleted_at.is_(None))
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
+    return list(result.scalars().all())
+```
+
+---
+
+## EXISTING FRONTEND PATTERNS (follow exactly)
+
+**Hook pattern:**
+```typescript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/shared/api/client';
+import { PaginatedResponse } from '@/shared/types/common';
+
+export function useItems(filters?: Record<string, any>) {
+  return useQuery({
+    queryKey: ['items', filters],
+    queryFn: () => api.get<PaginatedResponse<Item>>('/api/v1/items', filters),
+  });
+}
+```
+
+**Page pattern:**
+```typescript
+import { PageHeader } from '@/shared/components/PageHeader';
+import { GlassCard } from '@/shared/components/GlassCard';
+import { GlassButton } from '@/shared/components/GlassButton';
+import { DataTable } from '@/shared/components/DataTable';
+import { LoadingSpinner } from '@/shared/components/LoadingSpinner';
+import { EmptyState } from '@/shared/components/EmptyState';
+// Uses Ant Design components: Select, DatePicker, Tag, Space, Row, Col, Tabs, etc.
+```
+
+---
+
+## COLOR PALETTE (use exact values)
+
+- Background: `#0A0A0A`, Cards: `#141414`, Secondary card: `#1A1A1A`
+- Text primary: `#F2F2F2`, secondary: `#B8B8B8`, muted: `#7A7A7A`
+- Borders: `#242424`, Accent edge: `#2E2E2E`
+- Status: Working `#5F8F6B`, Not Working `#B68A3C`, Faulty `#9B3E3E`
+- Audit: Create `#5F8F6B`, Update `#7A7A7A`, Delete `#9B3E3E`
+- Comparison: Matches `#4F7A63`, Differences `#8A5C3C`
+- Glass: `background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06);`
+
+---
+
+## FILES TO GENERATE (36 total)
+
+### Backend — Search Module (7 files)
+1. `NavDashboard/backend/modules/search/__init__.py`
+2. `NavDashboard/backend/modules/search/models.py`
+3. `NavDashboard/backend/modules/search/schemas.py`
+4. `NavDashboard/backend/modules/search/repository.py`
+5. `NavDashboard/backend/modules/search/service.py`
+6. `NavDashboard/backend/modules/search/router.py`
+7. `NavDashboard/backend/modules/search/indexer.py`
+
+### Backend — Audit Trail Module (6 files)
+8. `NavDashboard/backend/modules/audit_trail/__init__.py`
+9. `NavDashboard/backend/modules/audit_trail/models.py`
+10. `NavDashboard/backend/modules/audit_trail/schemas.py`
+11. `NavDashboard/backend/modules/audit_trail/repository.py`
+12. `NavDashboard/backend/modules/audit_trail/service.py`
+13. `NavDashboard/backend/modules/audit_trail/router.py`
+
+### Backend — Comparison Module (6 files)
+14. `NavDashboard/backend/modules/comparison/__init__.py`
+15. `NavDashboard/backend/modules/comparison/models.py`
+16. `NavDashboard/backend/modules/comparison/schemas.py`
+17. `NavDashboard/backend/modules/comparison/repository.py`
+18. `NavDashboard/backend/modules/comparison/service.py`
+19. `NavDashboard/backend/modules/comparison/router.py`
+
+### Backend — Modified Files (2 files — FULL REPLACEMENT)
+20. `NavDashboard/backend/main.py`
+21. `NavDashboard/backend/migrations/env.py`
+
+### Frontend — Search Module (5 files)
+22. `NavDashboard/frontend/src/modules/search/pages/SearchPage.tsx`
+23. `NavDashboard/frontend/src/modules/search/components/GlobalSearch.tsx`
+24. `NavDashboard/frontend/src/modules/search/components/SearchResults.tsx`
+25. `NavDashboard/frontend/src/modules/search/components/AdvancedFilters.tsx`
+26. `NavDashboard/frontend/src/modules/search/hooks/useSearch.ts`
+
+### Frontend — Audit Trail Module (4 files)
+27. `NavDashboard/frontend/src/modules/audit_trail/pages/AuditTrailPage.tsx`
+28. `NavDashboard/frontend/src/modules/audit_trail/components/AuditTimeline.tsx`
+29. `NavDashboard/frontend/src/modules/audit_trail/components/AuditFilters.tsx`
+30. `NavDashboard/frontend/src/modules/audit_trail/hooks/useAuditTrail.ts`
+
+### Frontend — Comparison Module (5 files)
+31. `NavDashboard/frontend/src/modules/comparison/pages/ComparisonPage.tsx`
+32. `NavDashboard/frontend/src/modules/comparison/components/ComparisonSelector.tsx`
+33. `NavDashboard/frontend/src/modules/comparison/components/ComparisonTable.tsx`
+34. `NavDashboard/frontend/src/modules/comparison/components/DiffHighlighter.tsx`
+35. `NavDashboard/frontend/src/modules/comparison/hooks/useComparison.ts`
+
+### Frontend — Modified File (1 file — FULL REPLACEMENT)
+36. `NavDashboard/frontend/src/app/routes.tsx`
+
+---
+
+## DETAILED SPECIFICATIONS
+
+---
+
+### SEARCH MODULE — Backend
+
+**`models.py`:**
+```python
+# No dedicated models — search queries across existing tables
+```
+
+**`schemas.py`:**
+```python
+from pydantic import BaseModel
+from uuid import UUID
+from datetime import datetime
+
+class SearchResult(BaseModel):
+    id: UUID
+    entity_type: str       # "device", "couple", "pair", "personnel", "error"
+    name: str              # serial_number for devices, name for others, error_type for errors
+    description: str | None = None
+    status: str | None = None
+    extra: dict | None = None
+    score: float = 0.0
+
+    class Config:
+        from_attributes = True
+
+class GlobalSearchResponse(BaseModel):
+    results: list[SearchResult]
+    total: int
+    query: str
+    entity_counts: dict[str, int]
+
+class SearchSuggestion(BaseModel):
+    text: str
+    entity_type: str
+    entity_id: UUID
+
+class AdvancedSearchParams(BaseModel):
+    query: str | None = None
+    entity_types: list[str] | None = None
+    status: str | None = None
+    device_type: str | None = None
+    severity: str | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    handling_person_id: UUID | None = None
+```
+
+**`indexer.py`:**
+- `build_ilike_conditions(model_class, columns: list[str], search_term: str)` — returns list of SQLAlchemy ILIKE conditions for OR combination
+- `calculate_relevance(match_text: str, search_term: str) -> float` — simple scoring: exact match = 1.0, starts_with = 0.8, contains = 0.5
+- These are utility functions used by repository.py. Do NOT use pg_trgm functions (since the extension may not be configured on all columns). Just use ILIKE which works everywhere.
+
+**`repository.py`:**
+- Import models: `Device` from devices, `Couple` from couples, `Pair` from pairs, `Person` from personnel, `ErrorLog` from troubleshooting
+- `async def search_devices(db, query: str, filters: dict | None = None, limit: int = 20) -> list[dict]` — searches `serial_number` and `notes` via ILIKE, returns dicts with id, entity_type="device", name=serial_number, status, description=notes, extra={device_type}
+- `async def search_couples(db, query: str, filters: dict | None = None, limit: int = 20) -> list[dict]` — searches `name` and `notes` via ILIKE
+- `async def search_pairs(db, query: str, filters: dict | None = None, limit: int = 20) -> list[dict]` — searches `name` and `notes` via ILIKE
+- `async def search_personnel(db, query: str, filters: dict | None = None, limit: int = 20) -> list[dict]` — searches `full_name`, `email`, `notes` via ILIKE
+- `async def search_errors(db, query: str, filters: dict | None = None, limit: int = 20) -> list[dict]` — searches `error_type`, `description` via ILIKE
+- All queries: `WHERE deleted_at IS NULL` (or no deleted_at filter for models without it — AuditLog doesn't have soft delete)
+- Apply additional filters if provided (status, device_type, severity, date range, handling_person_id)
+
+**`service.py`:**
+- `async def global_search(db, query: str, entity_types: list[str] | None, limit: int) -> GlobalSearchResponse`
+  - If entity_types is None, search all 5 types
+  - Call relevant repository search functions
+  - Calculate score using `indexer.calculate_relevance`
+  - Sort all results by score descending
+  - Count results per entity type
+  - Return GlobalSearchResponse
+- `async def get_suggestions(db, query: str, limit: int) -> list[SearchSuggestion]`
+  - Quick search across device serial_numbers, couple names, pair names, personnel names
+  - Return top matches
+
+**`router.py` (prefix: `/search`):**
+
+| Method | Path | Query Params | Response |
+|--------|------|-------------|----------|
+| GET | `/global` | `q` (required, min length 2), `entity_types` (optional comma-separated), `limit` (default 50) | GlobalSearchResponse |
+| GET | `/suggestions` | `q` (required, min length 2), `limit` (default 10) | list[SearchSuggestion] |
+
+All require `Depends(get_current_user)`.
+
+---
+
+### AUDIT TRAIL MODULE — Backend
+
+**`models.py`:**
+```python
+# Uses AuditLog model from shared/audit.py
+```
+
+**`schemas.py`:**
+```python
+from pydantic import BaseModel
+from uuid import UUID
+from datetime import datetime
+
+class AuditEntryResponse(BaseModel):
+    id: UUID
+    action: str
+    entity_type: str
+    entity_id: UUID
+    changed_by: UUID | None = None
+    old_values: dict | None = None
+    new_values: dict | None = None
+    timestamp: datetime
+    user_name: str | None = None
+    description: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class AuditStatsResponse(BaseModel):
+    total_entries: int
+    by_action: dict[str, int]
+    by_entity_type: dict[str, int]
+    most_active_users: list[dict]
+```
+
+**`repository.py`:**
+- Import: `from shared.audit import AuditLog` and `from modules.auth.models import User`
+- `async def get_audit_entries(db, skip, limit, filters: dict | None) -> tuple[list, int]`
+  - Query `AuditLog` LEFT JOIN `User` on `AuditLog.changed_by == User.id`
+  - Select: all AuditLog columns + `User.full_name` as `user_name`
+  - Apply filters: `entity_type`, `entity_id`, `action`, `changed_by`, `date_from` (timestamp >=), `date_to` (timestamp <=)
+  - Order by `AuditLog.timestamp` DESC
+  - Return (list of results, total count)
+- `async def get_entity_audit(db, entity_type, entity_id, skip, limit) -> tuple[list, int]`
+- `async def get_user_audit(db, user_id, skip, limit) -> tuple[list, int]`
+- `async def get_audit_stats(db) -> dict`
+  - Count by action (GROUP BY action)
+  - Count by entity_type (GROUP BY entity_type)
+  - Top 5 most active users (GROUP BY changed_by, ORDER BY count DESC, JOIN users for name)
+
+**`service.py`:**
+- Wraps repository calls
+- `generate_description(action, entity_type, old_values, new_values) -> str`
+  - CREATE: "Created {entity_type}" + name/serial if in new_values
+  - UPDATE: "Updated {entity_type}" + list of changed field names
+  - DELETE: "Deleted {entity_type}" + name/serial if in old_values
+  - STATUS_CHANGE: "Changed {entity_type} status from X to Y"
+  - RESOLVE: "Resolved {entity_type} error"
+  - Default: "{action} on {entity_type}"
+- Applies description to each entry before returning
+
+**`router.py` (prefix: `/audit`):**
+
+| Method | Path | Query Params | Auth | Response |
+|--------|------|-------------|------|----------|
+| GET | `/` | `page`, `size`, `entity_type`, `action`, `user_id`, `date_from`, `date_to` | `get_current_user` | PaginatedResponse with items as list[AuditEntryResponse] |
+| GET | `/entity/{entity_type}/{entity_id}` | `page`, `size` | `get_current_user` | Same |
+| GET | `/user/{user_id}` | `page`, `size` | `get_current_user` | Same |
+| GET | `/stats` | none | `get_current_user` | AuditStatsResponse |
+
+**IMPORTANT for pagination:** The audit module does NOT use the shared `paginate()` function (since AuditLog doesn't use the same Base query pattern). Instead, manually construct the paginated response:
+```python
+from shared.pagination import PaginatedResponse
+import math
+
+items_data = [AuditEntryResponse(...) for row in rows]
+return {
+    "items": items_data,
+    "total": total,
+    "page": page,
+    "size": size,
+    "pages": math.ceil(total / size) if size > 0 else 0
+}
+```
+
+---
+
+### COMPARISON MODULE — Backend
+
+**`models.py`:**
+```python
+# No dedicated models — comparison fetches from other modules
+```
+
+**`schemas.py`:**
+```python
+from pydantic import BaseModel
+from uuid import UUID
+from typing import Any
+
+class ComparisonField(BaseModel):
+    field_name: str
+    label: str
+    value_a: Any
+    value_b: Any
+    match: bool
+
+class ComparisonResult(BaseModel):
+    entity_type: str  # "couple", "pair", "device"
+    entity_a_id: UUID
+    entity_a_name: str
+    entity_b_id: UUID
+    entity_b_name: str
+    fields: list[ComparisonField]
+    match_count: int
+    diff_count: int
+    nested_comparisons: dict[str, list[ComparisonField]] | None = None  # e.g., "devices", "materials"
+
+class CompareRequest(BaseModel):
+    entity_id_1: UUID
+    entity_id_2: UUID
+```
+
+**`repository.py`:**
+- `async def get_couple_full(db, couple_id) -> dict | None` — fetch couple with all related data: devices (via couple_id), fitting_materials (via couple_id), location, handling_person name. Return as flat dict.
+- `async def get_pair_full(db, pair_id) -> dict | None` — fetch pair with coupled couples' names and statuses. Return as flat dict.
+- `async def get_device_full(db, device_id) -> dict | None` — fetch device with handling_person name, couple name. Return as flat dict.
+- Use `select()` with LEFT JOINs or separate queries. Return dictionaries, not ORM objects.
+
+**`service.py`:**
+- `async def compare_couples(db, id_1, id_2) -> ComparisonResult`
+  - Fetch both couples via repository
+  - Compare fields: name, status, has_rf, handling_person, location (lat/lng), notes, configuration
+  - Nested comparison: devices (by device_type), fitting_materials (by name)
+  - For each field: `ComparisonField(field_name, label, value_a, value_b, match=value_a==value_b)`
+  - Count matches and diffs
+- `async def compare_pairs(db, id_1, id_2) -> ComparisonResult`
+  - Compare: name, status, notes, couple names, couple statuses
+- `async def compare_devices(db, id_1, id_2) -> ComparisonResult`
+  - Compare: serial_number, device_type, status, couple assignment, handling_person, notes, custom_fields
+
+**`router.py` (prefix: `/comparison`):**
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| POST | `/couples` | `CompareRequest` | `ComparisonResult` |
+| POST | `/pairs` | `CompareRequest` | `ComparisonResult` |
+| POST | `/devices` | `CompareRequest` | `ComparisonResult` |
+
+All require `Depends(get_current_user)`.
+
+---
+
+### SEARCH MODULE — Frontend
+
+**`useSearch.ts`:**
+```typescript
+// Types defined in this file
+interface SearchResult {
+  id: string;
+  entity_type: 'device' | 'couple' | 'pair' | 'personnel' | 'error';
+  name: string;
+  description?: string;
+  status?: string;
+  extra?: Record<string, any>;
+  score: number;
+}
+
+interface GlobalSearchResponse {
+  results: SearchResult[];
+  total: number;
+  query: string;
+  entity_counts: Record<string, number>;
+}
+
+interface SearchSuggestion {
+  text: string;
+  entity_type: string;
+  entity_id: string;
+}
+
+// Hooks
+export function useGlobalSearch(query: string, entityTypes?: string[], limit?: number)
+  // → useQuery, enabled when query.length >= 2
+  // → calls GET /api/v1/search/global?q=...&entity_types=...&limit=...
+  // → returns { data: GlobalSearchResponse, isLoading, error }
+
+export function useSearchSuggestions(query: string, limit?: number)
+  // → useQuery, enabled when query.length >= 2
+  // → calls GET /api/v1/search/suggestions?q=...&limit=...
+  // → returns { data: SearchSuggestion[], isLoading }
+```
+
+**`SearchPage.tsx`:**
+- Uses `useSearchParams` from react-router-dom to read `?q=` from URL
+- Large GlassInput search bar at top (auto-focused, pre-filled from URL param)
+- Debounced search (300ms) using `useDebounce` from `@/shared/hooks/useDebounce`
+- AdvancedFilters panel (collapsible via toggle button)
+- SearchResults component below
+- If no query: EmptyState with "Search across all devices, couples, pairs, and more"
+- If loading: LoadingSpinner
+- Result count summary: "Found {total} results" with entity type pills showing counts
+
+**`GlobalSearch.tsx`:**
+- Compact search input with SearchOutlined icon (from `@ant-design/icons`)
+- As user types (debounced 300ms), shows dropdown with suggestions
+- Each suggestion: entity type icon + text + entity type label
+- Click suggestion → navigate to entity detail page:
+  - device → `/devices/{id}`
+  - couple → `/couples/{id}`
+  - pair → `/pairs/{id}`
+  - personnel → stays on search (no dedicated page yet)
+  - error → `/troubleshooting` (no per-error detail page yet)
+- Press Enter → navigate to `/search?q={query}`
+- Dropdown positioned absolutely, glass styled: `background: rgba(20,20,20,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08);`
+- Click outside → close dropdown
+- This component can be imported into Layout.tsx header but DO NOT modify Layout.tsx in this phase — just export the component
+
+**`SearchResults.tsx`:**
+- Props: `results: SearchResult[]`, `entityCounts: Record<string, number>`, `query: string`
+- Entity type filter tabs at top using Ant Design `Tabs` or custom pills:
+  - "All ({total})", "Devices ({n})", "Couples ({n})", "Pairs ({n})", "Personnel ({n})", "Errors ({n})"
+  - Only show tabs with count > 0
+  - Clicking tab filters displayed results by entity_type
+- Each result rendered as a GlassCard:
+  - Left: entity type icon (ApiOutlined for device, LinkOutlined for couple, SwapOutlined for pair, UserOutlined for personnel, WarningOutlined for error)
+  - Center: name (bold), description snippet (truncated to 100 chars), entity type label as small muted tag
+  - Right: StatusBadge if status exists
+  - Highlight matching text in name and description: wrap matched substring in `<span style={{ background: 'rgba(230,230,230,0.15)', padding: '0 2px', borderRadius: 2 }}>`
+- Click result → navigate to detail page (same mapping as GlobalSearch)
+- If no results: EmptyState "No results found for '{query}'"
+
+**`AdvancedFilters.tsx`:**
+- Props: `onFiltersChange: (filters) => void`, `visible: boolean`
+- Glass panel that slides down when visible
+- Filters in a Row/Col grid:
+  - Entity types: Checkbox group (Device, Couple, Pair, Personnel, Error)
+  - Status: Select (WORKING, NOT_WORKING, FAULTY)
+  - Device Type: Select (IU, OU, HC, RF) — only relevant when "Device" is checked
+  - Severity: Select (LOW, MEDIUM, HIGH, CRITICAL) — only relevant when "Error" is checked
+  - Date Range: Ant Design RangePicker
+- Active filters shown as removable Tag components below the filter panel
+- "Reset" button (GlassButton ghost) to clear all filters
+
+---
+
+### AUDIT TRAIL MODULE — Frontend
+
+**`useAuditTrail.ts`:**
+```typescript
+// Types
+interface AuditEntry {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  changed_by: string | null;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
+  timestamp: string;
+  user_name: string | null;
+  description: string | null;
+}
+
+interface AuditStats {
+  total_entries: number;
+  by_action: Record<string, number>;
+  by_entity_type: Record<string, number>;
+  most_active_users: Array<{ user_id: string; name: string; count: number }>;
+}
+
+// Hooks
+export function useAuditEntries(filters?: Record<string, any>)
+  // → useQuery
+  // → GET /api/v1/audit/?page=...&size=...&entity_type=...&action=...&user_id=...&date_from=...&date_to=...
+  // → returns { data: PaginatedResponse<AuditEntry>, isLoading, error }
+
+export function useEntityAudit(entityType: string, entityId: string)
+  // → useQuery, enabled when both params are truthy
+  // → GET /api/v1/audit/entity/{entityType}/{entityId}
+  // → returns { data: PaginatedResponse<AuditEntry>, isLoading }
+
+export function useUserAudit(userId: string)
+  // → useQuery, enabled when userId is truthy
+  // → GET /api/v1/audit/user/{userId}
+
+export function useAuditStats()
+  // → useQuery
+  // → GET /api/v1/audit/stats
+  // → returns { data: AuditStats, isLoading }
+```
+
+**`AuditTrailPage.tsx`:**
+- PageHeader: "Audit Trail"
+- Stats summary row at top: 4 small GlassCards showing total entries, creates count, updates count, deletes count (from useAuditStats)
+- AuditFilters component
+- View toggle: "Timeline" / "Table" (GlassButton group)
+- Timeline view (default): AuditTimeline component
+- Table view: DataTable with columns: Timestamp, Action, Entity Type, Entity ID, User, Description
+- Pagination controls at bottom
+- Uses `useAuditEntries(filters)` with filter state managed via `useState`
+
+**`AuditTimeline.tsx`:**
+- Props: `entries: AuditEntry[]`, `loading: boolean`, `onLoadMore?: () => void`
+- Vertical timeline with connecting line (2px wide, color `#2C2C2C`, left side)
+- Each entry is a row:
+  - Left: colored dot on the timeline line
+    - CREATE / SEED_CREATE: `#5F8F6B`
+    - UPDATE / STATUS_CHANGE: `#7A7A7A`
+    - DELETE: `#9B3E3E`
+    - RESOLVE: `#5F8F6B`
+    - ADD_STEP: `#7A7A7A`
+    - Default: `#7A7A7A`
+  - Right: GlassCard with:
+    - Top row: action badge (Tag with appropriate color) + entity type tag (muted) + timestamp (relative, e.g., "2 hours ago" using dayjs .fromNow(), show absolute on hover via Ant Design Tooltip)
+    - Middle: description text (from API, or fallback to `{action} on {entity_type}`)
+    - Bottom row: user name (muted text) + entity link (clickable, navigates to detail page)
+    - Expandable section (click "Show changes" button): shows old_values and new_values side by side
+      - Each changed field: field name, old value (with light red background `rgba(155,62,62,0.15)`), new value (with light green background `rgba(95,143,107,0.15)`)
+      - If old_values or new_values is null, show "N/A"
+      - Use JSON.stringify for complex values, truncate at 200 chars
+- If loading: LoadingSpinner at bottom
+- "Load more" button at bottom if there are more pages
+
+**`AuditFilters.tsx`:**
+- Props: `filters: Record<string, any>`, `onFiltersChange: (filters) => void`
+- Horizontal filter bar (not collapsible — always visible since this page is dedicated to audit)
+- Filters in a single Row:
+  - Action: Select (multiple) — options: CREATE, UPDATE, DELETE, STATUS_CHANGE, RESOLVE, SEED_CREATE, ADD_STEP
+  - Entity Type: Select (multiple) — options: device, couple, pair, error_log, personnel, user, fitting_material, location, status_change, material_template
+  - User: Select (single, searchable) — fetch users from `/api/v1/auth/users` if admin, otherwise just show current user
+  - Date Range: RangePicker
+- Active filters as removable Tags below
+- "Clear All" link to reset
+
+---
+
+### COMPARISON MODULE — Frontend
+
+**`useComparison.ts`:**
+```typescript
+// Types
+interface ComparisonField {
+  field_name: string;
+  label: string;
+  value_a: any;
+  value_b: any;
+  match: boolean;
+}
+
+interface ComparisonResult {
+  entity_type: string;
+  entity_a_id: string;
+  entity_a_name: string;
+  entity_b_id: string;
+  entity_b_name: string;
+  fields: ComparisonField[];
+  match_count: number;
+  diff_count: number;
+  nested_comparisons?: Record<string, ComparisonField[]>;
+}
+
+// Hooks
+export function useCompareCouples()
+  // → useMutation
+  // → POST /api/v1/comparison/couples with { entity_id_1, entity_id_2 }
+  // → returns { mutate, data: ComparisonResult, isLoading }
+
+export function useComparePairs()
+  // → useMutation
+  // → POST /api/v1/comparison/pairs with { entity_id_1, entity_id_2 }
+
+export function useCompareDevices()
+  // → useMutation
+  // → POST /api/v1/comparison/devices with { entity_id_1, entity_id_2 }
+```
+
+**`ComparisonPage.tsx`:**
+- PageHeader: "Configuration Comparison"
+- ComparisonSelector at top
+- "Compare" button (GlassButton primary, disabled until both entities selected)
+- ComparisonTable below (shown after comparison is fetched)
+- Loading state while comparing
+- If no comparison yet: EmptyState "Select two entities to compare their configurations"
+
+**`ComparisonSelector.tsx`:**
+- Props: `onCompare: (entityType: string, id1: string, id2: string) => void`
+- Entity type selector: Radio group or Ant Design Segmented component — "Couples", "Pairs", "Devices"
+- Two side-by-side searchable Select dropdowns labeled "Entity A" and "Entity B"
+  - Options loaded from existing API:
+    - Couples: `GET /api/v1/couples/?size=100` → map to `{ value: id, label: name }`
+    - Pairs: `GET /api/v1/pairs/?size=100` → map to `{ value: id, label: name }`
+    - Devices: `GET /api/v1/devices/?size=100` → map to `{ value: id, label: serial_number }`
+  - Options update when entity type changes
+- Prevent selecting same entity for both A and B (filter out selected A from B's options)
+- Glass styled selects
+
+**`ComparisonTable.tsx`:**
+- Props: `result: ComparisonResult`
+- Header row: Entity A name (left) | Field Label (center) | Entity B name (right)
+- For each field in `result.fields`:
+  - Row with 3 columns:
+    - Left: value_a wrapped in DiffHighlighter
+    - Center: field label (muted text, centered)
+    - Right: value_b wrapped in DiffHighlighter
+- Summary footer: "{match_count} matches, {diff_count} differences"
+- If `nested_comparisons` exists, render sub-sections (e.g., "Devices", "Materials") with same table pattern but indented
+- Glass card container with glass-styled table (header `#151515`, alternating rows `#111111` / transparent)
+
+**`DiffHighlighter.tsx`:**
+- Props: `value: any`, `match: boolean`, `side: 'a' | 'b'`
+- If match: background `rgba(79, 122, 99, 0.15)` (match green), text color `#F2F2F2`
+- If not match: background `rgba(138, 92, 60, 0.15)` (diff amber), text color `#F2F2F2`
+- Renders value as string. For objects/arrays: `JSON.stringify(value, null, 2)` in a `<pre>` with `font-size: 12px`
+- For null/undefined: renders "—" in muted color
+
+---
+
+### MODIFIED FILES
+
+**`main.py`** — Full replacement. Keep ALL existing router includes and add 3 new ones:
+```python
+from modules.search.router import router as search_router
+from modules.audit_trail.router import router as audit_router
+from modules.comparison.router import router as comparison_router
+
+# Add after existing includes:
+app.include_router(search_router, prefix="/api/v1/search", tags=["Search"])
+app.include_router(audit_router, prefix="/api/v1/audit", tags=["Audit"])
+app.include_router(comparison_router, prefix="/api/v1/comparison", tags=["Comparison"])
+```
+Keep everything else identical: CORS, exception handlers, health endpoint, startup event, all existing router includes.
+
+**`migrations/env.py`** — Full replacement. Keep ALL existing model imports. No new models to add (search, audit_trail, and comparison have no new tables). But ensure the file is complete and correct.
+
+**`routes.tsx`** — Full replacement. Keep ALL existing routes. Replace PlaceholderPage for `/search`, `/audit`, `/comparison` with the new page components:
+```typescript
+import SearchPage from '@/modules/search/pages/SearchPage';
+import AuditTrailPage from '@/modules/audit_trail/pages/AuditTrailPage';
+import ComparisonPage from '@/modules/comparison/pages/ComparisonPage';
+```
+Keep all other routes exactly as they are (dashboard, devices, device detail, couples, couple detail, pairs, pair detail, map, troubleshooting, login, and remaining placeholders).
+
+---
+
+## VERIFICATION STEPS
+
+After generating all files, test in this order:
+
+1. **Rebuild:** `docker compose up -d --build`
+2. **Check backend starts:** `docker compose logs backend` — no import errors
+3. **Get auth token:** `curl -s -X POST http://localhost/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"admin@navdashboard.com","password":"admin123"}' | jq .access_token`
+4. **Test search:** `curl -s http://localhost/api/v1/search/global?q=IU -H "Authorization: Bearer $TOKEN" | jq .`
+5. **Test suggestions:** `curl -s http://localhost/api/v1/search/suggestions?q=Couple -H "Authorization: Bearer $TOKEN" | jq .`
+6. **Test audit list:** `curl -s "http://localhost/api/v1/audit/?page=1&size=5" -H "Authorization: Bearer $TOKEN" | jq .`
+7. **Test audit stats:** `curl -s http://localhost/api/v1/audit/stats -H "Authorization: Bearer $TOKEN" | jq .`
+8. **Test comparison:** `curl -s -X POST http://localhost/api/v1/comparison/devices -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"entity_id_1":"<DEVICE_UUID_1>","entity_id_2":"<DEVICE_UUID_2>"}' | jq .`
+9. **Test frontend:** Open browser → `/search` → type "IU" → see results → `/audit` → see timeline → `/comparison` → select 2 couples → compare
+10. **Test existing features:** `/devices`, `/couples`, `/pairs`, `/map`, `/troubleshooting` all still work
+
+---
+
+## RULES REMINDER
+
+- ✅ Generate ALL 36 files listed above — complete contents, no abbreviation
+- ✅ Use exact color hex values from the palette
+- ✅ Follow existing patterns exactly (router, repository, service, hooks, pages)
+- ✅ Use `from_attributes = True` in Pydantic models (not `orm_mode`)
+- ✅ All imports must reference correct paths based on the existing project structure
+- ✅ main.py and migrations/env.py must include ALL existing imports plus new ones
+- ✅ routes.tsx must include ALL existing routes plus the 3 new page components
+- ❌ DO NOT modify any file not listed above
+- ❌ DO NOT abbreviate with "// ... rest of code" or "# similar to above"
+- ❌ DO NOT skip any file
+- ❌ DO NOT change the tech stack or patterns
+
+## OUTPUT FORMAT
+
+### [full/path/to/filename.ext]
+
+```[language]
+[complete file contents]
+```
+
+after testing and everythign is done and user has verified and prompted to generate report 
+## TECHNICAL REPORT
+
+After verification, produce concise report:
+1. **Files created/modified** — count
+2. **API surface** — new dashboard endpoints
+3. **Dashboard components** — what renders with real data
+4. **Chart library** — Recharts integration status
+5. **Issues and fixes**
+6. **Phase 11b needs** — what Documents + Backup + Reports can use
+```
+
+you will need to write code as mentioned above
+this is the current directory structure :
+madhur@Rajs-MacBook-Pro NavDashboard % tree
+.
+├── Makefile
+├── backend
+│   ├── Dockerfile
+│   ├── __pycache__
+│   │   └── main.cpython-312.pyc
+│   ├── alembic.ini
+│   ├── core
+│   │   ├── __pycache__
+│   │   │   ├── config.cpython-312.pyc
+│   │   │   ├── database.cpython-312.pyc
+│   │   │   ├── dependencies.cpython-312.pyc
+│   │   │   ├── exceptions.cpython-312.pyc
+│   │   │   └── security.cpython-312.pyc
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── dependencies.py
+│   │   ├── exceptions.py
+│   │   ├── init.py
+│   │   └── security.py
+│   ├── main.py
+│   ├── migrations
+│   │   ├── __pycache__
+│   │   │   └── env.cpython-312.pyc
+│   │   ├── env.py
+│   │   ├── init.py
+│   │   ├── script.py.mako
+│   │   └── versions
+│   │       ├── 11ced21b3d5f_add_personnel_inventory.py
+│   │       ├── 3845f6ceaac9_initial_audit_logs.py
+│   │       ├── 8c160d3bc7f0_add_devices.py
+│   │       ├── 919b93c9c09d_add_locations_couples.py
+│   │       ├── 959926f36bc1_add_pairs.py
+│   │       ├── __pycache__
+│   │       │   ├── 03a68ed6aec5_add_locations_couples.cpython-312.pyc
+│   │       │   ├── 11ced21b3d5f_add_personnel_inventory.cpython-312.pyc
+│   │       │   ├── 3845f6ceaac9_initial_audit_logs.cpython-312.pyc
+│   │       │   ├── 5721eacc4a78_add_users_table.cpython-312.pyc
+│   │       │   ├── 8c160d3bc7f0_add_devices.cpython-312.pyc
+│   │       │   ├── 919b93c9c09d_add_locations_couples.cpython-312.pyc
+│   │       │   ├── 959926f36bc1_add_pairs.cpython-312.pyc
+│   │       │   ├── aa477f490651_add_troubleshooting_status.cpython-312.pyc
+│   │       │   ├── ca3abdffb9ae_add_users_table.cpython-312.pyc
+│   │       │   └── dd1090696ae2_initial_audit_logs.cpython-312.pyc
+│   │       ├── aa477f490651_add_troubleshooting_status.py
+│   │       └── ca3abdffb9ae_add_users_table.py
+│   ├── modules
+│   │   ├── auth
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── couples
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── dashboard
+│   │   │   ├── __pycache__
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── devices
+│   │   │   ├── __pycache__
+│   │   │   │   ├── constants.cpython-312.pyc
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── constants.py
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── init.py
+│   │   ├── inventory
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   ├── service.cpython-312.pyc
+│   │   │   │   └── templates.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   ├── service.py
+│   │   │   └── templates.py
+│   │   ├── locations
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── pairs
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── personnel
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── status
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   └── troubleshooting
+│   │       ├── __pycache__
+│   │       │   ├── models.cpython-312.pyc
+│   │       │   ├── repository.cpython-312.pyc
+│   │       │   ├── router.cpython-312.pyc
+│   │       │   ├── schemas.cpython-312.pyc
+│   │       │   └── service.cpython-312.pyc
+│   │       ├── init.py
+│   │       ├── models.py
+│   │       ├── repository.py
+│   │       ├── router.py
+│   │       ├── schemas.py
+│   │       └── service.py
+│   ├── requirements.txt
+│   └── shared
+│       ├── __pycache__
+│       │   ├── audit.cpython-312.pyc
+│       │   ├── filters.cpython-312.pyc
+│       │   └── pagination.cpython-312.pyc
+│       ├── audit.py
+│       ├── filters.py
+│       ├── init.py
+│       ├── pagination.py
+│       └── utils.py
+├── database
+│   ├── backups
+│   └── init
+│       ├── 01_extensions.sql
+│       └── 02_schemas.sql
+├── docker-compose.yml
+├── frontend
+│   ├── Dockerfile
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── src
+│   │   ├── app
+│   │   │   ├── App.tsx
+│   │   │   ├── providers.tsx
+│   │   │   └── routes.tsx
+│   │   ├── main.tsx
+│   │   ├── modules
+│   │   │   ├── auth
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useAuth.ts
+│   │   │   │   └── pages
+│   │   │   │       └── LoginPage.tsx
+│   │   │   ├── couples
+│   │   │   │   ├── components
+│   │   │   │   │   ├── CoupleCard.tsx
+│   │   │   │   │   ├── CoupleForm.tsx
+│   │   │   │   │   ├── CoupleTable.tsx
+│   │   │   │   │   └── MaterialSelector.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useCouples.ts
+│   │   │   │   └── pages
+│   │   │   │       ├── CoupleDetailPage.tsx
+│   │   │   │       └── CoupleListPage.tsx
+│   │   │   ├── dashboard
+│   │   │   │   ├── components
+│   │   │   │   │   ├── DeviceChart.tsx
+│   │   │   │   │   ├── ErrorTrendChart.tsx
+│   │   │   │   │   ├── PairStatusPie.tsx
+│   │   │   │   │   ├── RecentActivity.tsx
+│   │   │   │   │   ├── StatsCards.tsx
+│   │   │   │   │   └── StatusOverview.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useDashboard.ts
+│   │   │   │   └── pages
+│   │   │   │       └── DashboardPage.tsx
+│   │   │   ├── devices
+│   │   │   │   ├── components
+│   │   │   │   │   ├── DeviceForm.tsx
+│   │   │   │   │   └── DeviceTable.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useDevices.ts
+│   │   │   │   └── pages
+│   │   │   │       ├── DeviceDetailPage.tsx
+│   │   │   │       └── DeviceListPage.tsx
+│   │   │   ├── map
+│   │   │   │   ├── components
+│   │   │   │   │   ├── DeviceMarker.tsx
+│   │   │   │   │   ├── DevicePopup.tsx
+│   │   │   │   │   ├── LocationPicker.tsx
+│   │   │   │   │   ├── LocationTrail.tsx
+│   │   │   │   │   ├── MainMap.tsx
+│   │   │   │   │   ├── MapFilters.tsx
+│   │   │   │   │   └── MapSidePanel.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useMapData.ts
+│   │   │   │   └── pages
+│   │   │   │       └── MapViewPage.tsx
+│   │   │   ├── pairs
+│   │   │   │   ├── components
+│   │   │   │   │   ├── PairCard.tsx
+│   │   │   │   │   ├── PairForm.tsx
+│   │   │   │   │   └── PairTable.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── usePairs.ts
+│   │   │   │   └── pages
+│   │   │   │       ├── PairDetailPage.tsx
+│   │   │   │       └── PairListPage.tsx
+│   │   │   └── troubleshooting
+│   │   │       ├── components
+│   │   │       │   ├── ErrorFilters.tsx
+│   │   │       │   ├── ErrorTimeline.tsx
+│   │   │       │   └── TroubleshootForm.tsx
+│   │   │       ├── hooks
+│   │   │       │   └── useTroubleshooting.ts
+│   │   │       └── pages
+│   │   │           └── TroubleshootingPage.tsx
+│   │   ├── shared
+│   │   │   ├── api
+│   │   │   │   └── client.ts
+│   │   │   ├── components
+│   │   │   │   ├── ConfirmDialog.tsx
+│   │   │   │   ├── DataTable.tsx
+│   │   │   │   ├── EmptyState.tsx
+│   │   │   │   ├── ErrorBoundary.tsx
+│   │   │   │   ├── GlassButton.tsx
+│   │   │   │   ├── GlassCard.tsx
+│   │   │   │   ├── GlassInput.tsx
+│   │   │   │   ├── GlassModal.tsx
+│   │   │   │   ├── Layout.tsx
+│   │   │   │   ├── LoadingSpinner.tsx
+│   │   │   │   ├── PageHeader.tsx
+│   │   │   │   ├── PlaceholderPage.tsx
+│   │   │   │   ├── Sidebar.tsx
+│   │   │   │   └── StatusBadge.tsx
+│   │   │   ├── hooks
+│   │   │   │   ├── useDebounce.ts
+│   │   │   │   ├── useDevices.ts
+│   │   │   │   └── useLocalStorage.ts
+│   │   │   ├── stores
+│   │   │   │   ├── authStore.ts
+│   │   │   │   └── uiStore.ts
+│   │   │   ├── types
+│   │   │   │   ├── common.ts
+│   │   │   │   ├── couples.ts
+│   │   │   │   ├── devices.ts
+│   │   │   │   ├── locations.ts
+│   │   │   │   └── pairs.ts
+│   │   │   └── utils
+│   │   │       ├── colors.ts
+│   │   │       ├── formatters.ts
+│   │   │       └── validators.ts
+│   │   ├── styles
+│   │   │   ├── glass.css
+│   │   │   ├── global.css
+│   │   │   └── theme.ts
+│   │   └── vite-env.d.ts
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── nginx
+│   ├── Dockerfile
+│   └── default.conf
+└── temp
+    ├── Example 
+    ├── Phase 5 report.md
+    ├── Phase 6 report.md
+    ├── Phase 8 report.md
+    ├── Phase 9 report 
+    ├── data.md
+    ├── example2
+    ├── phase 1 report.md
+    ├── phase 11 report
+    ├── phase 2 reports.md
+    ├── phase 3 report.md
+    ├── phase 4 report.md
+    ├── phase 7 report .md
+    ├── temp
+    ├── tempdata1.md
+    ├── tempdata2.md
+    └── tempdata3.md
+
+76 directories, 265 files
+madhur@Rajs-MacBook-Pro NavDashboard % 
+
+you have 2 options 1: get the whole file 2:write a prompt to get what you want from ai from that file (easy to understand for less important files)
+tell me which files will you need as soon as possible for this phase 

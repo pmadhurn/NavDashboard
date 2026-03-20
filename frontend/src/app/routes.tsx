@@ -28,6 +28,9 @@ import PairListPage from '@/modules/pairs/pages/PairListPage';
 import PairDetailPage from '@/modules/pairs/pages/PairDetailPage';
 import MapViewPage from '@/modules/map/pages/MapViewPage';
 import TroubleshootingPage from '@/modules/troubleshooting/pages/TroubleshootingPage';
+import SearchPage from '@/modules/search/pages/SearchPage';
+import AuditTrailPage from '@/modules/audit_trail/pages/AuditTrailPage';
+import ComparisonPage from '@/modules/comparison/pages/ComparisonPage';
 
 export function AppRoutes() {
   return (
@@ -42,13 +45,13 @@ export function AppRoutes() {
         <Route path="pairs/:id" element={<PairDetailPage />} />
         <Route path="map" element={<MapViewPage />} />
         <Route path="troubleshooting" element={<TroubleshootingPage />} />
+        <Route path="search" element={<SearchPage />} />
+        <Route path="audit" element={<AuditTrailPage />} />
+        <Route path="comparison" element={<ComparisonPage />} />
         <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
         <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
         <Route path="documents" element={<PlaceholderPage title="Documents" icon={<FileOutlined />} />} />
         <Route path="reports" element={<PlaceholderPage title="Reports" icon={<BarChartOutlined />} />} />
-        <Route path="audit" element={<PlaceholderPage title="Audit Trail" icon={<AuditOutlined />} />} />
-        <Route path="search" element={<PlaceholderPage title="Search" icon={<SearchOutlined />} />} />
-        <Route path="comparison" element={<PlaceholderPage title="Comparison" icon={<DiffOutlined />} />} />
         <Route path="backup" element={<PlaceholderPage title="Backup" icon={<CloudDownloadOutlined />} />} />
         <Route path="settings" element={<PlaceholderPage title="Settings" icon={<SettingOutlined />} />} />
       </Route>

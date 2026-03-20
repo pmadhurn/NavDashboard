@@ -25,6 +25,9 @@ from modules.pairs.router import router as pairs_router
 from modules.troubleshooting.router import router as troubleshooting_router
 from modules.status.router import router as status_router
 from modules.dashboard.router import router as dashboard_router
+from modules.search.router import router as search_router
+from modules.audit_trail.router import router as audit_router
+from modules.comparison.router import router as comparison_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -106,6 +109,9 @@ app.include_router(pairs_router, prefix=settings.API_V1_PREFIX + "/pairs", tags=
 app.include_router(troubleshooting_router, prefix=settings.API_V1_PREFIX + "/troubleshooting", tags=["troubleshooting"])
 app.include_router(status_router, prefix=settings.API_V1_PREFIX + "/status", tags=["status"])
 app.include_router(dashboard_router, prefix=settings.API_V1_PREFIX + "/dashboard", tags=["dashboard"])
+app.include_router(search_router, prefix=settings.API_V1_PREFIX + "/search", tags=["search"])
+app.include_router(audit_router, prefix=settings.API_V1_PREFIX + "/audit", tags=["audit"])
+app.include_router(comparison_router, prefix=settings.API_V1_PREFIX + "/comparison", tags=["comparison"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
@@ -122,5 +128,5 @@ async def health_check():
         "status": "ok",
         "environment": settings.ENVIRONMENT,
         "database": db_status,
-        "version": "0.1.0",
+        "version": "0.11.1",
     }
