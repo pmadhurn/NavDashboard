@@ -39,12 +39,15 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
+      - ./database/backups:/backups
     env_file:
       - ./backend/.env
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     networks:
       - navdashboard
@@ -64,6 +67,8 @@ services:
       POSTGRES_PASSWORD: navdashboard
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/backups:/backups
     networks:
       - navdashboard
     restart: unless-stopped
@@ -84,8 +89,41 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-navdashboard}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-navdashboard_minio_secret}
+    volumes:
+      - minio_data:/data
+    networks:
+      - navdashboard
+    restart: always
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   networks:
+  #     - navdashboard
+  #   restart: unless-stopped
+
 volumes:
   pgdata:
+  minio_data:
+  redis_data:
+  # ollama_data:
 
 networks:
   navdashboard:

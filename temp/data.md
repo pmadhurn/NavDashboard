@@ -1,10 +1,7 @@
-Good thinking to ask first. Here's exactly what I need:
+Files I Need (Full Content)
+Critical — modifying these directly:
 
-## Option 1 (FULL file content) — 10 files
-
-These are **critical** — I'm either replacing them or querying their exact columns:
-
-1. `backend/main.py`
+1. backend/main.py
 import logging
 from contextlib import asynccontextmanager
 
@@ -32,6 +29,9 @@ from modules.pairs.router import router as pairs_router
 from modules.troubleshooting.router import router as troubleshooting_router
 from modules.status.router import router as status_router
 from modules.dashboard.router import router as dashboard_router
+from modules.search.router import router as search_router
+from modules.audit_trail.router import router as audit_router
+from modules.comparison.router import router as comparison_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -113,6 +113,9 @@ app.include_router(pairs_router, prefix=settings.API_V1_PREFIX + "/pairs", tags=
 app.include_router(troubleshooting_router, prefix=settings.API_V1_PREFIX + "/troubleshooting", tags=["troubleshooting"])
 app.include_router(status_router, prefix=settings.API_V1_PREFIX + "/status", tags=["status"])
 app.include_router(dashboard_router, prefix=settings.API_V1_PREFIX + "/dashboard", tags=["dashboard"])
+app.include_router(search_router, prefix=settings.API_V1_PREFIX + "/search", tags=["search"])
+app.include_router(audit_router, prefix=settings.API_V1_PREFIX + "/audit", tags=["audit"])
+app.include_router(comparison_router, prefix=settings.API_V1_PREFIX + "/comparison", tags=["comparison"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
@@ -129,12 +132,12 @@ async def health_check():
         "status": "ok",
         "environment": settings.ENVIRONMENT,
         "database": db_status,
-        "version": "0.1.0",
+        "version": "0.11.1",
     }
 
 
-2. `backend/migrations/env.py`
-import asyncio
+2. backend/migrations/env.py
+    import asyncio
 from logging.config import fileConfig
 
 from alembic import context
@@ -213,7 +216,7 @@ if context.is_offline_mode():
 else:
     run_migrations_online()
 
-3. `frontend/src/app/routes.tsx`
+3. frontend/src/app/routes.tsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import {
@@ -244,6 +247,9 @@ import PairListPage from '@/modules/pairs/pages/PairListPage';
 import PairDetailPage from '@/modules/pairs/pages/PairDetailPage';
 import MapViewPage from '@/modules/map/pages/MapViewPage';
 import TroubleshootingPage from '@/modules/troubleshooting/pages/TroubleshootingPage';
+import SearchPage from '@/modules/search/pages/SearchPage';
+import AuditTrailPage from '@/modules/audit_trail/pages/AuditTrailPage';
+import ComparisonPage from '@/modules/comparison/pages/ComparisonPage';
 
 export function AppRoutes() {
   return (
@@ -258,13 +264,13 @@ export function AppRoutes() {
         <Route path="pairs/:id" element={<PairDetailPage />} />
         <Route path="map" element={<MapViewPage />} />
         <Route path="troubleshooting" element={<TroubleshootingPage />} />
+        <Route path="search" element={<SearchPage />} />
+        <Route path="audit" element={<AuditTrailPage />} />
+        <Route path="comparison" element={<ComparisonPage />} />
         <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
         <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
         <Route path="documents" element={<PlaceholderPage title="Documents" icon={<FileOutlined />} />} />
         <Route path="reports" element={<PlaceholderPage title="Reports" icon={<BarChartOutlined />} />} />
-        <Route path="audit" element={<PlaceholderPage title="Audit Trail" icon={<AuditOutlined />} />} />
-        <Route path="search" element={<PlaceholderPage title="Search" icon={<SearchOutlined />} />} />
-        <Route path="comparison" element={<PlaceholderPage title="Comparison" icon={<DiffOutlined />} />} />
         <Route path="backup" element={<PlaceholderPage title="Backup" icon={<CloudDownloadOutlined />} />} />
         <Route path="settings" element={<PlaceholderPage title="Settings" icon={<SettingOutlined />} />} />
       </Route>
@@ -274,113 +280,146 @@ export function AppRoutes() {
   );
 }
 
-4. `backend/shared/audit.py`
-from datetime import datetime
-from typing import Optional
-from uuid import UUID
+4. docker-compose.yml
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
+    networks:
+      - navdashboard
+    restart: unless-stopped
 
-from sqlalchemy import DateTime, String, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - navdashboard
+    restart: unless-stopped
 
-from core.database import Base
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=eyJhIjoiYWM1ZmMwM2E5ZWE2NmU3OGFiNTlkN2NjMzk0NTc4ZGEiLCJ0IjoiMzAzNTZlYjAtMDhlOS00YTQ3LWE3NWQtYTcyOTM3YTUzODUyIiwicyI6IllUaGlaV1k0TnpjdE9UTTVNeTAwWmpZMkxUazBZakF0TXpaak9ESXhOelkwWVRFeSJ9
+    networks:
+      - navdashboard
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - navdashboard
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  db:
+    image: imresamu/postgis:16-3.5
+    environment:
+      POSTGRES_DB: navdashboard
+      POSTGRES_USER: navdashboard
+      POSTGRES_PASSWORD: navdashboard
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - navdashboard
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U navdashboard -d navdashboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - navdashboard
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+
+networks:
+  navdashboard:
+    driver: bridge
+
+5. backend/requirements.txt
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+sqlalchemy[asyncio]>=2.0.36
+asyncpg>=0.30.0
+alembic>=1.14.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+python-dotenv>=1.0.0
+geoalchemy2>=0.17.0
+shapely>=2.0.0
+python-jose[cryptography]>=3.3
+passlib[bcrypt]>=1.7
+python-multipart>=0.0.18
+pydantic[email]>=2.10
+bcrypt==4.0.1
 
 
-class AuditLog(Base):
-    __tablename__ = "audit_logs"
+6. backend/Dockerfile
+FROM python:3.12-slim
 
-    action: Mapped[str] = mapped_column(String, nullable=False)
-    entity_type: Mapped[str] = mapped_column(String, nullable=False)
-    entity_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
-    changed_by: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
-    old_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    new_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-    )
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    gdal-bin \
+    libgdal-dev \
+    && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
 
-async def record_audit(
-    db: AsyncSession,
-    action: str,
-    entity_type: str,
-    entity_id: UUID,
-    user_id: UUID,
-    old_values: dict | None = None,
-    new_values: dict | None = None,
-) -> None:
-    entry = AuditLog(
-        action=action,
-        entity_type=entity_type,
-        entity_id=entity_id,
-        changed_by=user_id,
-        old_values=old_values,
-        new_values=new_values,
-    )
-    db.add(entry)
-    await db.flush()
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-5. `backend/shared/pagination.py`
-from math import ceil
-from typing import Generic, Type, TypeVar
+COPY . .
 
-from pydantic import BaseModel, Field
-from sqlalchemy import Select, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+EXPOSE 8000
 
-T = TypeVar("T", bound=BaseModel)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 
-class PaginationParams(BaseModel):
-    page: int = Field(default=1, ge=1)
-    size: int = Field(default=20, ge=1, le=100)
+Critical — need to match patterns exactly:
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
-    items: list[T]
-    total: int
-    page: int
-    size: int
-    pages: int
 
-
-async def paginate(
-    db: AsyncSession,
-    query: Select,
-    params: PaginationParams,
-    response_schema: Type[T],
-) -> PaginatedResponse[T]:
-    count_query = select(func.count()).select_from(query.subquery())
-    total_result = await db.execute(count_query)
-    total = total_result.scalar_one()
-
-    offset = (params.page - 1) * params.size
-    paginated_query = query.offset(offset).limit(params.size)
-    result = await db.execute(paginated_query)
-    rows = result.all()
-
-    items = []
-    for row in rows:
-        obj = row[0] if len(row) == 1 else row
-        if hasattr(obj, "__dict__") and hasattr(obj, "__table__"):
-            items.append(response_schema.model_validate(obj, from_attributes=True))
-        else:
-            items.append(response_schema.model_validate(obj._mapping))
-
-    pages = ceil(total / params.size) if params.size > 0 else 0
-
-    return PaginatedResponse(
-        items=items,
-        total=total,
-        page=params.page,
-        size=params.size,
-        pages=pages,
-    )
-
-6. `backend/core/database.py`
+7. backend/core/database.py (need to see Base, SoftDeleteMixin, get_db)
 import logging
 from datetime import datetime
 from typing import AsyncGenerator, Optional
@@ -464,28 +503,160 @@ async def check_db_connection() -> bool:
         logger.error("Database connection check failed: %s", e)
         return False
 
-7. `backend/modules/auth/models.py`
+
+8. backend/core/config.py (need to see Settings class for MinIO config)
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
+    # Database
+    POSTGRES_USER: str = "navdashboard"
+    POSTGRES_PASSWORD: str = "navdashboard_secret"
+    POSTGRES_DB: str = "navdashboard_db"
+    POSTGRES_HOST: str = "db"
+    POSTGRES_PORT: int = 5432
+
+    # Redis
+    REDIS_URL: str = "redis://redis:6379/0"
+
+    # JWT (defined now, used in Phase 2)
+    SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRY_MINUTES: int = 1440
+
+    # App
+    ENVIRONMENT: str = "development"
+    APP_NAME: str = "NavDashboard"
+    API_V1_PREFIX: str = "/api/v1"
+
+    @property
+    def async_database_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
+            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    @property
+    def sync_database_url(self) -> str:
+        return (
+            f"postgresql+psycopg2://{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
+            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+
+settings = Settings()
+
+
+
+9. backend/core/dependencies.py (need get_current_user, require_role signatures)
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import get_db
+from core.security import decode_access_token
+from core.exceptions import UnauthorizedException, ForbiddenException
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    from modules.auth.models import User
+
+    try:
+        payload = decode_access_token(token)
+    except JWTError:
+        raise UnauthorizedException("Invalid or expired token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise UnauthorizedException("Invalid token payload")
+
+    from sqlalchemy import select
+
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user or user.deleted_at is not None:
+        raise UnauthorizedException("User not found")
+
+    if not user.is_active:
+        raise UnauthorizedException("Account disabled")
+
+    return user
+
+
+def require_role(*roles: str):
+    async def role_checker(current_user=Depends(get_current_user)):
+        if current_user.role not in roles:
+            raise ForbiddenException("Insufficient permissions")
+        return current_user
+
+    return role_checker
+
+10. backend/shared/audit.py (need record_audit signature)
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
-from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy import DateTime, String, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
+from core.database import Base
 
 
-class User(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "users"
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
 
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    role: Mapped[str] = mapped_column(String(20), default="VIEWER", nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    entity_type: Mapped[str] = mapped_column(String, nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    changed_by: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    old_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    new_values: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
 
-8. `backend/modules/devices/models.py`
+
+async def record_audit(
+    db: AsyncSession,
+    action: str,
+    entity_type: str,
+    entity_id: UUID,
+    user_id: UUID,
+    old_values: dict | None = None,
+    new_values: dict | None = None,
+) -> None:
+    entry = AuditLog(
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changed_by=user_id,
+        old_values=old_values,
+        new_values=new_values,
+    )
+    db.add(entry)
+    await db.flush()
+
+11. backend/modules/devices/models.py (model pattern — does Base provide id?)
 from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
@@ -533,74 +704,83 @@ class DeviceStatusHistory(Base):
     )
     reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-9. `backend/modules/couples/models.py`
-from __future__ import annotations
 
-from typing import Optional
-from uuid import UUID
+Important — frontend patterns:
 
-from sqlalchemy import Boolean, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+12. frontend/src/shared/api/client.ts
+import axios from 'axios'
 
-from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
+const axiosInstance = axios.create({
+  baseURL: '/api/v1',
+  headers: { 'Content-Type': 'application/json' },
+})
+
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('access_token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  },
+)
+
+export const api = {
+  get: <T>(url: string, params?: object): Promise<T> =>
+    axiosInstance.get(url, { params }).then(res => res.data),
+  post: <T>(url: string, data?: object): Promise<T> =>
+    axiosInstance.post(url, data).then(res => res.data),
+  put: <T>(url: string, data?: object): Promise<T> =>
+    axiosInstance.put(url, data).then(res => res.data),
+  del: <T>(url: string): Promise<T> =>
+    axiosInstance.delete(url).then(res => res.data),
+}
+
+13. frontend/src/shared/types/common.ts
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface ApiError {
+  detail: string;
+  status_code?: number;
+}
+
+export type DeviceType = 'IU' | 'OU' | 'HC' | 'RF';
+export type DeviceStatus = 'WORKING' | 'NOT_WORKING' | 'FAULTY';
+export type Severity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type UserRole = 'ADMIN' | 'TECHNICIAN' | 'VIEWER';
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
+  updated_at: string | null;
+  custom_fields: Record<string, unknown> | null;
+}
 
 
-class Couple(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "couples"
-
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    pair_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    has_rf: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
-    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("personnel.id"),
-        nullable=True,
-    )
-    location_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("locations.id"),
-        nullable=True,
-    )
-    configuration: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    handling_person = relationship(
-        "Person", foreign_keys=[handling_person_id], lazy="selectin"
-    )
-    location = relationship(
-        "Location", foreign_keys=[location_id], lazy="selectin"
-    )
-    
-
-10. `backend/modules/pairs/models.py`
-from __future__ import annotations
-
-from typing import Optional
-from uuid import UUID
-
-from sqlalchemy import Boolean, String, Text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
 
 
-class Pair(Base, SoftDeleteMixin, CustomFieldsMixin):
-    __tablename__ = "pairs"
-
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="WORKING")
-    status_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    handling_person_id: Mapped[Optional[UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=True
-    )
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-
+here are some extra things for you which were already ready 
 ## Option 2 (Prompt to extract) — 6 files
 
 Use this prompt for each:

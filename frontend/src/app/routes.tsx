@@ -31,6 +31,9 @@ import TroubleshootingPage from '@/modules/troubleshooting/pages/Troubleshooting
 import SearchPage from '@/modules/search/pages/SearchPage';
 import AuditTrailPage from '@/modules/audit_trail/pages/AuditTrailPage';
 import ComparisonPage from '@/modules/comparison/pages/ComparisonPage';
+import DocumentsPage from '@/modules/documents/pages/DocumentsPage';
+import BackupPage from '@/modules/backup/pages/BackupPage';
+import ReportsPage from '@/modules/reports/pages/ReportsPage';
 
 export function AppRoutes() {
   return (
@@ -48,11 +51,11 @@ export function AppRoutes() {
         <Route path="search" element={<SearchPage />} />
         <Route path="audit" element={<AuditTrailPage />} />
         <Route path="comparison" element={<ComparisonPage />} />
+        <Route path="documents" element={<DocumentsPage />} />
+        <Route path="backup" element={<BackupPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
         <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
-        <Route path="documents" element={<PlaceholderPage title="Documents" icon={<FileOutlined />} />} />
-        <Route path="reports" element={<PlaceholderPage title="Reports" icon={<BarChartOutlined />} />} />
-        <Route path="backup" element={<PlaceholderPage title="Backup" icon={<CloudDownloadOutlined />} />} />
         <Route path="settings" element={<PlaceholderPage title="Settings" icon={<SettingOutlined />} />} />
       </Route>
       <Route path="login" element={<LoginPage />} />

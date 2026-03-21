@@ -28,6 +28,9 @@ from modules.dashboard.router import router as dashboard_router
 from modules.search.router import router as search_router
 from modules.audit_trail.router import router as audit_router
 from modules.comparison.router import router as comparison_router
+from modules.documents.router import router as documents_router
+from modules.backup.router import router as backup_router
+from modules.reports.router import router as reports_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,7 +62,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="NavDashboard API",
-    version="0.1.0",
+    version="0.11.2",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -112,6 +115,9 @@ app.include_router(dashboard_router, prefix=settings.API_V1_PREFIX + "/dashboard
 app.include_router(search_router, prefix=settings.API_V1_PREFIX + "/search", tags=["search"])
 app.include_router(audit_router, prefix=settings.API_V1_PREFIX + "/audit", tags=["audit"])
 app.include_router(comparison_router, prefix=settings.API_V1_PREFIX + "/comparison", tags=["comparison"])
+app.include_router(documents_router, prefix=settings.API_V1_PREFIX + "/documents", tags=["documents"])
+app.include_router(backup_router, prefix=settings.API_V1_PREFIX + "/backup", tags=["backup"])
+app.include_router(reports_router, prefix=settings.API_V1_PREFIX + "/reports", tags=["reports"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
@@ -128,5 +134,5 @@ async def health_check():
         "status": "ok",
         "environment": settings.ENVIRONMENT,
         "database": db_status,
-        "version": "0.11.1",
+        "version": "0.11.2",
     }
