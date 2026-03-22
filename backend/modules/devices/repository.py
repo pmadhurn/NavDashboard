@@ -75,10 +75,12 @@ async def soft_delete(db: AsyncSession, id: UUID) -> Optional[Device]:
     return device
 
 
-async def find_by_serial(db: AsyncSession, serial_number: str) -> Optional[Device]:
-    stmt = select(Device).where(
-        Device.serial_number == serial_number, Device.deleted_at.is_(None)
-    )
+async def find_by_serial(
+    db: AsyncSession, serial_number: str, include_deleted: bool = False
+) -> Optional[Device]:
+    stmt = select(Device).where(Device.serial_number == serial_number)
+    if not include_deleted:
+        stmt = stmt.where(Device.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 

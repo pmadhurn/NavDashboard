@@ -45,11 +45,12 @@ async def get_device(db: AsyncSession, device_id: UUID) -> DeviceResponse:
 async def create_device(
     db: AsyncSession, device_in: DeviceCreate, user_id: UUID
 ) -> DeviceResponse:
-    existing = await repository.find_by_serial(db, device_in.serial_number)
+    existing = await repository.find_by_serial(db, device_in.serial_number, include_deleted=True)
     if existing:
-        raise ConflictException(
-            f"Device with serial number '{device_in.serial_number}' already exists"
-        )
+        msg = f"Device with serial number '{device_in.serial_number}' already exists"
+        if getattr(existing, "deleted_at", None):
+            msg += " but was deleted. Please restore it or use a different serial number."
+        raise ConflictException(msg)
     device = await repository.create(db, device_in)
     await record_audit(
         db,
@@ -70,11 +71,12 @@ async def update_device(
         raise NotFoundException("Device not found")
 
     if device_in.serial_number and device_in.serial_number != device.serial_number:
-        existing = await repository.find_by_serial(db, device_in.serial_number)
+        existing = await repository.find_by_serial(db, device_in.serial_number, include_deleted=True)
         if existing:
-            raise ConflictException(
-                f"Device with serial number '{device_in.serial_number}' already exists"
-            )
+            msg = f"Device with serial number '{device_in.serial_number}' already exists"
+            if getattr(existing, "deleted_at", None):
+                msg += " but was deleted. Please restore it or use a different serial number."
+            raise ConflictException(msg)
 
     old_values = {"serial_number": device.serial_number, "status": device.status}
 
