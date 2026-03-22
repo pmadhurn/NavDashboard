@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from
 import 'leaflet/dist/leaflet.css';
 import { formatDateTime, formatCoordinates } from '@/shared/utils/formatters';
 import type { LocationHistoryEntry } from '../hooks/useLocationHistory';
+import { useSettings } from '../../settings/hooks/useSettings';
 
 interface HistoryMapProps {
   entries: LocationHistoryEntry[];
@@ -72,6 +73,8 @@ export default function HistoryMap({
   selectedEntryId,
   coupleId,
 }: HistoryMapProps) {
+  const { data: settings } = useSettings();
+
   // Build trail points from entries (sorted chronologically)
   const sortedEntries = useMemo(() => {
     return [...entries].sort(
@@ -118,6 +121,12 @@ export default function HistoryMap({
     [trailPoints]
   );
 
+  const mapLat = parseFloat(settings?.find(s => s.key === 'default_map_lat')?.value || '48.8566');
+  const mapLng = parseFloat(settings?.find(s => s.key === 'default_map_lng')?.value || '2.3522');
+  const mapZoom = parseInt(settings?.find(s => s.key === 'default_map_zoom')?.value || '13', 10);
+
+  if (!settings) return null;
+
   return (
     <div
       style={{
@@ -129,8 +138,9 @@ export default function HistoryMap({
       }}
     >
       <MapContainer
-        center={[48.8566, 2.3522]}
-        zoom={13}
+        key={`${mapLat}-${mapLng}-${mapZoom}`}
+        center={[mapLat, mapLng]}
+        zoom={mapZoom}
         style={{ width: '100%', height: '100%' }}
         zoomControl={true}
       >

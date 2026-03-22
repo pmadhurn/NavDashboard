@@ -8,19 +8,19 @@ from sqlalchemy import select, text, delete, func
 
 from core.config import settings
 from modules.ai_assistant.models import EmbeddingDocument
+from modules.ai_assistant.config import get_ai_config
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_BASE_URL = settings.OLLAMA_BASE_URL
-EMBED_MODEL = settings.OLLAMA_EMBED_MODEL
 EMBED_DIM = settings.OLLAMA_EMBED_DIMENSION
 
 
-async def check_ollama_available() -> tuple[bool, list[str]]:
+async def check_ollama_available(db: AsyncSession) -> tuple[bool, list[str]]:
     """Check if Ollama is reachable and list available models."""
+    url, _, _ = await get_ai_config(db)
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+            resp = await client.get(f"{url}/api/tags")
             if resp.status_code == 200:
                 data = resp.json()
                 model_names = [m.get("name", "") for m in data.get("models", [])]
@@ -31,13 +31,14 @@ async def check_ollama_available() -> tuple[bool, list[str]]:
         return (False, [])
 
 
-async def embed_text(content: str) -> Optional[list[float]]:
+async def embed_text(db: AsyncSession, content: str) -> Optional[list[float]]:
     """Generate embedding vector for a text string using Ollama."""
+    url, _, embed_model = await get_ai_config(db)
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/embeddings",
-                json={"model": EMBED_MODEL, "prompt": content},
+                f"{url}/api/embeddings",
+                json={"model": embed_model, "prompt": content},
             )
             if resp.status_code == 200:
                 data = resp.json()
@@ -57,7 +58,7 @@ async def embed_and_store(
     metadata: Optional[dict] = None,
 ) -> Optional[EmbeddingDocument]:
     """Embed text and store as an EmbeddingDocument row."""
-    embedding = await embed_text(content)
+    embedding = await embed_text(db, content)
     if embedding is None:
         return None
 
@@ -95,7 +96,7 @@ async def batch_embed_and_store(db: AsyncSession, items: list[dict]) -> int:
 
 async def sync_all_embeddings(db: AsyncSession) -> dict:
     """Main ingestion function: query all entities and create/update embeddings."""
-    available, _ = await check_ollama_available()
+    available, _ = await check_ollama_available(db)
     if not available:
         return {"total_synced": 0, "error": "Ollama not available"}
 

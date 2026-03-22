@@ -10,11 +10,9 @@ from core.config import settings
 from modules.ai_assistant.retriever import hybrid_retrieve, build_context, extract_source_references
 from modules.ai_assistant.prompts import SYSTEM_PROMPT, NO_OLLAMA_MESSAGE, NO_CONTEXT_MESSAGE
 from modules.ai_assistant.embeddings import check_ollama_available
+from modules.ai_assistant.config import get_ai_config
 
 logger = logging.getLogger(__name__)
-
-OLLAMA_BASE_URL = settings.OLLAMA_BASE_URL
-CHAT_MODEL = settings.OLLAMA_MODEL
 
 
 async def generate_response(
@@ -23,7 +21,8 @@ async def generate_response(
     chat_history: Optional[list[dict]] = None,
 ) -> dict:
     """Non-streaming RAG response."""
-    available, _ = await check_ollama_available()
+    url, chat_model, _ = await get_ai_config(db)
+    available, _ = await check_ollama_available(db)
     if not available:
         return {"content": NO_OLLAMA_MESSAGE, "sources": []}
 
@@ -48,9 +47,9 @@ async def generate_response(
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/chat",
+                f"{url}/api/chat",
                 json={
-                    "model": CHAT_MODEL,
+                    "model": chat_model,
                     "messages": messages,
                     "stream": False,
                 },
@@ -79,7 +78,8 @@ async def generate_response_stream(
     chat_history: Optional[list[dict]] = None,
 ) -> AsyncGenerator[str, None]:
     """Streaming RAG response via SSE."""
-    available, _ = await check_ollama_available()
+    url, chat_model, _ = await get_ai_config(db)
+    available, _ = await check_ollama_available(db)
     if not available:
         yield f"data: {json.dumps({'token': NO_OLLAMA_MESSAGE, 'done': True, 'sources': []})}\n\n"
         return
@@ -106,9 +106,9 @@ async def generate_response_stream(
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream(
                 "POST",
-                f"{OLLAMA_BASE_URL}/api/chat",
+                f"{url}/api/chat",
                 json={
-                    "model": CHAT_MODEL,
+                    "model": chat_model,
                     "messages": messages,
                     "stream": True,
                 },
@@ -142,18 +142,19 @@ async def generate_response_stream(
         yield f"data: {json.dumps({'token': 'I encountered an error generating a response. Please try again.', 'done': True, 'sources': []})}\n\n"
 
 
-async def generate_session_title(user_message: str) -> str:
+async def generate_session_title(db: AsyncSession, user_message: str) -> str:
     """Generate a short title for a chat session."""
-    available, _ = await check_ollama_available()
+    url, chat_model, _ = await get_ai_config(db)
+    available, _ = await check_ollama_available(db)
     if not available:
         return user_message[:50].strip() or "New Chat"
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/chat",
+                f"{url}/api/chat",
                 json={
-                    "model": CHAT_MODEL,
+                    "model": chat_model,
                     "messages": [
                         {
                             "role": "user",

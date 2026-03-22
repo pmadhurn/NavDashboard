@@ -113,7 +113,8 @@ async def ingest_status(
 
 @router.get("/health", response_model=OllamaHealthResponse)
 async def health(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.get_health()
+    return await service.get_health(db)
     

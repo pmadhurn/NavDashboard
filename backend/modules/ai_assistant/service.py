@@ -228,12 +228,13 @@ async def get_ingest_status(db: AsyncSession) -> IngestStatusResponse:
     )
 
 
-async def get_health() -> OllamaHealthResponse:
-    available, models = await embeddings.check_ollama_available()
-    from core.config import settings as cfg
+async def get_health(db: AsyncSession) -> OllamaHealthResponse:
+    available, models = await embeddings.check_ollama_available(db)
+    from modules.ai_assistant.config import get_ai_config
+    url, _, _ = await get_ai_config(db)
     return OllamaHealthResponse(
         available=available,
-        url=cfg.OLLAMA_BASE_URL,
+        url=url,
         models=models,
         error=None if available else "Ollama is not running or not reachable",
     )

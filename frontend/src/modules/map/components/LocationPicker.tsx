@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { useSettings } from '../../settings/hooks/useSettings'
 
 interface LocationPickerProps {
   value: { latitude: number; longitude: number } | null
@@ -57,10 +58,18 @@ export default function LocationPicker({
   onChange,
   height = '300px',
 }: LocationPickerProps) {
+  const { data: settings } = useSettings()
+
+  const mapLat = parseFloat(settings?.find(s => s.key === 'default_map_lat')?.value || '48.856')
+  const mapLng = parseFloat(settings?.find(s => s.key === 'default_map_lng')?.value || '2.352')
+  const mapZoom = parseInt(settings?.find(s => s.key === 'default_map_zoom')?.value || '13', 10)
+
   const center: [number, number] = useMemo(() => {
     if (value) return [value.latitude, value.longitude]
-    return [48.856, 2.352]
-  }, [value])
+    return [mapLat, mapLng]
+  }, [value, mapLat, mapLng])
+
+  if (!settings) return null;
 
   const handleDragEnd = useCallback(
     (e: L.DragEndEvent) => {
@@ -119,8 +128,9 @@ export default function LocationPicker({
         }}
       >
         <MapContainer
+          key={`${mapLat}-${mapLng}-${mapZoom}`}
           center={center}
-          zoom={value ? 15 : 13}
+          zoom={value ? 15 : mapZoom}
           style={{ width: '100%', height: '100%' }}
           zoomControl={true}
         >

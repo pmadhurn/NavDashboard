@@ -7,6 +7,7 @@ import DevicePopup from './DevicePopup'
 import LocationTrail from './LocationTrail'
 import type { MapDataPoint, LocationHistory } from '@/shared/types/locations'
 import type { Couple } from '@/shared/types/couples'
+import { useSettings } from '../../settings/hooks/useSettings'
 
 interface MainMapProps {
   markers: MapDataPoint[]
@@ -109,6 +110,8 @@ export default function MainMap({
   pickerMode,
   pickerPosition,
 }: MainMapProps) {
+  const { data: settings } = useSettings()
+
   const selectedPoint = selectedCoupleId
     ? markers.find((m) => m.couple_id === selectedCoupleId) ?? null
     : null
@@ -117,10 +120,17 @@ export default function MainMap({
     ? { latitude: selectedPoint.latitude, longitude: selectedPoint.longitude }
     : null
 
+  const mapLat = parseFloat(settings?.find(s => s.key === 'default_map_lat')?.value || '48.856')
+  const mapLng = parseFloat(settings?.find(s => s.key === 'default_map_lng')?.value || '2.352')
+  const mapZoom = parseInt(settings?.find(s => s.key === 'default_map_zoom')?.value || '13', 10)
+
+  if (!settings) return null;
+
   return (
     <MapContainer
-      center={[48.856, 2.352]}
-      zoom={13}
+      key={`${mapLat}-${mapLng}-${mapZoom}`}
+      center={[mapLat, mapLng]}
+      zoom={mapZoom}
       style={{
         width: '100%',
         height: '100%',

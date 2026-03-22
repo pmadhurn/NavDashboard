@@ -117,22 +117,33 @@ async def seed_devices(db: AsyncSession) -> dict:
         return {}
 
     devices_data = [
-        # Indoor Units
-        {"serial_number": "IU-001", "device_type": "IU", "status": "WORKING", "notes": "Indoor unit - Office Block A"},
-        {"serial_number": "IU-002", "device_type": "IU", "status": "WORKING", "notes": "Indoor unit - Office Block B"},
-        {"serial_number": "IU-003", "device_type": "IU", "status": "WORKING", "notes": "Indoor unit - Office Block C"},
-        # Outdoor Units
-        {"serial_number": "OU-001", "device_type": "OU", "status": "WORKING", "notes": "Outdoor unit - Rooftop A"},
-        {"serial_number": "OU-002", "device_type": "OU", "status": "NOT_WORKING", "notes": "Outdoor unit - Rooftop B"},
-        {"serial_number": "OU-003", "device_type": "OU", "status": "FAULTY", "notes": "Outdoor unit - Rooftop C, hardware fault"},
-        # Hybrid Cables
-        {"serial_number": "HC-001", "device_type": "HC", "status": "WORKING", "notes": "Hybrid cable - Link A"},
-        {"serial_number": "HC-002", "device_type": "HC", "status": "WORKING", "notes": "Hybrid cable - Link B"},
-        {"serial_number": "HC-003", "device_type": "HC", "status": "WORKING", "notes": "Hybrid cable - Link C"},
-        # RF Listeners
-        {"serial_number": "RF-001", "device_type": "RF", "status": "WORKING", "notes": "RF listener - Site A"},
-        {"serial_number": "RF-002", "device_type": "RF", "status": "NOT_WORKING", "notes": "RF listener - Site B"},
-        {"serial_number": "RF-003", "device_type": "RF", "status": "WORKING", "notes": "RF listener - Site C"},
+        # Mumbai Navy (Jan 1)
+        {"serial_number": "10525", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/121OU"},
+        {"serial_number": "30525", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/121OU"},
+        {"serial_number": "20525", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/122OU"},
+        {"serial_number": "40525", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/122OU"},
+        
+        {"serial_number": "10625", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/123OU"},
+        {"serial_number": "30625", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/123OU"},
+        {"serial_number": "20625", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/124OU"},
+        {"serial_number": "40625", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/124OU"},
+
+        # Mumbai Navy (Jan 23)
+        {"serial_number": "10725", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/131OU"},
+        {"serial_number": "30725", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/131OU"},
+        {"serial_number": "20725", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/132OU"},
+        {"serial_number": "40725", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/132OU"},
+
+        {"serial_number": "10825", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/133OU"},
+        {"serial_number": "30825", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/133OU"},
+        {"serial_number": "20825", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/134OU"},
+        {"serial_number": "40825", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/134OU"},
+        
+        # NZ
+        {"serial_number": "10925", "device_type": "OU", "status": "WORKING", "notes": "NAV202122/141OU - IU sent to NZ on 19-02-2026"},
+        {"serial_number": "30925", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/141OU - NZ"},
+        {"serial_number": "20925", "device_type": "OU", "status": "NOT_WORKING", "notes": "NAV202122/142OU - Not switching to Backup"},
+        {"serial_number": "40925", "device_type": "IU", "status": "WORKING", "notes": "NAV202122/142OU - After replacing with 41025 it worked"},
     ]
 
     ids = {}
@@ -222,38 +233,23 @@ async def seed_couples(db: AsyncSession, device_ids: dict) -> dict:
         location_ids.append(loc.id)
 
     couples_data = [
-        {
-            "name": "Couple A1",
-            "has_rf": False,
-            "status": "WORKING",
-            "location_id": location_ids[0],
-            "configuration": {"mode": "standard", "power": "auto", "channel": 1},
-            "notes": "Primary installation - Block A",
-        },
-        {
-            "name": "Couple A2",
-            "has_rf": True,
-            "status": "WORKING",
-            "location_id": location_ids[1],
-            "configuration": {"mode": "high_performance", "power": "max", "channel": 3},
-            "notes": "Secondary installation - Block A",
-        },
-        {
-            "name": "Couple B1",
-            "has_rf": False,
-            "status": "NOT_WORKING",
-            "location_id": location_ids[2],
-            "configuration": {"mode": "standard", "power": "auto", "channel": 2},
-            "notes": "Primary installation - Block B",
-        },
-        {
-            "name": "Couple B2",
-            "has_rf": True,
-            "status": "FAULTY",
-            "location_id": location_ids[3],
-            "configuration": {"mode": "standard", "power": "low", "channel": 4},
-            "notes": "Secondary installation - Block B, fault detected",
-        },
+        # Pair 1 (Mumbai)
+        {"name": "NAV202122/121OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 1"},
+        {"name": "NAV202122/122OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 2"},
+        # Pair 2 (Mumbai)
+        {"name": "NAV202122/123OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 1"},
+        {"name": "NAV202122/124OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 2"},
+        
+        # Pair 1 (Jan 23)
+        {"name": "NAV202122/131OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 1"},
+        {"name": "NAV202122/132OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 2"},
+        # Pair 2 (Jan 23)
+        {"name": "NAV202122/133OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 1"},
+        {"name": "NAV202122/134OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard", "power": "auto"}, "notes": "Box 2"},
+        
+        # NZ
+        {"name": "NAV202122/141OU", "has_rf": False, "status": "WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard"}, "notes": "NZ"},
+        {"name": "NAV202122/142OU", "has_rf": False, "status": "NOT_WORKING", "location_id": location_ids[0], "configuration": {"mode": "standard"}, "notes": "Box 2"},
     ]
 
     couple_ids = {}
@@ -265,10 +261,16 @@ async def seed_couples(db: AsyncSession, device_ids: dict) -> dict:
 
     # Assign devices to couples
     device_assignments = {
-        "IU-001": "Couple A1", "OU-001": "Couple A1", "HC-001": "Couple A1",
-        "IU-002": "Couple A2", "OU-002": "Couple A2", "HC-002": "Couple A2", "RF-001": "Couple A2",
-        "IU-003": "Couple B1", "OU-003": "Couple B1", "HC-003": "Couple B1",
-        "RF-002": "Couple B2",
+        "10525": "NAV202122/121OU", "30525": "NAV202122/121OU",
+        "20525": "NAV202122/122OU", "40525": "NAV202122/122OU",
+        "10625": "NAV202122/123OU", "30625": "NAV202122/123OU",
+        "20625": "NAV202122/124OU", "40625": "NAV202122/124OU",
+        "10725": "NAV202122/131OU", "30725": "NAV202122/131OU",
+        "20725": "NAV202122/132OU", "40725": "NAV202122/132OU",
+        "10825": "NAV202122/133OU", "30825": "NAV202122/133OU",
+        "20825": "NAV202122/134OU", "40825": "NAV202122/134OU",
+        "10925": "NAV202122/141OU", "30925": "NAV202122/141OU",
+        "20925": "NAV202122/142OU", "40925": "NAV202122/142OU",
     }
 
     from modules.devices.models import Device
@@ -284,24 +286,13 @@ async def seed_couples(db: AsyncSession, device_ids: dict) -> dict:
 
     # Create fitting materials for couples
     materials_for_couples = {
-        "Couple A1": [
+        "NAV202122/121OU": [
             {"name": "Mounting Bracket", "quantity": 2, "unit": "pcs"},
             {"name": "Ethernet Cable Cat6 10m", "quantity": 1, "unit": "pcs"},
             {"name": "Weatherproof Sealant", "quantity": 1, "unit": "tube"},
             {"name": "Cable Ties", "quantity": 20, "unit": "pcs"},
         ],
-        "Couple A2": [
-            {"name": "Mounting Bracket", "quantity": 2, "unit": "pcs"},
-            {"name": "Ethernet Cable Cat6 10m", "quantity": 1, "unit": "pcs"},
-            {"name": "Weatherproof Sealant", "quantity": 1, "unit": "tube"},
-            {"name": "Cable Ties", "quantity": 20, "unit": "pcs"},
-        ],
-        "Couple B1": [
-            {"name": "Wall Mount Plate", "quantity": 1, "unit": "pcs"},
-            {"name": "Power Adapter", "quantity": 1, "unit": "pcs"},
-            {"name": "Short Patch Cable", "quantity": 1, "unit": "pcs"},
-        ],
-        "Couple B2": [
+        "NAV202122/122OU": [
             {"name": "Mounting Bracket", "quantity": 2, "unit": "pcs"},
             {"name": "Ethernet Cable Cat6 10m", "quantity": 1, "unit": "pcs"},
             {"name": "Weatherproof Sealant", "quantity": 1, "unit": "tube"},
@@ -342,8 +333,11 @@ async def seed_pairs(db: AsyncSession, couple_ids: dict) -> dict:
         couple_ids = {c.name: c.id for c in couples}
 
     pairs_data = [
-        {"name": "Pair 01", "status": "WORKING", "notes": "Block A pair - both couples working"},
-        {"name": "Pair 02", "status": "FAULTY", "notes": "Block B pair - B2 has fault"},
+        {"name": "Pair Mumbai - 01", "status": "WORKING", "notes": "Nav Pair 1"},
+        {"name": "Pair Mumbai - 02", "status": "WORKING", "notes": "Nav Pair 2"},
+        {"name": "Pair Mumbai - 03", "status": "WORKING", "notes": "Nav Pair Jan 23 - #1"},
+        {"name": "Pair Mumbai - 04", "status": "WORKING", "notes": "Nav Pair Jan 23 - #2"},
+        {"name": "Pair NZ/Nav - 05", "status": "FAULTY", "notes": "NZ Pair"},
     ]
 
     pair_ids = {}
@@ -355,8 +349,11 @@ async def seed_pairs(db: AsyncSession, couple_ids: dict) -> dict:
 
     # Assign couples to pairs
     pair_couple_map = {
-        "Pair 01": ["Couple A1", "Couple A2"],
-        "Pair 02": ["Couple B1", "Couple B2"],
+        "Pair Mumbai - 01": ["NAV202122/121OU", "NAV202122/122OU"],
+        "Pair Mumbai - 02": ["NAV202122/123OU", "NAV202122/124OU"],
+        "Pair Mumbai - 03": ["NAV202122/131OU", "NAV202122/132OU"],
+        "Pair Mumbai - 04": ["NAV202122/133OU", "NAV202122/134OU"],
+        "Pair NZ/Nav - 05": ["NAV202122/141OU", "NAV202122/142OU"],
     }
 
     from modules.couples.models import Couple
@@ -413,10 +410,10 @@ async def seed_error_logs(
 
     errors_data = [
         {
-            "device_id": device_ids.get("IU-001"),
+            "device_id": device_ids.get("10525"),
             "error_type": "Connection Loss",
             "severity": "HIGH",
-            "description": "Indoor unit IU-001 lost connection intermittently over 24h period",
+            "description": "Indoor unit lost connection intermittently over 24h period",
             "resolved": True,
             "resolved_at": now - timedelta(days=2),
             "reported_at": now - timedelta(days=5),
@@ -426,10 +423,10 @@ async def seed_error_logs(
             ],
         },
         {
-            "couple_id": couple_ids.get("Couple A2"),
+            "couple_id": couple_ids.get("NAV202122/124OU"),
             "error_type": "Signal Degradation",
             "severity": "MEDIUM",
-            "description": "Signal quality degraded on Couple A2, suspected interference",
+            "description": "Signal quality degraded, suspected interference",
             "resolved": True,
             "resolved_at": now - timedelta(days=1),
             "reported_at": now - timedelta(days=3),
@@ -438,19 +435,19 @@ async def seed_error_logs(
             ],
         },
         {
-            "device_id": device_ids.get("OU-003"),
+            "device_id": device_ids.get("20925"),
             "error_type": "Hardware Fault",
             "severity": "CRITICAL",
-            "description": "Outdoor unit OU-003 reporting hardware error codes, smoke detected",
+            "description": "Outdoor unit reporting hardware error codes, not switching to backup",
             "resolved": False,
             "reported_at": now - timedelta(hours=12),
             "steps": [],
         },
         {
-            "couple_id": couple_ids.get("Couple B1"),
+            "couple_id": couple_ids.get("NAV202122/131OU"),
             "error_type": "Configuration Mismatch",
             "severity": "LOW",
-            "description": "Configuration parameters on Couple B1 don't match expected template",
+            "description": "Configuration parameters don't match expected template",
             "resolved": True,
             "resolved_at": now - timedelta(days=1),
             "reported_at": now - timedelta(days=4),
@@ -461,10 +458,10 @@ async def seed_error_logs(
             ],
         },
         {
-            "pair_id": pair_ids.get("Pair 02"),
+            "pair_id": pair_ids.get("Pair Mumbai - 02"),
             "error_type": "RF Interference",
             "severity": "MEDIUM",
-            "description": "RF interference detected on Pair 02, affecting B2 couple's RF listener",
+            "description": "RF interference detected, affecting couple's RF listener",
             "resolved": False,
             "reported_at": now - timedelta(hours=6),
             "steps": [
@@ -508,7 +505,7 @@ async def seed_location_history(db: AsyncSession, couple_ids: dict) -> dict:
 
     history_data = [
         {
-            "couple_id": couple_ids.get("Couple A1"),
+            "couple_id": couple_ids.get("NAV202122/121OU"),
             "old_latitude": 48.8550,
             "old_longitude": 2.3500,
             "new_latitude": 48.8566,
@@ -524,7 +521,7 @@ async def seed_location_history(db: AsyncSession, couple_ids: dict) -> dict:
             "notes": "Relocated from initial position to permanent site",
         },
         {
-            "couple_id": couple_ids.get("Couple B1"),
+            "couple_id": couple_ids.get("NAV202122/131OU"),
             "old_latitude": 48.8510,
             "old_longitude": 2.3470,
             "new_latitude": 48.8530,
@@ -535,7 +532,7 @@ async def seed_location_history(db: AsyncSession, couple_ids: dict) -> dict:
             "notes": "Moved to better coverage area",
         },
         {
-            "couple_id": couple_ids.get("Couple A2"),
+            "couple_id": couple_ids.get("NAV202122/122OU"),
             "old_latitude": 48.8620,
             "old_longitude": 2.3400,
             "new_latitude": 48.8606,
