@@ -1,23 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import {
-  ApiOutlined,
-  LinkOutlined,
-  SwapOutlined,
-  EnvironmentOutlined,
-  ToolOutlined,
-  RobotOutlined,
-  HistoryOutlined,
-  FileOutlined,
-  BarChartOutlined,
-  AuditOutlined,
-  SearchOutlined,
-  DiffOutlined,
-  CloudDownloadOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
 import Layout from '@/shared/components/Layout';
-import PlaceholderPage from '@/shared/components/PlaceholderPage';
 import LoginPage from '@/modules/auth/pages/LoginPage';
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage';
 import DeviceListPage from '@/modules/devices/pages/DeviceListPage';
@@ -35,6 +18,8 @@ import DocumentsPage from '@/modules/documents/pages/DocumentsPage';
 import BackupPage from '@/modules/backup/pages/BackupPage';
 import ReportsPage from '@/modules/reports/pages/ReportsPage';
 import AIChatPage from '@/modules/ai_chat/pages/AIChatPage';
+import LocationHistoryPage from '@/modules/location_history/pages/LocationHistoryPage';
+import SettingsPage from '@/modules/settings/pages/SettingsPage';
 
 export function AppRoutes() {
   return (
@@ -56,8 +41,8 @@ export function AppRoutes() {
         <Route path="backup" element={<BackupPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="ai" element={<AIChatPage />} />
-        <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
-        <Route path="settings" element={<PlaceholderPage title="Settings" icon={<SettingOutlined />} />} />
+        <Route path="location-history" element={<LocationHistoryPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="login" element={<LoginPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
