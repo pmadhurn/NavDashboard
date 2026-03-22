@@ -1,35 +1,28 @@
-
-
-Now here's the **Phase 11b prompt**:
+** here the Phase 12 prompt** — AI Assistant module:
 
 ```markdown
 # ═══════════════════════════════════════════════════════════════
-# NAVDASHBOARD — PHASE 11b: DOCUMENTS + BACKUP + REPORTS
+# NAVDASHBOARD — PHASE 12: AI ASSISTANT
 # ═══════════════════════════════════════════════════════════════
 
 ## PROJECT STATE (DO NOT REGENERATE — ALREADY EXISTS)
 
-NavDashboard is a LiFi device management system. Phases 1–10 and
-Phase 11a are complete and working.
+NavDashboard is a LiFi device management system. Phases 1–11b are
+complete and working. 16 backend modules, 15 database tables,
+6 Docker services (nginx, frontend, backend, db, redis, minio).
 
-**Backend modules that exist and are working:**
-auth, devices, couples, pairs, locations, personnel, inventory,
-troubleshooting, status, dashboard, search, audit_trail, comparison
+**Backend modules (16):** auth, devices, couples, pairs, locations,
+personnel, inventory, troubleshooting, status, dashboard, search,
+audit_trail, comparison, documents, backup, reports
 
-**Database tables (15 — no new tables added in 11a):**
-users, audit_logs, devices, device_status_history, personnel,
-assignment_history, fitting_materials, material_templates, locations,
-location_history, couples, pairs, error_logs, troubleshoot_entries,
-status_change_logs
+**Database tables (16):** users, audit_logs, devices, device_status_history,
+personnel, assignment_history, fitting_materials, material_templates,
+locations, location_history, couples, pairs, error_logs,
+troubleshoot_entries, status_change_logs, documentsy7l. 
 
-**Docker services running:**
-nginx (:80 reverse proxy), frontend (:3000), backend (:8000),
-db (imresamu/postgis:16-3.5), redis (:6379)
+**PostgreSQL extensions active:** postgis, uuid-ossp, vector, pg_trgm, btree_gin
 
-**MinIO is defined in docker-compose.yml but NOT yet started.**
-Phase 11b will activate it.
-
-**Current main.py router includes (KEEP ALL):**
+**Current main.py router includes (KEEP ALL 16):**
 ```python
 from modules.auth.router import router as auth_router
 from modules.devices.router import router as devices_router
@@ -44,6 +37,9 @@ from modules.dashboard.router import router as dashboard_router
 from modules.search.router import router as search_router
 from modules.audit_trail.router import router as audit_router
 from modules.comparison.router import router as comparison_router
+from modules.documents.router import router as documents_router
+from modules.backup.router import router as backup_router
+from modules.reports.router import router as reports_router
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(devices_router, prefix="/api/v1/devices", tags=["Devices"])
@@ -58,6 +54,9 @@ app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["Dashboar
 app.include_router(search_router, prefix="/api/v1/search", tags=["Search"])
 app.include_router(audit_router, prefix="/api/v1/audit", tags=["Audit"])
 app.include_router(comparison_router, prefix="/api/v1/comparison", tags=["Comparison"])
+app.include_router(documents_router, prefix="/api/v1/documents", tags=["Documents"])
+app.include_router(backup_router, prefix="/api/v1/backup", tags=["Backup"])
+app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
 ```
 
 **Current migrations/env.py model imports (KEEP ALL):**
@@ -72,197 +71,122 @@ from modules.couples.models import Couple
 from modules.pairs.models import Pair
 from modules.troubleshooting.models import ErrorLog, TroubleshootEntry
 from modules.status.models import StatusChangeLog
+from modules.documents.models import Document
 ```
 
 **Current routes.tsx live routes (KEEP ALL):**
-- `/` → DashboardPage
-- `/login` → LoginPage
-- `/devices` → DeviceListPage
-- `/devices/:id` → DeviceDetailPage
-- `/couples` → CoupleListPage
-- `/couples/:id` → CoupleDetailPage
-- `/pairs` → PairListPage
-- `/pairs/:id` → PairDetailPage
-- `/map` → MapViewPage
-- `/troubleshooting` → TroubleshootingPage
-- `/search` → SearchPage
-- `/audit` → AuditTrailPage
-- `/comparison` → ComparisonPage
-- `/documents`, `/backup`, `/reports`, `/ai`, `/location-history`, `/settings` → PlaceholderPage
+```
+/ → DashboardPage
+/login → LoginPage
+/devices → DeviceListPage
+/devices/:id → DeviceDetailPage
+/couples → CoupleListPage
+/couples/:id → CoupleDetailPage
+/pairs → PairListPage
+/pairs/:id → PairDetailPage
+/map → MapViewPage
+/troubleshooting → TroubleshootingPage
+/search → SearchPage
+/audit → AuditTrailPage
+/comparison → ComparisonPage
+/documents → DocumentsPage
+/backup → BackupPage
+/reports → ReportsPage
+/ai → PlaceholderPage          ← REPLACE THIS
+/location-history → PlaceholderPage  (keep as placeholder for Phase 13)
+/settings → PlaceholderPage          (keep as placeholder for Phase 13)
+```
 
-**Existing shared component import style (IMPORTANT):**
-All shared components use `export default`. Import them as:
+**Shared component imports (use default imports):**
 ```typescript
 import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
+import GlassInput from '@/shared/components/GlassInput';
+import GlassModal from '@/shared/components/GlassModal';
 import PageHeader from '@/shared/components/PageHeader';
-import DataTable from '@/shared/components/DataTable';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import EmptyState from '@/shared/components/EmptyState';
-import GlassModal from '@/shared/components/GlassModal';
-import GlassInput from '@/shared/components/GlassInput';
 import ConfirmDialog from '@/shared/components/ConfirmDialog';
-import StatusBadge from '@/shared/components/StatusBadge';
 ```
-Do NOT use `{ GlassCard }` named imports — they will fail.
 
-**Existing frontend patterns:**
-```typescript
-// Hooks
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/shared/api/client';
-import { PaginatedResponse } from '@/shared/types/common';
-
-// Pages use Ant Design: Row, Col, Select, DatePicker, Tag, Space, Tabs, Upload, Button, Table, message, Progress, Checkbox, Radio, etc.
-import { Row, Col, Select, Tag, Space, message } from 'antd';
+**Environment variables available (in .env):**
 ```
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OLLAMA_MODEL=llama3
+OLLAMA_EMBED_MODEL=nomic-embed-text
+OLLAMA_EMBED_DIMENSION=768
+```
+
+**CRITICAL DEPLOYMENT CONSTRAINT:**
+- On developer Mac: Ollama runs locally, accessible at `http://host.docker.internal:11434`
+- On Oracle Cloud (1 core, 1GB RAM): Ollama is NOT available
+- The AI module MUST gracefully handle Ollama being unavailable
+- When Ollama is unavailable: chat endpoint should return a clear message like "AI assistant is not available. Ollama is not running or not reachable."
+- All other endpoints (sessions, ingest status) must still work without Ollama
 
 ---
 
-## EXISTING BACKEND PATTERNS (follow exactly)
+## ARCHITECTURE DECISION: DIRECT HTTP (NO LANGCHAIN)
 
-**Router:**
-```python
-from fastapi import APIRouter, Depends, Query, UploadFile, File
-from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from core.database import get_db
-from core.dependencies import get_current_user, require_role
-from modules.auth.models import User
+Do NOT use LangChain. Use `httpx` to call the Ollama HTTP API directly.
+This reduces dependencies, complexity, and failure points.
 
-router = APIRouter()
-```
+**Ollama API endpoints used:**
+- `POST /api/embeddings` — generate embeddings
+  ```json
+  {"model": "nomic-embed-text", "prompt": "text to embed"}
+  → {"embedding": [0.1, 0.2, ...]}  // 768-dim vector
+  ```
+- `POST /api/chat` — chat completion
+  ```json
+  {"model": "llama3", "messages": [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}], "stream": true}
+  → streamed NDJSON: {"message": {"role": "assistant", "content": "token"}, "done": false}
+  ```
+- `GET /api/tags` — list available models
+  ```json
+  → {"models": [{"name": "llama3", ...}, {"name": "nomic-embed-text", ...}]}
+  ```
 
-**Repository — standard CRUD:**
-```python
-async def get_by_id(db: AsyncSession, id: UUID) -> Optional[Model]:
-    result = await db.execute(select(Model).where(Model.id == id, Model.deleted_at.is_(None)))
-    return result.scalar_one_or_none()
-```
-
-**Service — calls repository, records audit:**
-```python
-from shared.audit import record_audit
-```
-
----
-
-## COLOR PALETTE (exact values)
-
-- Background: `#0A0A0A`, Cards: `#141414`, Secondary: `#1A1A1A`
-- Text primary: `#F2F2F2`, secondary: `#B8B8B8`, muted: `#7A7A7A`
-- Borders: `#242424`, Accent: `#2E2E2E`
-- Status: Working `#5F8F6B`, Not Working `#B68A3C`, Faulty `#9B3E3E`
-- Glass: `background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06);`
-- Success: `#5F8F6B`, Warning: `#B68A3C`, Error: `#9B3E3E`, Info: `#6E7E8A`
+**pgvector usage:**
+- Store embeddings in `embedding_documents` table using `Vector(768)` column
+- Similarity search: `SELECT ... ORDER BY embedding <=> $1::vector LIMIT k`
+- Use raw SQLAlchemy text queries for vector operations
 
 ---
 
-## FILES TO GENERATE (35 total)
+## FILES TO GENERATE (22 total)
 
-### Backend — Documents Module (7 files)
-1. `NavDashboard/backend/modules/documents/__init__.py`
-2. `NavDashboard/backend/modules/documents/models.py`
-3. `NavDashboard/backend/modules/documents/schemas.py`
-4. `NavDashboard/backend/modules/documents/repository.py`
-5. `NavDashboard/backend/modules/documents/service.py`
-6. `NavDashboard/backend/modules/documents/router.py`
-7. `NavDashboard/backend/modules/documents/storage.py`
+### Backend — AI Assistant Module (10 files)
+1. `NavDashboard/backend/modules/ai_assistant/__init__.py`
+2. `NavDashboard/backend/modules/ai_assistant/models.py`
+3. `NavDashboard/backend/modules/ai_assistant/schemas.py`
+4. `NavDashboard/backend/modules/ai_assistant/repository.py`
+5. `NavDashboard/backend/modules/ai_assistant/service.py`
+6. `NavDashboard/backend/modules/ai_assistant/router.py`
+7. `NavDashboard/backend/modules/ai_assistant/embeddings.py`
+8. `NavDashboard/backend/modules/ai_assistant/retriever.py`
+9. `NavDashboard/backend/modules/ai_assistant/prompts.py`
+10. `NavDashboard/backend/modules/ai_assistant/chain.py`
 
-### Backend — Backup Module (9 files)
-8. `NavDashboard/backend/modules/backup/__init__.py`
-9. `NavDashboard/backend/modules/backup/models.py`
-10. `NavDashboard/backend/modules/backup/schemas.py`
-11. `NavDashboard/backend/modules/backup/repository.py`
-12. `NavDashboard/backend/modules/backup/service.py`
-13. `NavDashboard/backend/modules/backup/router.py`
-14. `NavDashboard/backend/modules/backup/exporter.py`
-15. `NavDashboard/backend/modules/backup/importer.py`
-16. `NavDashboard/backend/modules/backup/pg_dump_handler.py`
+### Backend — Modified Files (3 files)
+11. `NavDashboard/backend/main.py`
+12. `NavDashboard/backend/migrations/env.py`
+13. `NavDashboard/backend/requirements.txt`
 
-### Backend — Reports Module (8 files)
-17. `NavDashboard/backend/modules/reports/__init__.py`
-18. `NavDashboard/backend/modules/reports/models.py`
-19. `NavDashboard/backend/modules/reports/schemas.py`
-20. `NavDashboard/backend/modules/reports/repository.py`
-21. `NavDashboard/backend/modules/reports/service.py`
-22. `NavDashboard/backend/modules/reports/router.py`
-23. `NavDashboard/backend/modules/reports/generators.py`
-24. `NavDashboard/backend/modules/reports/templates_pdf.py`
-
-### Backend — Modified Files (2 files)
-25. `NavDashboard/backend/main.py`
-26. `NavDashboard/backend/migrations/env.py`
-
-### Frontend — Documents Module (5 files)
-27. `NavDashboard/frontend/src/modules/documents/pages/DocumentsPage.tsx`
-28. `NavDashboard/frontend/src/modules/documents/components/DocumentUploader.tsx`
-29. `NavDashboard/frontend/src/modules/documents/components/DocumentList.tsx`
-30. `NavDashboard/frontend/src/modules/documents/hooks/useDocuments.ts`
-
-### Frontend — Backup Module (4 files)
-31. `NavDashboard/frontend/src/modules/backup/pages/BackupPage.tsx`
-32. `NavDashboard/frontend/src/modules/backup/components/ExportOptions.tsx`
-33. `NavDashboard/frontend/src/modules/backup/components/ImportUploader.tsx`
-34. `NavDashboard/frontend/src/modules/backup/hooks/useBackup.ts`
-
-### Frontend — Reports Module (4 files)
-35. `NavDashboard/frontend/src/modules/reports/pages/ReportsPage.tsx`
-36. `NavDashboard/frontend/src/modules/reports/components/ReportBuilder.tsx`
-37. `NavDashboard/frontend/src/modules/reports/hooks/useReports.ts`
+### Frontend — AI Chat Module (7 files)
+14. `NavDashboard/frontend/src/modules/ai_chat/pages/AIChatPage.tsx`
+15. `NavDashboard/frontend/src/modules/ai_chat/components/ChatWindow.tsx`
+16. `NavDashboard/frontend/src/modules/ai_chat/components/ChatMessage.tsx`
+17. `NavDashboard/frontend/src/modules/ai_chat/components/ChatInput.tsx`
+18. `NavDashboard/frontend/src/modules/ai_chat/components/SuggestedQueries.tsx`
+19. `NavDashboard/frontend/src/modules/ai_chat/components/SourceReference.tsx`
+20. `NavDashboard/frontend/src/modules/ai_chat/hooks/useAIChat.ts`
 
 ### Frontend — Modified File (1 file)
-38. `NavDashboard/frontend/src/app/routes.tsx`
+21. `NavDashboard/frontend/src/app/routes.tsx`
 
-### Docker — Modified File (1 file)
-39. `NavDashboard/docker-compose.yml`
-
-**Total: 39 files**
-
----
-
-## DOCKER-COMPOSE CHANGES
-
-The existing `docker-compose.yml` already has a `minio` service defined.
-Generate the FULL `docker-compose.yml` with:
-- All existing services: nginx, frontend, backend, db, redis, celery-worker (if present), mosquitto (if present)
-- MinIO service **uncommented and active**:
-  ```yaml
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-navdashboard}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-navdashboard_minio_secret}
-    volumes:
-      - minio_data:/data
-    networks:
-      - navdashboard_net
-    restart: always
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-  ```
-- Backend `depends_on` should include `minio`
-- Add `minio_data` to volumes section if not already there
-- Keep all other services EXACTLY as they are currently
-- Preserve the commented-out ollama service block
-
-**IMPORTANT:** The current docker-compose.yml structure must be preserved. Only add/uncomment minio and update backend depends_on. If you don't know the exact current content, generate a complete docker-compose.yml with:
-- nginx (build: ./nginx, ports: 80:80, depends_on: frontend, backend)
-- frontend (build: ./frontend, depends_on: backend)
-- backend (build: ./backend, ports: internal 8000, depends_on: db, redis, minio, volumes: ./backend:/app)
-- db (image: imresamu/postgis:16-3.5, ports: 5432:5432, volumes: postgres_data + ./database/init + ./database/backups)
-- redis (image: redis:7-alpine, volumes: redis_data)
-- minio (as above)
-- Commented-out ollama block
-- Networks: navdashboard_net
-- Volumes: postgres_data, redis_data, minio_data, ollama_data
+### Nginx — Modified File (1 file)
+22. `NavDashboard/nginx/default.conf`
 
 ---
 
@@ -270,1215 +194,856 @@ Generate the FULL `docker-compose.yml` with:
 
 ---
 
-### DOCUMENTS MODULE — Backend
+### MODELS (`models.py`)
 
-**`models.py`:**
 ```python
-from core.database import Base, SoftDeleteMixin
-from sqlalchemy import Column, String, Integer, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as PgUUID
+from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
+from sqlalchemy import Column, String, Text, Integer, Boolean, DateTime, ForeignKey, Enum as SAEnum
+from sqlalchemy.dialects.postgresql import UUID as PgUUID, JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+from pgvector.sqlalchemy import Vector
 import uuid
-
-class Document(Base, SoftDeleteMixin):
-    __tablename__ = "documents"
-
-    id = Column(PgUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    filename = Column(String, nullable=False)
-    original_filename = Column(String, nullable=False)
-    file_type = Column(String, nullable=False)       # pdf, image, doc, xlsx, etc.
-    mime_type = Column(String, nullable=True)
-    file_size = Column(Integer, nullable=False)       # bytes
-    storage_path = Column(String, nullable=False)     # MinIO object key
-    entity_type = Column(String, nullable=True)       # device, couple, pair, error, general
-    entity_id = Column(PgUUID(as_uuid=True), nullable=True)
-    uploaded_by = Column(PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    description = Column(Text, nullable=True)
+import enum
+from datetime import datetime
 ```
-NOTE: This model inherits `Base` which provides `id`, `created_at`, `updated_at`, `deleted_at`. Since we're also defining `id` explicitly with PgUUID, check how your existing models handle this. If `Base` already provides `id` as a `Mapped[UUID]`, then do NOT redefine `id` — just let Base handle it. Follow the SAME pattern as existing models like `Device`, `Couple`, `Pair`. Look at how those models define their columns (they use `Base` which provides id automatically). Generate the Document model consistently with existing patterns.
 
-**`schemas.py`:**
+**ChatSession:**
+- Inherits Base, SoftDeleteMixin
+- `user_id`: UUID FK → users.id, nullable=False
+- `title`: String, default="New Chat"
+
+**ChatMessage:**
+- Inherits Base (provides id, created_at, updated_at, deleted_at)
+- `session_id`: UUID FK → chat_sessions.id, nullable=False, indexed
+- `role`: String — "user" or "assistant"
+- `content`: Text
+- `sources`: JSONB, nullable=True — list of source references
+- `token_count`: Integer, nullable=True — for tracking usage
+
+**EmbeddingDocument:**
+- Inherits Base
+- `content`: Text — the text chunk that was embedded
+- `source_type`: String — "device", "couple", "pair", "error_log", "troubleshoot", "location", "personnel", "material", "custom"
+- `source_id`: UUID, nullable=True — FK to original entity if applicable
+- `embedding`: `Vector(768)` — pgvector column, 768 dimensions for nomic-embed-text
+- `metadata_json`: JSONB, nullable=True — extra context about the chunk
+
+**IMPORTANT for the Vector column:**
 ```python
-class DocumentCreate(BaseModel):
-    entity_type: str | None = None
-    entity_id: UUID | None = None
-    description: str | None = None
+from pgvector.sqlalchemy import Vector
 
-class DocumentResponse(BaseModel):
+class EmbeddingDocument(Base):
+    __tablename__ = "embedding_documents"
+    # ... other columns ...
+    embedding = Column(Vector(768), nullable=True)
+```
+
+This requires the `pgvector` Python package. Add it to requirements.txt.
+
+Follow the same column definition pattern as your existing models (Device, Couple, etc.). If they use `Column(...)` syntax, use that. If they use `Mapped[...]` with `mapped_column(...)`, use that. Be consistent.
+
+---
+
+### SCHEMAS (`schemas.py`)
+
+```python
+from pydantic import BaseModel
+from uuid import UUID
+from datetime import datetime
+
+class ChatMessageCreate(BaseModel):
+    content: str
+
+class ChatMessageResponse(BaseModel):
     id: UUID
-    filename: str
-    original_filename: str
-    file_type: str
-    mime_type: str | None
-    file_size: int
-    storage_path: str
-    entity_type: str | None
-    entity_id: UUID | None
-    uploaded_by: UUID
-    description: str | None
+    session_id: UUID
+    role: str
+    content: str
+    sources: list[dict] | None = None
+    token_count: int | None = None
     created_at: datetime
-    download_url: str | None = None  # presigned URL from MinIO
 
     class Config:
         from_attributes = True
 
-class DocumentListResponse(BaseModel):
-    items: list[DocumentResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
-```
+class ChatSessionResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    title: str
+    created_at: datetime
+    updated_at: datetime | None = None
+    message_count: int = 0
+    last_message_preview: str | None = None
 
-**`storage.py`** — MinIO client wrapper:
-```python
-from minio import Minio
-from minio.error import S3Error
-from core.config import settings
-import io
-import uuid
+    class Config:
+        from_attributes = True
 
-class MinIOStorage:
-    def __init__(self):
-        self.client = Minio(
-            endpoint=settings.MINIO_ENDPOINT,       # "minio:9000"
-            access_key=settings.MINIO_ROOT_USER,
-            secret_key=settings.MINIO_ROOT_PASSWORD,
-            secure=False                              # internal Docker network
-        )
-        self.bucket = settings.MINIO_BUCKET          # "navdashboard-files"
+class ChatResponse(BaseModel):
+    message: ChatMessageResponse
+    session_id: UUID
 
-    async def ensure_bucket(self):
-        """Create bucket if it doesn't exist."""
-        if not self.client.bucket_exists(self.bucket):
-            self.client.make_bucket(self.bucket)
+class StreamChunk(BaseModel):
+    """For SSE streaming"""
+    token: str
+    done: bool = False
+    sources: list[dict] | None = None  # only sent with final chunk
 
-    async def upload_file(self, file_data: bytes, object_name: str, content_type: str) -> str:
-        """Upload file bytes to MinIO. Returns the object name (storage path)."""
-        self.client.put_object(
-            self.bucket,
-            object_name,
-            io.BytesIO(file_data),
-            length=len(file_data),
-            content_type=content_type,
-        )
-        return object_name
+class IngestStatusResponse(BaseModel):
+    total_documents: int
+    last_sync: datetime | None = None
+    ollama_available: bool
+    ollama_models: list[str] = []
+    embedding_model_available: bool
+    chat_model_available: bool
 
-    async def download_file(self, object_name: str) -> bytes:
-        """Download file from MinIO. Returns bytes."""
-        response = self.client.get_object(self.bucket, object_name)
-        data = response.read()
-        response.close()
-        response.release_conn()
-        return data
-
-    async def delete_file(self, object_name: str):
-        """Delete file from MinIO."""
-        self.client.remove_object(self.bucket, object_name)
-
-    async def get_presigned_url(self, object_name: str, expires_hours: int = 1) -> str:
-        """Generate presigned download URL."""
-        from datetime import timedelta
-        return self.client.presigned_get_object(
-            self.bucket, object_name, expires=timedelta(hours=expires_hours)
-        )
-
-def get_storage() -> MinIOStorage:
-    """Dependency for FastAPI."""
-    return MinIOStorage()
-```
-
-NOTE: The minio Python library is synchronous. The `async` keyword on methods is for consistency with the async service layer — the actual minio calls are sync but fast (they're just HTTP calls to the local MinIO container). This is acceptable. Do NOT try to make them truly async with `run_in_executor` — it adds complexity for no real benefit at this scale.
-
-**`repository.py`:**
-- Standard CRUD: `get_by_id`, `get_multi` (with filters for entity_type, entity_id, file_type), `create`, `soft_delete`
-- `get_by_entity(db, entity_type, entity_id, skip, limit)` — documents for a specific entity
-- Count query for pagination
-
-**`service.py`:**
-- `upload_document(db, file: UploadFile, metadata: DocumentCreate, user_id: UUID, storage: MinIOStorage) -> DocumentResponse`
-  1. Read file bytes
-  2. Generate unique storage path: `{entity_type}/{entity_id}/{uuid}_{original_filename}` (or `general/{uuid}_{filename}` if no entity)
-  3. Detect file_type from extension
-  4. Call `storage.ensure_bucket()` then `storage.upload_file()`
-  5. Create Document record in DB
-  6. Record audit
-  7. Return DocumentResponse with presigned download_url
-- `get_document(db, id, storage)` — get metadata + generate download URL
-- `download_document(db, id, storage)` — get file bytes for streaming response
-- `delete_document(db, id, storage)` — soft delete in DB (optionally delete from MinIO too)
-- `list_documents(db, page, size, entity_type, entity_id, file_type)`
-- `list_by_entity(db, entity_type, entity_id, page, size)`
-
-**`router.py` (prefix: `/documents`):**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/upload` | Multipart upload. Form fields: `file` (UploadFile), `entity_type` (optional), `entity_id` (optional), `description` (optional) |
-| GET | `/` | List documents. Query: `page`, `size`, `entity_type`, `entity_id`, `file_type` |
-| GET | `/{id}` | Get document metadata with download URL |
-| GET | `/{id}/download` | Download file as StreamingResponse |
-| DELETE | `/{id}` | Soft delete document |
-| GET | `/by-entity/{entity_type}/{entity_id}` | Documents for a specific entity |
-
-All require `Depends(get_current_user)`.
-
-For the upload endpoint:
-```python
-@router.post("/upload")
-async def upload_document(
-    file: UploadFile = File(...),
-    entity_type: str | None = Form(None),
-    entity_id: str | None = Form(None),
-    description: str | None = Form(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    storage: MinIOStorage = Depends(get_storage),
-):
-```
-
-For the download endpoint:
-```python
-from fastapi.responses import StreamingResponse
-import io
-
-@router.get("/{id}/download")
-async def download_document(
-    id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    storage: MinIOStorage = Depends(get_storage),
-):
-    doc, file_bytes = await service.download_document(db, id, storage)
-    return StreamingResponse(
-        io.BytesIO(file_bytes),
-        media_type=doc.mime_type or "application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename={doc.original_filename}"}
-    )
+class OllamaHealthResponse(BaseModel):
+    available: bool
+    url: str
+    models: list[str] = []
+    error: str | None = None
 ```
 
 ---
 
-### BACKUP MODULE — Backend
+### EMBEDDINGS (`embeddings.py`)
 
-**`models.py`:**
+This module handles all interaction with the Ollama embedding API and pgvector storage.
+
 ```python
-# No dedicated models for backup module
-```
-
-**`schemas.py`:**
-```python
-class BackupInfo(BaseModel):
-    filename: str
-    size: int          # bytes
-    created_at: datetime
-    backup_type: str   # "pg_dump" or "xlsx" or "csv"
-
-class ExportRequest(BaseModel):
-    format: str = "xlsx"    # "xlsx" or "csv"
-    tables: list[str] | None = None  # None = all tables
-
-class ImportSummary(BaseModel):
-    total_rows: int
-    created: int
-    updated: int
-    errors: int
-    error_details: list[str] | None = None
-```
-
-**`pg_dump_handler.py`:**
-```python
-import subprocess
-import os
-from datetime import datetime
-from core.config import settings
-
-BACKUP_DIR = "/backups"  # Mapped from docker-compose volume ./database/backups:/backups
-
-async def create_pg_dump() -> str:
-    """Run pg_dump and save to backup directory. Returns filename."""
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    filename = f"navdashboard_backup_{timestamp}.sql"
-    filepath = os.path.join(BACKUP_DIR, filename)
-
-    # pg_dump connects to the db service via internal Docker network
-    cmd = [
-        "pg_dump",
-        "-h", settings.POSTGRES_HOST,
-        "-p", str(settings.POSTGRES_PORT),
-        "-U", settings.POSTGRES_USER,
-        "-d", settings.POSTGRES_DB,
-        "-f", filepath,
-        "--no-owner",
-        "--no-acl",
-    ]
-
-    env = os.environ.copy()
-    env["PGPASSWORD"] = settings.POSTGRES_PASSWORD
-
-    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-    if result.returncode != 0:
-        raise RuntimeError(f"pg_dump failed: {result.stderr}")
-
-    return filename
-
-async def restore_pg_dump(filename: str) -> str:
-    """Restore from a pg_dump file. Returns status message."""
-    filepath = os.path.join(BACKUP_DIR, filename)
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f"Backup file not found: {filename}")
-
-    cmd = [
-        "psql",
-        "-h", settings.POSTGRES_HOST,
-        "-p", str(settings.POSTGRES_PORT),
-        "-U", settings.POSTGRES_USER,
-        "-d", settings.POSTGRES_DB,
-        "-f", filepath,
-    ]
-
-    env = os.environ.copy()
-    env["PGPASSWORD"] = settings.POSTGRES_PASSWORD
-
-    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-    if result.returncode != 0:
-        raise RuntimeError(f"pg_restore failed: {result.stderr}")
-
-    return f"Restored from {filename}"
-
-async def list_backups() -> list[dict]:
-    """List all backup files in the backup directory."""
-    backups = []
-    if not os.path.exists(BACKUP_DIR):
-        os.makedirs(BACKUP_DIR, exist_ok=True)
-        return backups
-
-    for f in sorted(os.listdir(BACKUP_DIR), reverse=True):
-        if f.endswith((".sql", ".dump")):
-            filepath = os.path.join(BACKUP_DIR, f)
-            stat = os.stat(filepath)
-            backups.append({
-                "filename": f,
-                "size": stat.st_size,
-                "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                "backup_type": "pg_dump",
-            })
-    return backups
-
-async def delete_backup(filename: str):
-    """Delete a backup file."""
-    filepath = os.path.join(BACKUP_DIR, filename)
-    if os.path.exists(filepath):
-        os.remove(filepath)
-```
-
-NOTE: The backend container needs `pg_dump` and `psql` available. The backend Dockerfile already installs `libpq-dev`. Add `postgresql-client` to the Dockerfile's apt-get install line if not already present. However, do NOT modify the Dockerfile in this phase — just note it. If `pg_dump` is not available at runtime, the endpoint should return a clear error message saying "pg_dump not available in container".
-
-**`exporter.py`:**
-```python
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
-import csv
-import io
-import zipfile
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
-from datetime import datetime
-
-# Import all models
-from modules.devices.models import Device, DeviceStatusHistory
-from modules.couples.models import Couple
-from modules.pairs.models import Pair
-from modules.locations.models import Location, LocationHistory
-from modules.personnel.models import Person
-from modules.inventory.models import FittingMaterial, MaterialTemplate
-from modules.troubleshooting.models import ErrorLog, TroubleshootEntry
-from modules.status.models import StatusChangeLog
-from modules.auth.models import User
-```
-
-Functions to implement:
-- `async def export_xlsx(db: AsyncSession, tables: list[str] | None = None) -> bytes`
-  - Creates an openpyxl Workbook
-  - For each table/model: query all non-deleted records, create a sheet
-  - Sheets to include (in this order, skip if not in `tables` list or `tables` is None for all):
-    - "Devices": all Device columns
-    - "Couples": all Couple columns
-    - "Pairs": all Pair columns
-    - "Locations": all Location columns (latitude, longitude, address_note)
-    - "LocationHistory": all LocationHistory columns
-    - "Personnel": all Person columns
-    - "FittingMaterials": all FittingMaterial columns
-    - "MaterialTemplates": all MaterialTemplate columns
-    - "ErrorLogs": all ErrorLog columns
-    - "TroubleshootEntries": all TroubleshootEntry columns
-    - "StatusChangeLogs": all StatusChangeLog columns
-    - "Users": id, email, username, full_name, role, is_active (EXCLUDE hashed_password)
-  - Header row: bold white font on dark background (`#151515`)
-  - Auto-width columns
-  - Convert UUIDs to strings, datetimes to ISO format, JSONB to JSON strings
-  - Return workbook as bytes via `io.BytesIO`
-
-- `async def export_csv(db: AsyncSession, tables: list[str] | None = None) -> bytes`
-  - Creates a ZIP file containing one CSV per table
-  - Same tables as XLSX
-  - Each CSV has header row + data rows
-  - Return ZIP as bytes via `io.BytesIO`
-
-Helper:
-- `def model_to_row(instance, columns: list[str]) -> list` — converts a SQLAlchemy model instance to a list of string values for the given column names. Handle UUID, datetime, dict (JSONB) serialization.
-- `def get_export_tables() -> list[dict]` — returns list of `{"name": "Devices", "key": "devices", "model": Device, "columns": [...]}` for all exportable tables
-
-**`importer.py`:**
-```python
-import openpyxl
-import csv
-import io
+import httpx
+import logging
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from datetime import datetime
+from sqlalchemy import select, text, delete
+from core.config import settings
+from modules.ai_assistant.models import EmbeddingDocument
+
+logger = logging.getLogger(__name__)
+
+OLLAMA_BASE_URL = getattr(settings, 'OLLAMA_BASE_URL', 'http://host.docker.internal:11434')
+EMBED_MODEL = getattr(settings, 'OLLAMA_EMBED_MODEL', 'nomic-embed-text')
+EMBED_DIM = getattr(settings, 'OLLAMA_EMBED_DIMENSION', 768)
 ```
 
 Functions:
-- `async def import_xlsx(db: AsyncSession, file_bytes: bytes, user_id: UUID) -> dict`
-  - Parse XLSX workbook
-  - For each sheet: match sheet name to a model/table
-  - For each row: attempt upsert (Business Rule #10):
-    1. If `id` column exists and has a value → try to find by id → update if found
-    2. Else if `serial_number` exists → try to find by serial_number → update if found
-    3. Else if `name` exists → try to find by name → update if found
-    4. Else → create new record
-  - Track: created count, updated count, error count, error details
-  - Record audit for each created/updated record
-  - Return ImportSummary dict
 
-- `async def import_csv(db: AsyncSession, zip_bytes: bytes, user_id: UUID) -> dict`
-  - Extract ZIP, parse each CSV file
-  - Same upsert logic as XLSX
-  - Return ImportSummary dict
+- `async def check_ollama_available() -> tuple[bool, list[str]]`
+  - Try `httpx.AsyncClient.get(OLLAMA_BASE_URL + "/api/tags", timeout=5.0)`
+  - If success: parse model names, return (True, model_names)
+  - If fail: return (False, [])
+  - NEVER raise — always return gracefully
 
-Helper:
-- `def parse_value(value: str, column_type: str) -> any` — convert string values back to proper types (UUID, datetime, bool, int, float, JSON)
-- `def match_sheet_to_model(sheet_name: str) -> tuple[Model, list[str]]` — map sheet name to SQLAlchemy model and column list
+- `async def embed_text(text: str) -> list[float] | None`
+  - Call `POST {OLLAMA_BASE_URL}/api/embeddings` with `{"model": EMBED_MODEL, "prompt": text}`
+  - Return the embedding vector (list of 768 floats)
+  - If Ollama unavailable: log warning, return None
+  - Timeout: 30 seconds
 
-**`repository.py`:**
+- `async def embed_and_store(db: AsyncSession, content: str, source_type: str, source_id: UUID | None = None, metadata: dict | None = None) -> EmbeddingDocument | None`
+  - Call `embed_text(content)`
+  - If embedding is None: return None (Ollama unavailable)
+  - Create EmbeddingDocument record with the embedding vector
+  - `db.add(doc)`, `await db.flush()`
+  - Return the document
+
+- `async def batch_embed_and_store(db: AsyncSession, items: list[dict]) -> int`
+  - Each item: `{"content": str, "source_type": str, "source_id": UUID|None, "metadata": dict|None}`
+  - Call `embed_and_store` for each item
+  - Return count of successfully embedded items
+  - Process in batches of 10 with `await db.commit()` after each batch
+
+- `async def sync_all_embeddings(db: AsyncSession) -> dict`
+  - **This is the main ingestion function.**
+  - Queries ALL entities from the database and creates/updates embeddings:
+    1. **Devices**: For each device → embed: `"Device {serial_number}, type: {device_type}, status: {status}, notes: {notes}"`
+    2. **Couples**: For each couple → embed: `"Couple {name}, status: {status}, has_rf: {has_rf}, location: ({lat}, {lng}), notes: {notes}"`
+    3. **Pairs**: For each pair → embed: `"Pair {name}, status: {status}, notes: {notes}"`
+    4. **Error Logs**: For each error → embed: `"Error on {entity_type}: {error_type}, severity: {severity}, description: {description}"`
+    5. **Troubleshoot Entries**: For each step → embed: `"Troubleshoot step: {step_description}, action: {action_taken}, resolution: {resolution}"`
+    6. **Personnel**: For each person → embed: `"Personnel {full_name}, role: {role}, email: {email}"`
+    7. **Fitting Materials**: For each material → embed: `"Material {name}, quantity: {quantity} {unit}, for couple: {couple_id}"`
+    8. **Location History**: For each entry → embed: `"Location change for couple {couple_id}: moved from ({old_lat},{old_lng}) to ({new_lat},{new_lng}), distance: {distance}m"`
+  - Before embedding: delete existing embeddings for that source_type + source_id to avoid duplicates
+  - Return summary: `{"total_synced": N, "by_type": {"device": 10, "couple": 4, ...}, "errors": 0}`
+  - If Ollama unavailable: return `{"total_synced": 0, "error": "Ollama not available"}`
+
+Import models from other modules:
 ```python
-# No dedicated models — backup reads/writes across all tables
-# Helper functions for backup-specific queries if needed
-
-async def get_table_counts(db: AsyncSession) -> dict[str, int]:
-    """Get row counts for all tables (for backup summary)."""
-    tables = ["devices", "couples", "pairs", "locations", "personnel",
-              "fitting_materials", "error_logs", "users"]
-    counts = {}
-    for table in tables:
-        result = await db.execute(text(f"SELECT COUNT(*) FROM {table} WHERE deleted_at IS NULL"))
-        counts[table] = result.scalar() or 0
-    return counts
+from modules.devices.models import Device
+from modules.couples.models import Couple
+from modules.pairs.models import Pair
+from modules.troubleshooting.models import ErrorLog, TroubleshootEntry
+from modules.personnel.models import Person
+from modules.inventory.models import FittingMaterial
+from modules.locations.models import LocationHistory
 ```
 
-**`service.py`:**
-- Wraps pg_dump_handler, exporter, importer calls
-- Records audit for backup/restore/export/import operations
-- `create_backup(db, user_id)` → calls `pg_dump_handler.create_pg_dump()`
-- `restore_backup(db, filename, user_id)` → calls `pg_dump_handler.restore_pg_dump()`
-- `get_backup_history()` → calls `pg_dump_handler.list_backups()`
-- `export_data(db, format, tables)` → calls exporter
-- `import_data(db, file_bytes, format, user_id)` → calls importer
-- `get_table_counts(db)` → for showing what will be exported
+---
 
-**`router.py` (prefix: `/backup`):**
+### RETRIEVER (`retriever.py`)
+
+Handles similarity search and context assembly.
+
+```python
+import logging
+from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from modules.ai_assistant.embeddings import embed_text, EMBED_DIM
+
+logger = logging.getLogger(__name__)
+```
+
+Functions:
+
+- `async def vector_search(db: AsyncSession, query_text: str, limit: int = 5, source_types: list[str] | None = None) -> list[dict]`
+  - Embed the query text using `embed_text()`
+  - If embedding is None: return [] (Ollama unavailable)
+  - Run pgvector similarity search:
+    ```python
+    sql = """
+        SELECT id, content, source_type, source_id, metadata_json,
+               1 - (embedding <=> :query_vec::vector) as similarity
+        FROM embedding_documents
+        WHERE embedding IS NOT NULL
+    """
+    if source_types:
+        sql += " AND source_type = ANY(:source_types)"
+    sql += " ORDER BY embedding <=> :query_vec::vector LIMIT :limit"
+    ```
+  - Convert embedding list to string format for pgvector: `"[0.1, 0.2, ...]"`
+  - Return list of dicts: `[{"content": ..., "source_type": ..., "source_id": ..., "similarity": ..., "metadata": ...}]`
+
+- `async def structured_search(db: AsyncSession, query: str) -> list[dict]`
+  - Perform keyword-based search across entities (similar to search module)
+  - Search devices by serial_number, couples by name, pairs by name, errors by description
+  - Use ILIKE for fuzzy matching
+  - Return list of dicts with entity info
+  - This provides results even when Ollama is down (no embeddings needed)
+
+- `async def hybrid_retrieve(db: AsyncSession, query: str, limit: int = 10) -> list[dict]`
+  - Call both `vector_search` and `structured_search`
+  - Merge results, remove duplicates (by source_id)
+  - Sort by relevance (vector similarity score, then structured matches)
+  - Return top `limit` results
+
+- `def build_context(retrieved_docs: list[dict]) -> str`
+  - Format retrieved documents into a context string for the LLM:
+    ```
+    Context from NavDashboard database:
+
+    [Source: device] Device IU-00001, type: IU, status: WORKING, ...
+    [Source: error_log] Error on couple A2: Signal Degradation, severity: MEDIUM, ...
+    [Source: troubleshoot] Troubleshoot step: Checked OU alignment, action: ...
+    ```
+  - Truncate total context to ~3000 characters to fit in prompt
+  - Return the formatted string
+
+- `def extract_source_references(retrieved_docs: list[dict]) -> list[dict]`
+  - Convert retrieved docs into source reference format for the frontend:
+    ```python
+    [
+        {"entity_type": "device", "entity_id": "...", "name": "IU-00001", "snippet": "..."},
+        {"entity_type": "error_log", "entity_id": "...", "name": "Signal Degradation", "snippet": "..."},
+    ]
+    ```
+
+---
+
+### PROMPTS (`prompts.py`)
+
+```python
+SYSTEM_PROMPT = """You are NavDashboard AI, an expert assistant for managing LiFi (Light Fidelity) devices.
+
+You have access to a database containing:
+- Devices: Indoor Units (IU), Outdoor Units (OU), Hybrid Cables (HC), and RF Listeners (RF), each with serial numbers, statuses, and assignments
+- Couples: Pairs of devices (IU + OU + HC, optionally RF) deployed at specific locations
+- Pairs: Two couples linked together forming a complete LiFi communication link
+- Troubleshooting: Error logs with severity levels and step-by-step troubleshooting entries
+- Personnel: Technicians and managers responsible for handling devices
+- Locations: GPS coordinates and movement history of deployed couples
+- Fitting Materials: Hardware and accessories used at each deployment site
+
+When answering questions:
+1. Use the provided context to give accurate, specific answers
+2. Reference device serial numbers, couple names, and pair names when relevant
+3. If the context doesn't contain enough information, say so clearly
+4. For troubleshooting questions, provide step-by-step guidance based on historical data
+5. Keep responses concise but complete
+6. Format lists and steps clearly using markdown"""
+
+QUERY_CLASSIFICATION_PROMPT = """Classify the following user query into one of these categories:
+- DATA_LOOKUP: User wants to find specific device/couple/pair information
+- TROUBLESHOOTING: User needs help diagnosing or fixing an issue
+- STATUS_CHECK: User wants to know the current status of entities
+- ANALYTICS: User wants statistics or trends
+- GENERAL: General question about the system or LiFi technology
+
+Query: {query}
+
+Respond with just the category name."""
+
+NO_OLLAMA_MESSAGE = """I'm sorry, but the AI assistant is currently unavailable. The Ollama service is not running or not reachable.
+
+**To enable the AI assistant:**
+1. Install Ollama from https://ollama.com
+2. Start Ollama: `ollama serve`
+3. Pull required models: `ollama pull llama3` and `ollama pull nomic-embed-text`
+4. The assistant will automatically connect when Ollama is available.
+
+In the meantime, you can use the **Search** feature to find information across all devices, couples, and pairs."""
+
+NO_CONTEXT_MESSAGE = """I don't have enough context in the database to answer this question specifically. 
+
+You might want to:
+1. Run **Sync Embeddings** from the AI settings to index all current data
+2. Try rephrasing your question with specific device serial numbers or couple names
+3. Use the **Search** page for direct database queries"""
+```
+
+---
+
+### CHAIN (`chain.py`)
+
+The RAG chain orchestrator. Calls retriever → builds prompt → calls Ollama → returns response.
+
+```python
+import httpx
+import json
+import logging
+from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import AsyncGenerator
+from core.config import settings
+from modules.ai_assistant.retriever import hybrid_retrieve, build_context, extract_source_references
+from modules.ai_assistant.prompts import SYSTEM_PROMPT, NO_OLLAMA_MESSAGE, NO_CONTEXT_MESSAGE
+from modules.ai_assistant.embeddings import check_ollama_available
+
+logger = logging.getLogger(__name__)
+
+OLLAMA_BASE_URL = getattr(settings, 'OLLAMA_BASE_URL', 'http://host.docker.internal:11434')
+CHAT_MODEL = getattr(settings, 'OLLAMA_MODEL', 'llama3')
+```
+
+Functions:
+
+- `async def generate_response(db: AsyncSession, user_message: str, chat_history: list[dict] | None = None) -> dict`
+  - **Non-streaming version**
+  - 1. Check Ollama availability → if not available, return `{"content": NO_OLLAMA_MESSAGE, "sources": []}`
+  - 2. Call `hybrid_retrieve(db, user_message)` → get relevant context
+  - 3. Build context string with `build_context()`
+  - 4. Extract source references with `extract_source_references()`
+  - 5. Construct messages array:
+    ```python
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT + "\n\n" + context},
+    ]
+    # Add last 6 messages from chat_history (if provided) for conversation continuity
+    if chat_history:
+        for msg in chat_history[-6:]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": user_message})
+    ```
+  - 6. Call Ollama: `POST {OLLAMA_BASE_URL}/api/chat` with `{"model": CHAT_MODEL, "messages": messages, "stream": false}`
+  - 7. Parse response, return: `{"content": response_text, "sources": source_references}`
+  - Timeout: 120 seconds (LLM can be slow)
+  - On error: return `{"content": "I encountered an error generating a response. Please try again.", "sources": []}`
+
+- `async def generate_response_stream(db: AsyncSession, user_message: str, chat_history: list[dict] | None = None) -> AsyncGenerator[str, None]`
+  - **Streaming version (Server-Sent Events)**
+  - Steps 1-5 same as non-streaming
+  - 6. Call Ollama with `stream: true`, read NDJSON lines
+  - 7. For each chunk: yield SSE-formatted data:
+    ```python
+    yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
+    ```
+  - 8. After final chunk: yield sources:
+    ```python
+    yield f"data: {json.dumps({'token': '', 'done': True, 'sources': source_references})}\n\n"
+    ```
+  - On error: yield error message as final chunk
+
+- `async def generate_session_title(user_message: str) -> str`
+  - If Ollama available: ask it to generate a short title for the conversation
+    - Prompt: `"Generate a very short title (5 words max) for a conversation that starts with: {user_message}. Respond with just the title, no quotes."`
+  - If Ollama unavailable: return first 50 chars of user_message as title
+  - Timeout: 10 seconds
+
+---
+
+### REPOSITORY (`repository.py`)
+
+```python
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, desc, delete
+from uuid import UUID
+from typing import Optional
+from modules.ai_assistant.models import ChatSession, ChatMessage, EmbeddingDocument
+```
+
+Functions:
+
+- `async def create_session(db, user_id: UUID, title: str = "New Chat") -> ChatSession`
+- `async def get_session(db, session_id: UUID) -> Optional[ChatSession]`
+- `async def get_user_sessions(db, user_id: UUID, skip: int = 0, limit: int = 50) -> list[dict]`
+  - Returns sessions with message_count and last_message_preview (LEFT JOIN ChatMessage, ORDER BY latest message timestamp DESC)
+- `async def update_session_title(db, session_id: UUID, title: str) -> ChatSession`
+- `async def delete_session(db, session_id: UUID)` — hard delete session + its messages
+- `async def add_message(db, session_id: UUID, role: str, content: str, sources: list[dict] | None = None, token_count: int | None = None) -> ChatMessage`
+- `async def get_session_messages(db, session_id: UUID, skip: int = 0, limit: int = 100) -> list[ChatMessage]`
+  - ORDER BY created_at ASC (chronological)
+- `async def get_embedding_count(db) -> int`
+- `async def get_last_sync_time(db) -> Optional[datetime]`
+  - MAX(created_at) from embedding_documents
+
+---
+
+### SERVICE (`service.py`)
+
+```python
+from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
+from modules.ai_assistant import repository, chain, embeddings
+from modules.ai_assistant.schemas import *
+from shared.audit import record_audit
+```
+
+Functions:
+
+- `async def send_message(db, session_id: UUID | None, user_id: UUID, content: str) -> dict`
+  - If session_id is None: create new session, generate title
+  - Save user message to DB
+  - Load chat history (last 10 messages from this session)
+  - Call `chain.generate_response(db, content, chat_history)`
+  - Save assistant message to DB (with sources)
+  - Return: `{"message": ChatMessageResponse, "session_id": UUID}`
+
+- `async def send_message_stream(db, session_id: UUID | None, user_id: UUID, content: str) -> AsyncGenerator`
+  - If session_id is None: create new session, generate title
+  - Save user message to DB
+  - Load chat history
+  - Yield from `chain.generate_response_stream(db, content, chat_history)`
+  - After streaming complete: save full assistant message to DB
+  - **Note:** For streaming, the full response needs to be accumulated to save to DB. Yield tokens as they come, but also collect them.
+
+- `async def get_sessions(db, user_id: UUID) -> list[ChatSessionResponse]`
+- `async def get_session_messages(db, session_id: UUID) -> list[ChatMessageResponse]`
+- `async def delete_session(db, session_id: UUID, user_id: UUID)`
+- `async def trigger_sync(db, user_id: UUID) -> dict`
+  - Call `embeddings.sync_all_embeddings(db)`
+  - Record audit
+  - Return sync summary
+- `async def get_ingest_status(db) -> IngestStatusResponse`
+  - Check Ollama availability
+  - Get embedding count + last sync time
+  - Check if required models are available
+  - Return IngestStatusResponse
+
+---
+
+### ROUTER (`router.py`, prefix: `/ai`)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/pg-dump` | Trigger pg_dump backup. Returns BackupInfo. |
-| GET | `/pg-dump/history` | List past pg_dump backups. Returns list[BackupInfo]. |
-| GET | `/pg-dump/download/{filename}` | Download a backup file as StreamingResponse. |
-| POST | `/pg-dump/restore` | Upload a .sql file and restore. Accepts UploadFile. |
-| DELETE | `/pg-dump/{filename}` | Delete a backup file. |
-| POST | `/export/xlsx` | Export data as XLSX. Body: ExportRequest. Returns StreamingResponse (file download). |
-| POST | `/export/csv` | Export data as CSV ZIP. Body: ExportRequest. Returns StreamingResponse. |
-| POST | `/import/xlsx` | Upload XLSX, import data. Returns ImportSummary. |
-| POST | `/import/csv` | Upload CSV ZIP, import data. Returns ImportSummary. |
-| GET | `/table-counts` | Get row counts for all tables. Returns dict. |
+| POST | `/chat` | Send message, get full response. Body: `{"content": "...", "session_id": "..." (optional)}`. Returns ChatResponse. |
+| POST | `/chat/stream` | Send message, get SSE stream. Body: `{"content": "...", "session_id": "..." (optional)}`. Returns `EventSourceResponse`. |
+| GET | `/sessions` | List chat sessions for current user. Returns list[ChatSessionResponse]. |
+| GET | `/sessions/{session_id}` | Get session with messages. Returns `{"session": ChatSessionResponse, "messages": list[ChatMessageResponse]}`. |
+| DELETE | `/sessions/{session_id}` | Delete a chat session. |
+| POST | `/ingest` | Trigger embedding sync. Returns sync summary dict. |
+| GET | `/ingest/status` | Get sync status + Ollama health. Returns IngestStatusResponse. |
+| GET | `/health` | Check Ollama connectivity. Returns OllamaHealthResponse. |
 
-All require `Depends(get_current_user)`. pg-dump and restore require `require_role("ADMIN")`.
+All require `Depends(get_current_user)`.
 
-For file downloads:
+**For SSE streaming:**
 ```python
-@router.post("/export/xlsx")
-async def export_xlsx(
-    request: ExportRequest,
+from fastapi.responses import StreamingResponse
+
+@router.post("/chat/stream")
+async def chat_stream(
+    request: ChatMessageCreate,
+    session_id: UUID | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    file_bytes = await service.export_data(db, "xlsx", request.tables)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    async def event_generator():
+        async for chunk in service.send_message_stream(db, session_id, current_user.id, request.content):
+            yield chunk
+
     return StreamingResponse(
-        io.BytesIO(file_bytes),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename=navdashboard_export_{timestamp}.xlsx"}
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
     )
 ```
 
 ---
 
-### REPORTS MODULE — Backend
+### FRONTEND — AI CHAT MODULE
 
-**`models.py`:**
-```python
-# No dedicated models — reports generate from other module data
-```
-
-**`schemas.py`:**
-```python
-class ReportTemplate(BaseModel):
-    id: str
-    name: str
-    description: str
-    parameters: list[str]  # configurable parameter names
-
-class ReportRequest(BaseModel):
-    template_id: str       # "device_inventory", "error_summary", "location_history", "pair_status", "full_system"
-    format: str = "pdf"    # "pdf" or "xlsx"
-    date_from: datetime | None = None
-    date_to: datetime | None = None
-    entity_ids: list[UUID] | None = None   # filter to specific entities
-    include_charts: bool = True
-
-class ReportResponse(BaseModel):
-    filename: str
-    format: str
-    size: int
-    generated_at: datetime
-```
-
-**`templates_pdf.py`:**
-PDF layout helpers using ReportLab:
-```python
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch, mm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
-from reportlab.graphics.shapes import Drawing, Line
-from datetime import datetime
-import io
-```
-
-Functions:
-- `def create_pdf_template(title: str, subtitle: str = "") -> tuple[SimpleDocTemplate, list]`
-  - Creates A4 document with dark-themed header/footer
-  - Header: "NavDashboard" branding + report title + generation date
-  - Footer: page number
-  - Returns (doc, elements_list)
-
-- `def add_table_to_pdf(elements: list, headers: list[str], rows: list[list], title: str = "")`
-  - Creates a ReportLab Table with styled header (dark background, white text) and alternating row colors
-  - Auto-sizes columns
-
-- `def add_summary_section(elements: list, stats: dict)`
-  - Renders key-value stats as a formatted section
-
-- `def finalize_pdf(doc: SimpleDocTemplate, elements: list) -> bytes`
-  - Builds the PDF and returns bytes
-
-**`generators.py`:**
-```python
-from sqlalchemy.ext.asyncio import AsyncSession
-from modules.reports.templates_pdf import *
-import xlsxwriter
-import io
-from datetime import datetime
-```
-
-Functions:
-- `async def generate_device_inventory_pdf(db, date_from, date_to, entity_ids) -> bytes`
-  - Query all devices (filtered)
-  - Table: Serial Number, Type, Status, Couple, Person, Notes
-  - Summary: total count, by type, by status
-
-- `async def generate_device_inventory_xlsx(db, date_from, date_to, entity_ids) -> bytes`
-  - Same data as PDF but in Excel format using xlsxwriter
-  - Sheet "Summary" + sheet "Devices"
-
-- `async def generate_error_summary_pdf(db, date_from, date_to, entity_ids) -> bytes`
-  - Query error_logs (filtered by date range)
-  - Table: Date, Entity, Error Type, Severity, Status (open/resolved), Description
-  - Summary: total errors, by severity, resolution rate
-
-- `async def generate_error_summary_xlsx(db, ...) -> bytes`
-
-- `async def generate_location_history_pdf(db, date_from, date_to, entity_ids) -> bytes`
-  - Query location_history (filtered)
-  - Table: Date, Couple, From (lat/lng), To (lat/lng), Distance, Handler, Had RF
-
-- `async def generate_location_history_xlsx(db, ...) -> bytes`
-
-- `async def generate_pair_status_pdf(db, ...) -> bytes`
-  - Query all pairs with couples
-  - Table: Pair Name, Status, Couple A, Couple B, Devices, Notes
-
-- `async def generate_pair_status_xlsx(db, ...) -> bytes`
-
-- `async def generate_full_system_pdf(db, ...) -> bytes`
-  - Combines all above into one comprehensive report with page breaks between sections
-
-- `async def generate_full_system_xlsx(db, ...) -> bytes`
-
-**`repository.py`:**
-- Query functions used by generators:
-  - `get_devices_for_report(db, date_from, date_to, entity_ids)` — devices with joins for couple name, person name
-  - `get_errors_for_report(db, date_from, date_to, entity_ids)` — errors with joins
-  - `get_location_history_for_report(db, date_from, date_to, entity_ids)` — location history with joins
-  - `get_pairs_for_report(db, entity_ids)` — pairs with nested couples
-
-**`service.py`:**
-```python
-REPORT_TEMPLATES = [
-    {"id": "device_inventory", "name": "Device Inventory", "description": "Complete inventory of all LiFi devices", "parameters": ["date_from", "date_to"]},
-    {"id": "error_summary", "name": "Error Summary", "description": "Summary of all errors and troubleshooting", "parameters": ["date_from", "date_to"]},
-    {"id": "location_history", "name": "Location History", "description": "Movement history of all couples", "parameters": ["date_from", "date_to"]},
-    {"id": "pair_status", "name": "Pair Status Report", "description": "Current status of all pairs and their couples", "parameters": []},
-    {"id": "full_system", "name": "Full System Report", "description": "Comprehensive report of the entire system", "parameters": ["date_from", "date_to"]},
-]
-```
-
-- `get_templates() -> list[ReportTemplate]`
-- `async def generate_report(db, request: ReportRequest) -> tuple[bytes, str, str]`
-  - Returns (file_bytes, filename, content_type)
-  - Dispatches to correct generator based on template_id + format
-  - Records audit
-
-**`router.py` (prefix: `/reports`):**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/templates` | List available report templates. Returns list[ReportTemplate]. |
-| POST | `/generate` | Generate report. Body: ReportRequest. Returns StreamingResponse (file download). |
-
-All require `Depends(get_current_user)`.
-
----
-
-### DOCUMENTS MODULE — Frontend
-
-**`useDocuments.ts`:**
+**`useAIChat.ts`:**
 ```typescript
-interface DocumentItem {
+interface ChatSession {
   id: string;
-  filename: string;
-  original_filename: string;
-  file_type: string;
-  mime_type: string | null;
-  file_size: number;
-  storage_path: string;
-  entity_type: string | null;
-  entity_id: string | null;
-  uploaded_by: string;
-  description: string | null;
+  user_id: string;
+  title: string;
   created_at: string;
-  download_url: string | null;
+  updated_at: string | null;
+  message_count: number;
+  last_message_preview: string | null;
 }
 
-// useDocuments(filters?) → list documents
-//   GET /api/v1/documents/?page=&size=&entity_type=&file_type=
-//   Returns PaginatedResponse<DocumentItem>
-
-// useDocumentsByEntity(entityType, entityId) → docs for entity
-//   GET /api/v1/documents/by-entity/{entityType}/{entityId}
-
-// useUploadDocument() → mutation
-//   POST /api/v1/documents/upload (multipart FormData)
-//   On success: invalidate ['documents'] queries
-
-// useDeleteDocument() → mutation
-//   DELETE /api/v1/documents/{id}
-//   On success: invalidate ['documents'] queries
-```
-
-For the upload mutation, use FormData:
-```typescript
-export function useUploadDocument() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: { file: File; entityType?: string; entityId?: string; description?: string }) => {
-      const formData = new FormData();
-      formData.append('file', data.file);
-      if (data.entityType) formData.append('entity_type', data.entityType);
-      if (data.entityId) formData.append('entity_id', data.entityId);
-      if (data.description) formData.append('description', data.description);
-
-      // Use axios directly for FormData (not api.post which sets JSON content-type)
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/documents/upload', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Upload failed');
-      return response.json();
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['documents'] }),
-  });
-}
-```
-
-**`DocumentsPage.tsx`:**
-- PageHeader: "Documents" with "Upload" button (GlassButton primary)
-- Filter bar: entity type select (All, Device, Couple, Pair, Error, General), file type select (All, PDF, Image, Document, Spreadsheet)
-- DocumentList component below
-- Upload modal (GlassModal) with DocumentUploader component
-- Pagination controls
-
-**`DocumentUploader.tsx`:**
-- Props: `onClose: () => void`, `defaultEntityType?: string`, `defaultEntityId?: string`
-- Ant Design `Upload.Dragger` component styled with glass aesthetic:
-  - Background: `rgba(255,255,255,0.02)`
-  - Border: dashed `#242424`
-  - Hover: border `#7A7A7A`
-- Fields:
-  - File drop zone (single file at a time)
-  - Entity Type: Select (optional) — Device, Couple, Pair, Error, General
-  - Entity: Searchable Select (optional, loads from relevant API when entity type selected)
-  - Description: GlassInput textarea
-- Upload progress bar (Ant Design Progress component)
-- "Upload" button (GlassButton, disabled until file selected)
-- Success/error feedback via `message.success` / `message.error`
-
-**`DocumentList.tsx`:**
-- Props: `documents: DocumentItem[]`, `loading: boolean`, `onDelete: (id: string) => void`
-- Grid of GlassCards (responsive: 1-3 columns)
-- Each card:
-  - File icon based on type: 📄 PDF, 🖼️ Image, 📊 Spreadsheet, 📝 Document, 📎 Other
-  - Filename (bold, truncated)
-  - File size (formatted: KB, MB)
-  - Entity type tag (if linked to entity)
-  - Upload date (relative, using dayjs)
-  - Description snippet (truncated)
-  - Actions: Download button (opens download URL in new tab), Delete button (with ConfirmDialog)
-- Alternatively, a table view toggle showing: Filename, Type, Size, Entity, Date, Actions
-
----
-
-### BACKUP MODULE — Frontend
-
-**`useBackup.ts`:**
-```typescript
-interface BackupInfo {
-  filename: string;
-  size: number;
-  created_at: string;
-  backup_type: string;
-}
-
-interface ImportSummary {
-  total_rows: number;
-  created: number;
-  updated: number;
-  errors: number;
-  error_details: string[] | null;
-}
-
-interface TableCounts {
-  [table: string]: number;
-}
-
-// useBackupHistory() → GET /api/v1/backup/pg-dump/history → list[BackupInfo]
-// useCreateBackup() → mutation POST /api/v1/backup/pg-dump → BackupInfo
-// useDeleteBackup() → mutation DELETE /api/v1/backup/pg-dump/{filename}
-// useExportXlsx() → mutation POST /api/v1/backup/export/xlsx → triggers download
-// useExportCsv() → mutation POST /api/v1/backup/export/csv → triggers download
-// useImportXlsx() → mutation POST /api/v1/backup/import/xlsx (FormData) → ImportSummary
-// useImportCsv() → mutation POST /api/v1/backup/import/csv (FormData) → ImportSummary
-// useTableCounts() → GET /api/v1/backup/table-counts → TableCounts
-```
-
-For export mutations, handle the file download:
-```typescript
-export function useExportXlsx() {
-  return useMutation({
-    mutationFn: async (tables?: string[]) => {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/backup/export/xlsx', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ format: 'xlsx', tables }),
-      });
-      if (!response.ok) throw new Error('Export failed');
-      const blob = await response.blob();
-      // Trigger browser download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `navdashboard_export_${new Date().toISOString().slice(0,10)}.xlsx`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    },
-  });
-}
-```
-
-**`BackupPage.tsx`:**
-- PageHeader: "Backup & Restore"
-- Two-section layout:
-
-**Section 1: "Database Backup" (GlassCard)**
-- "Create Backup" button (GlassButton primary) — triggers pg_dump
-- Loading state while backup runs
-- Success message with backup filename
-- Backup history table:
-  - Columns: Filename, Size (formatted), Date, Actions (Download, Delete)
-  - Download: `<a href="/api/v1/backup/pg-dump/download/{filename}">` with auth header
-  - Delete: ConfirmDialog before deletion
-- "Restore from Backup" section:
-  - Upload area for .sql file (Ant Design Upload)
-  - Warning message: "⚠️ This will overwrite existing data. Make sure you have a current backup."
-  - ConfirmDialog before restore
-
-**Section 2: "Data Export & Import" (GlassCard)**
-- Left half: ExportOptions component
-- Right half: ImportUploader component
-
-**`ExportOptions.tsx`:**
-- Props: none (self-contained)
-- Table count summary at top (from `useTableCounts()`): shows each table with row count
-- Checkbox list of tables to export (all checked by default):
-  - "Select All" / "Deselect All" toggle
-  - Individual checkboxes: Devices, Couples, Pairs, Locations, Personnel, Materials, Errors, Users, etc.
-- Format selector: Radio group — XLSX / CSV
-- "Export" button (GlassButton primary)
-- Loading state during export
-- Download triggers automatically on completion
-
-**`ImportUploader.tsx`:**
-- Props: none (self-contained)
-- File upload area (Ant Design Upload.Dragger, glass styled)
-- Accepts: .xlsx, .csv, .zip files
-- After file selected: show file info (name, size)
-- "Import" button (GlassButton primary)
-- Warning: "Records will be matched by ID or serial_number/name. Existing records will be updated."
-- ConfirmDialog before import
-- After import: show ImportSummary card — created count, updated count, error count
-- If errors: expandable list of error details
-- Success/error feedback via Ant Design `message`
-
----
-
-### REPORTS MODULE — Frontend
-
-**`useReports.ts`:**
-```typescript
-interface ReportTemplate {
+interface ChatMessageItem {
   id: string;
+  session_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  sources: SourceRef[] | null;
+  token_count: number | null;
+  created_at: string;
+}
+
+interface SourceRef {
+  entity_type: string;
+  entity_id: string;
   name: string;
-  description: string;
-  parameters: string[];
+  snippet: string;
 }
 
-interface ReportRequest {
-  template_id: string;
-  format: string;
-  date_from?: string;
-  date_to?: string;
-  entity_ids?: string[];
-  include_charts?: boolean;
+interface IngestStatus {
+  total_documents: number;
+  last_sync: string | null;
+  ollama_available: boolean;
+  ollama_models: string[];
+  embedding_model_available: boolean;
+  chat_model_available: boolean;
 }
-
-// useReportTemplates() → GET /api/v1/reports/templates → list[ReportTemplate]
-// useGenerateReport() → mutation POST /api/v1/reports/generate → triggers file download
 ```
 
-For the generate mutation, handle file download similar to backup export:
-```typescript
-export function useGenerateReport() {
-  return useMutation({
-    mutationFn: async (request: ReportRequest) => {
+Hooks:
+- `useChatSessions()` → `useQuery` GET `/api/v1/ai/sessions`
+- `useChatMessages(sessionId: string)` → `useQuery` GET `/api/v1/ai/sessions/{sessionId}`, enabled when sessionId truthy
+- `useSendMessage()` → `useMutation` POST `/api/v1/ai/chat` with `{content, session_id}`
+  - On success: invalidate `['chat-sessions']` and `['chat-messages', sessionId]`
+- `useDeleteSession()` → `useMutation` DELETE `/api/v1/ai/sessions/{id}`
+  - On success: invalidate `['chat-sessions']`
+- `useIngestStatus()` → `useQuery` GET `/api/v1/ai/ingest/status`, refetchInterval: 30000
+- `useTriggerIngest()` → `useMutation` POST `/api/v1/ai/ingest`
+- `useSendMessageStream()` → custom hook (NOT useMutation) that:
+  1. POSTs to `/api/v1/ai/chat/stream` using `fetch` with `ReadableStream`
+  2. Reads SSE chunks and updates local state with each token
+  3. Returns `{ sendStream, streamingContent, isStreaming, sources }`
+  4. Implementation:
+  ```typescript
+  export function useSendMessageStream() {
+    const [streamingContent, setStreamingContent] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
+    const [sources, setSources] = useState<SourceRef[]>([]);
+    const qc = useQueryClient();
+
+    const sendStream = async (content: string, sessionId?: string) => {
+      setStreamingContent('');
+      setIsStreaming(true);
+      setSources([]);
+
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/reports/generate', {
+      const url = sessionId
+        ? `/api/v1/ai/chat/stream?session_id=${sessionId}`
+        : '/api/v1/ai/chat/stream';
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify({ content }),
       });
-      if (!response.ok) throw new Error('Report generation failed');
-      const blob = await response.blob();
-      const ext = request.format === 'pdf' ? 'pdf' : 'xlsx';
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `navdashboard_${request.template_id}_${new Date().toISOString().slice(0,10)}.${ext}`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    },
-  });
-}
-```
 
-**`ReportsPage.tsx`:**
-- PageHeader: "Reports"
-- Template gallery: grid of GlassCards, one per report template
-  - Each card: report name (bold), description, available parameters listed
-  - "Generate" button on each card → opens ReportBuilder in a GlassModal
-- Below gallery: ReportBuilder component (also accessible via card click)
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
 
-**`ReportBuilder.tsx`:**
-- Props: `template?: ReportTemplate`, `onClose?: () => void`
-- If used inside modal: shows selected template info at top
-- If used standalone: template selector dropdown
-- Parameters section (conditional based on template.parameters):
-  - Date range picker (if template has "date_from"/"date_to" params)
-  - Entity selector (if applicable)
-- Format selector: Radio group — PDF / Excel
-- "Generate Report" button (GlassButton primary)
-- Loading state with progress message: "Generating report..."
-- On success: file downloads automatically + success message
-- On error: error message display
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.token) {
+                accumulated += data.token;
+                setStreamingContent(accumulated);
+              }
+              if (data.done && data.sources) {
+                setSources(data.sources || []);
+              }
+            } catch {}
+          }
+        }
+      }
+
+      setIsStreaming(false);
+      qc.invalidateQueries({ queryKey: ['chat-sessions'] });
+      qc.invalidateQueries({ queryKey: ['chat-messages'] });
+    };
+
+    return { sendStream, streamingContent, isStreaming, sources };
+  }
+  ```
+
+---
+
+**`AIChatPage.tsx`:**
+- Two-panel layout:
+  - **Left sidebar** (280px wide, glass background `#0B0B0B`):
+    - "New Chat" button (GlassButton primary, full width) at top
+    - Session list below: each session shows title (truncated), last message preview, relative timestamp
+    - Active session: background `#1E1E1E` with left border accent
+    - Hover: `#1A1A1A`
+    - Delete button on hover (small X icon, with ConfirmDialog)
+    - Bottom section: Ingest status indicator
+      - Green dot + "AI Ready" if Ollama available
+      - Red dot + "AI Offline" if not
+      - "Sync Data" button to trigger embedding sync
+      - Last sync time
+  - **Right main area**:
+    - If no session selected: welcome screen with SuggestedQueries
+    - If session selected: ChatWindow
+- State: `activeSessionId` in useState
+- Clicking "New Chat" → clear activeSessionId, show welcome screen
+- Clicking a session → set activeSessionId, load messages
+
+**`ChatWindow.tsx`:**
+- Props: `sessionId: string | null`, `onSessionCreated: (id: string) => void`
+- Scrollable message area (flex-grow, overflow-y auto)
+- Auto-scrolls to bottom on new messages (useRef + useEffect)
+- Renders ChatMessage components for each message
+- If streaming: render a temporary ChatMessage with `streamingContent` and a typing indicator
+- At bottom: ChatInput
+- Uses `useChatMessages(sessionId)` to load messages
+- Uses `useSendMessageStream()` for sending
+
+**`ChatMessage.tsx`:**
+- Props: `message: {role, content, sources, created_at}`, `isStreaming?: boolean`
+- User messages:
+  - Aligned right
+  - Background: `#2A2A2A` with glass blur
+  - Border-radius: 16px 16px 4px 16px
+  - Max-width: 70%
+- Assistant messages:
+  - Aligned left
+  - Background: `#141414` with glass blur
+  - Border-radius: 16px 16px 16px 4px
+  - Max-width: 80%
+  - Content rendered as Markdown (use a simple markdown renderer — parse `**bold**`, `*italic*`, `` `code` ``, `- lists`, `### headings`, ```code blocks```)
+    - For simplicity: use `dangerouslySetInnerHTML` with a basic markdown-to-HTML converter function, OR use `react-markdown` if it's already available, OR write a simple parser
+    - Code blocks: background `#1A1A1A`, border `#2E2E2E`, monospace font, padding
+  - If `sources` present and not empty: render SourceReference components at bottom
+- Typing indicator (if isStreaming): pulsing dots animation `...`
+- Timestamp below message: muted `#7A7A7A`, small text, relative time
+
+**`ChatInput.tsx`:**
+- Glass-styled input area at bottom of chat
+- Textarea (auto-grows up to 4 lines, then scrolls)
+  - Background: `rgba(255,255,255,0.03)`
+  - Border: `1px solid #2A2A2A`
+  - Focus: border `#C9C9C9`
+  - Color: `#F2F2F2`
+  - Placeholder: "Ask about devices, troubleshooting, configurations..."
+- Send button (right side, GlassButton primary, icon: SendOutlined from @ant-design/icons)
+  - Or use → arrow icon
+- Keyboard: Enter to send, Shift+Enter for new line
+- Disabled state while AI is streaming (button shows loading spinner)
+- Props: `onSend: (content: string) => void`, `disabled: boolean`
+
+**`SuggestedQueries.tsx`:**
+- Props: `onSelect: (query: string) => void`
+- Displayed on welcome screen (no active session)
+- Header: "NavDashboard AI Assistant" with robot icon, subtitle "Ask me anything about your LiFi devices"
+- Grid of 6 glass cards (2×3 or 3×2), each with a pre-written query:
+  1. "What is the current status of all pairs?"
+  2. "Show me all faulty devices"
+  3. "How to troubleshoot OU connection issues?"
+  4. "List all devices at each location"
+  5. "What errors were reported recently?"
+  6. "Summarize the system health"
+- Each card: icon + query text
+- Click → calls `onSelect(query)` which triggers sending that message
+- Glass hover effect (border glow)
+
+**`SourceReference.tsx`:**
+- Props: `source: {entity_type, entity_id, name, snippet}`
+- Small glass pill/tag displayed below assistant messages
+- Shows: entity type icon + entity name
+  - device → ApiOutlined
+  - couple → LinkOutlined
+  - pair → SwapOutlined
+  - error_log → WarningOutlined
+  - personnel → UserOutlined
+  - default → FileOutlined
+- Click → navigate to entity detail page:
+  - device → `/devices/{entity_id}`
+  - couple → `/couples/{entity_id}`
+  - pair → `/pairs/{entity_id}`
+  - error_log → `/troubleshooting`
+  - personnel → (no dedicated page, do nothing or navigate to search)
+- Tooltip on hover: shows snippet
+- Style: `background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 4px 12px;`
 
 ---
 
 ### MODIFIED FILES
 
-**`main.py`** — Full replacement. Keep ALL existing 13 router includes and add 3 new ones:
+**`main.py`** — Full replacement. Keep ALL existing 16 router includes and add 1 new:
 ```python
-from modules.documents.router import router as documents_router
-from modules.backup.router import router as backup_router
-from modules.reports.router import router as reports_router
-
-# Add after existing includes:
-app.include_router(documents_router, prefix="/api/v1/documents", tags=["Documents"])
-app.include_router(backup_router, prefix="/api/v1/backup", tags=["Backup"])
-app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
+from modules.ai_assistant.router import router as ai_router
+app.include_router(ai_router, prefix="/api/v1/ai", tags=["AI Assistant"])
 ```
-
-Keep everything else identical: CORS, exception handlers, health endpoint, startup event, all 13 existing router includes.
 
 **`migrations/env.py`** — Full replacement. Keep ALL existing model imports and add:
 ```python
-from modules.documents.models import Document
+from modules.ai_assistant.models import ChatSession, ChatMessage, EmbeddingDocument
 ```
-This is the only new model. Backup
 
-```markdown
-and Reports have no new models.
+**`requirements.txt`** — Full replacement. Keep ALL existing packages and add:
+```
+pgvector>=0.3.0
+```
+If `pgvector` is already present, keep it. Make sure `httpx` is also present (it should be from the original requirements).
 
-**`routes.tsx`** — Full replacement. Keep ALL existing routes. Replace PlaceholderPage for `/documents`, `/backup`, `/reports` with new page components:
+**`routes.tsx`** — Full replacement. Replace PlaceholderPage for `/ai` with:
 ```typescript
-import DocumentsPage from '@/modules/documents/pages/DocumentsPage';
-import BackupPage from '@/modules/backup/pages/BackupPage';
-import ReportsPage from '@/modules/reports/pages/ReportsPage';
+import AIChatPage from '@/modules/ai_chat/pages/AIChatPage';
 ```
-Keep all other routes exactly as they are (dashboard, devices, device detail, couples, couple detail, pairs, pair detail, map, troubleshooting, search, audit, comparison, login, and remaining placeholders for `/ai`, `/location-history`, `/settings`).
+Keep `/location-history` and `/settings` as PlaceholderPage.
 
-**`docker-compose.yml`** — Full replacement with MinIO service active. See DOCKER-COMPOSE CHANGES section above for exact specification.
-
----
-
-## BACKEND DOCKERFILE NOTE
-
-The backend Dockerfile currently installs `gcc`, `libpq-dev`, `gdal-bin`, `libgdal-dev`. For pg_dump/pg_restore to work from the backend container, `postgresql-client` must also be installed. Add it to the `apt-get install` line.
-
-Generate a complete replacement:
-
-**`NavDashboard/backend/Dockerfile`** (add to file list as file #40):
-
-```dockerfile
-FROM python:3.12-slim
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    gdal-bin \
-    libgdal-dev \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 8000
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+**`nginx/default.conf`** — Full replacement. Add SSE support:
+- For the `/api/` location block, add:
+```nginx
+proxy_buffering off;          # Required for SSE
+proxy_cache off;              # No caching for SSE
+proxy_set_header X-Accel-Buffering no;
 ```
-
-Also update the requirements.txt to ensure `minio` and `reportlab` and `xlsxwriter` are present.
-
-**`NavDashboard/backend/requirements.txt`** (add to file list as file #41):
-
-```
-fastapi>=0.110
-uvicorn[standard]>=0.29
-sqlalchemy>=2.0
-alembic>=1.13
-asyncpg
-psycopg2-binary
-geoalchemy2>=0.15
-pydantic>=2.6
-pydantic-settings
-python-jose[cryptography]
-passlib[bcrypt]
-bcrypt==4.0.1
-python-multipart
-redis>=5.0
-httpx
-openpyxl
-python-dotenv
-minio
-reportlab
-xlsxwriter
-pandas
-aiofiles
-pytest
-pytest-asyncio
-```
-
-NOTE: Keep the exact same packages that already exist in your current requirements.txt. The above list is the minimum. If your current file has additional packages (like `langchain`, `celery`, `paho-mqtt`, `pgvector`), keep them. The key additions for this phase are: `minio`, `reportlab`, `xlsxwriter`. If they are already present, no change needed.
-
----
-
-## UPDATED FILE LIST (41 total)
-
-### Backend — Documents Module (7 files)
-1. `NavDashboard/backend/modules/documents/__init__.py`
-2. `NavDashboard/backend/modules/documents/models.py`
-3. `NavDashboard/backend/modules/documents/schemas.py`
-4. `NavDashboard/backend/modules/documents/repository.py`
-5. `NavDashboard/backend/modules/documents/service.py`
-6. `NavDashboard/backend/modules/documents/router.py`
-7. `NavDashboard/backend/modules/documents/storage.py`
-
-### Backend — Backup Module (9 files)
-8. `NavDashboard/backend/modules/backup/__init__.py`
-9. `NavDashboard/backend/modules/backup/models.py`
-10. `NavDashboard/backend/modules/backup/schemas.py`
-11. `NavDashboard/backend/modules/backup/repository.py`
-12. `NavDashboard/backend/modules/backup/service.py`
-13. `NavDashboard/backend/modules/backup/router.py`
-14. `NavDashboard/backend/modules/backup/exporter.py`
-15. `NavDashboard/backend/modules/backup/importer.py`
-16. `NavDashboard/backend/modules/backup/pg_dump_handler.py`
-
-### Backend — Reports Module (8 files)
-17. `NavDashboard/backend/modules/reports/__init__.py`
-18. `NavDashboard/backend/modules/reports/models.py`
-19. `NavDashboard/backend/modules/reports/schemas.py`
-20. `NavDashboard/backend/modules/reports/repository.py`
-21. `NavDashboard/backend/modules/reports/service.py`
-22. `NavDashboard/backend/modules/reports/router.py`
-23. `NavDashboard/backend/modules/reports/generators.py`
-24. `NavDashboard/backend/modules/reports/templates_pdf.py`
-
-### Backend — Modified/Replaced Files (4 files)
-25. `NavDashboard/backend/main.py`
-26. `NavDashboard/backend/migrations/env.py`
-27. `NavDashboard/backend/Dockerfile`
-28. `NavDashboard/backend/requirements.txt`
-
-### Frontend — Documents Module (4 files)
-29. `NavDashboard/frontend/src/modules/documents/pages/DocumentsPage.tsx`
-30. `NavDashboard/frontend/src/modules/documents/components/DocumentUploader.tsx`
-31. `NavDashboard/frontend/src/modules/documents/components/DocumentList.tsx`
-32. `NavDashboard/frontend/src/modules/documents/hooks/useDocuments.ts`
-
-### Frontend — Backup Module (4 files)
-33. `NavDashboard/frontend/src/modules/backup/pages/BackupPage.tsx`
-34. `NavDashboard/frontend/src/modules/backup/components/ExportOptions.tsx`
-35. `NavDashboard/frontend/src/modules/backup/components/ImportUploader.tsx`
-36. `NavDashboard/frontend/src/modules/backup/hooks/useBackup.ts`
-
-### Frontend — Reports Module (3 files)
-37. `NavDashboard/frontend/src/modules/reports/pages/ReportsPage.tsx`
-38. `NavDashboard/frontend/src/modules/reports/components/ReportBuilder.tsx`
-39. `NavDashboard/frontend/src/modules/reports/hooks/useReports.ts`
-
-### Frontend/Docker — Modified Files (2 files)
-40. `NavDashboard/frontend/src/app/routes.tsx`
-41. `NavDashboard/docker-compose.yml`
-
----
-
-## MINIO CONFIGURATION NOTE
-
-The backend needs these environment variables (should already be in `.env`):
-```
-MINIO_ROOT_USER=navdashboard
-MINIO_ROOT_PASSWORD=navdashboard_minio_secret
-MINIO_ENDPOINT=minio:9000
-MINIO_BUCKET=navdashboard-files
-```
-
-If `core/config.py` does not already have these fields, they need to be added. However, DO NOT regenerate `core/config.py`. Instead, in `storage.py`, handle missing config gracefully:
-```python
-class MinIOStorage:
-    def __init__(self):
-        endpoint = getattr(settings, 'MINIO_ENDPOINT', 'minio:9000')
-        access_key = getattr(settings, 'MINIO_ROOT_USER', 'navdashboard')
-        secret_key = getattr(settings, 'MINIO_ROOT_PASSWORD', 'navdashboard_minio_secret')
-        self.bucket = getattr(settings, 'MINIO_BUCKET', 'navdashboard-files')
-        self.client = Minio(
-            endpoint=endpoint,
-            access_key=access_key,
-            secret_key=secret_key,
-            secure=False,
-        )
-```
-
-Also, the `storage.py` `ensure_bucket` should be called on first upload, not on init. Handle MinIO connection errors gracefully — if MinIO is not running, upload should return a clear error rather than crashing the entire backend.
-
----
-
-## NGINX NOTE
-
-The nginx config may need updating to handle larger file uploads. The existing config should already have `client_max_body_size 100M`. If generating a new nginx config, ensure this is present. However, DO NOT regenerate the nginx config — it's not in the file list.
+Keep all existing config (proxy headers, timeouts, client_max_body_size, gzip, etc.).
 
 ---
 
 ## VERIFICATION STEPS
 
-After generating all files, test in this order:
-
-1. **Rebuild everything** (MinIO is new):
+1. **Rebuild:**
    ```bash
    docker compose down
    docker compose up -d --build
    ```
 
-2. **Check all services running:**
+2. **Run migration:**
    ```bash
-   docker compose ps
-   # Should show: nginx, frontend, backend, db, redis, minio — all "Up"
-   ```
-
-3. **Check MinIO console:**
-   Open `http://localhost:9001` in browser. Login: navdashboard / navdashboard_minio_secret
-
-4. **Run migration** (for documents table):
-   ```bash
-   docker compose exec backend alembic revision --autogenerate -m "add_documents"
+   docker compose exec backend alembic revision --autogenerate -m "add_ai_tables"
    docker compose exec backend alembic upgrade head
    ```
 
-5. **Get auth token:**
+3. **Verify tables created:**
+   ```bash
+   docker compose exec db psql -U navdashboard -d navdashboard -c "\dt"
+   # Should show: chat_sessions, chat_messages, embedding_documents (new)
+   ```
+
+4. **Get token:**
    ```bash
    TOKEN=$(curl -s -X POST http://localhost/api/v1/auth/login \
      -H "Content-Type: application/json" \
      -d '{"email":"admin@navdashboard.com","password":"admin123"}' | jq -r .access_token)
    ```
 
-6. **Test document upload:**
+5. **Test AI health (Ollama check):**
    ```bash
-   echo "test file content" > /tmp/test.txt
-   curl -s -X POST http://localhost/api/v1/documents/upload \
-     -H "Authorization: Bearer $TOKEN" \
-     -F "file=@/tmp/test.txt" \
-     -F "entity_type=general" \
-     -F "description=Test upload" | jq .
+   curl -s http://localhost/api/v1/ai/health \
+     -H "Authorization: Bearer $TOKEN" | jq .
+   # If Ollama running: {"available": true, "models": ["llama3", "nomic-embed-text", ...]}
+   # If Ollama not running: {"available": false, "error": "..."}
    ```
 
-7. **Test document list:**
+6. **Test ingest status:**
    ```bash
-   curl -s http://localhost/api/v1/documents/ \
+   curl -s http://localhost/api/v1/ai/ingest/status \
      -H "Authorization: Bearer $TOKEN" | jq .
    ```
 
-8. **Test document download:**
+7. **Test embedding sync (only if Ollama running):**
    ```bash
-   DOC_ID=$(curl -s http://localhost/api/v1/documents/ \
-     -H "Authorization: Bearer $TOKEN" | jq -r '.items[0].id')
-   curl -s http://localhost/api/v1/documents/$DOC_ID/download \
-     -H "Authorization: Bearer $TOKEN" -o /tmp/downloaded.txt
-   cat /tmp/downloaded.txt
+   curl -s -X POST http://localhost/api/v1/ai/ingest \
+     -H "Authorization: Bearer $TOKEN" | jq .
+   # Should show: {"total_synced": N, "by_type": {...}}
    ```
 
-9. **Test XLSX export:**
+8. **Test chat (non-streaming):**
    ```bash
-   curl -s -X POST http://localhost/api/v1/backup/export/xlsx \
+   curl -s -X POST http://localhost/api/v1/ai/chat \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
-     -d '{"format":"xlsx"}' -o /tmp/export.xlsx
-   ls -la /tmp/export.xlsx
+     -d '{"content": "What devices are currently faulty?"}' | jq .
    ```
 
-10. **Test pg_dump:**
+9. **Test chat (streaming):**
+   ```bash
+   curl -N -X POST http://localhost/api/v1/ai/chat/stream \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"content": "List all pairs and their status"}'
+   # Should see SSE events streaming in
+   ```
+
+10. **Test sessions:**
     ```bash
-    curl -s -X POST http://localhost/api/v1/backup/pg-dump \
+    curl -s http://localhost/api/v1/ai/sessions \
       -H "Authorization: Bearer $TOKEN" | jq .
     ```
 
-11. **Test backup history:**
-    ```bash
-    curl -s http://localhost/api/v1/backup/pg-dump/history \
-      -H "Authorization: Bearer $TOKEN" | jq .
-    ```
+11. **Test frontend:**
+    - Navigate to `/ai`
+    - If Ollama running: see "AI Ready" indicator, click suggested query, see streaming response with sources
+    - If Ollama NOT running: see "AI Offline" indicator, sending message returns clear unavailability message
+    - Create multiple sessions, switch between them
+    - Delete a session
 
-12. **Test table counts:**
-    ```bash
-    curl -s http://localhost/api/v1/backup/table-counts \
-      -H "Authorization: Bearer $TOKEN" | jq .
-    ```
+12. **Test graceful degradation (if Ollama not running):**
+    - `/ai` page loads without errors
+    - Sessions list works
+    - Sending message returns polite "unavailable" message
+    - Ingest status shows `ollama_available: false`
+    - No 500 errors anywhere
 
-13. **Test report templates:**
-    ```bash
-    curl -s http://localhost/api/v1/reports/templates \
-      -H "Authorization: Bearer $TOKEN" | jq .
-    ```
-
-14. **Test report generation (PDF):**
-    ```bash
-    curl -s -X POST http://localhost/api/v1/reports/generate \
-      -H "Authorization: Bearer $TOKEN" \
-      -H "Content-Type: application/json" \
-      -d '{"template_id":"device_inventory","format":"pdf"}' \
-      -o /tmp/report.pdf
-    ls -la /tmp/report.pdf
-    ```
-
-15. **Test report generation (Excel):**
-    ```bash
-    curl -s -X POST http://localhost/api/v1/reports/generate \
-      -H "Authorization: Bearer $TOKEN" \
-      -H "Content-Type: application/json" \
-      -d '{"template_id":"error_summary","format":"xlsx"}' \
-      -o /tmp/report.xlsx
-    ls -la /tmp/report.xlsx
-    ```
-
-16. **Test frontend pages:**
-    - `/documents` — upload a file, see it in the list, download it, delete it
-    - `/backup` — create backup, see history, export XLSX, import XLSX
-    - `/reports` — see templates, generate PDF report, generate Excel report
-
-17. **Verify existing features unbroken:**
-    - `/devices`, `/couples`, `/pairs`, `/map`, `/troubleshooting`, `/search`, `/audit`, `/comparison` all still work
+13. **Verify existing features:**
+    - `/devices`, `/couples`, `/pairs`, `/map`, `/troubleshooting`, `/search`, `/audit`, `/comparison`, `/documents`, `/backup`, `/reports` all still work
 
 ---
 
 ## RULES REMINDER
 
-- ✅ Generate ALL 41 files listed — complete contents, no abbreviation
+- ✅ Generate ALL 22 files listed — complete contents, no abbreviation
 - ✅ Use exact color hex values from the palette
-- ✅ Follow existing patterns (router, repository, service, hooks, pages)
-- ✅ Use `from_attributes = True` in Pydantic models (not `orm_mode`)
-- ✅ Use default imports for shared components: `import GlassCard from '...'` NOT `{ GlassCard }`
-- ✅ main.py must include ALL existing 13 router includes plus 3 new ones
-- ✅ migrations/env.py must include ALL existing model imports plus `Document`
-- ✅ routes.tsx must include ALL existing routes plus 3 new page components
-- ✅ docker-compose.yml must include ALL existing services plus MinIO active
-- ✅ Handle MinIO connection errors gracefully — don't crash the backend
-- ✅ Handle pg_dump unavailability gracefully — return clear error message
-- ❌ DO NOT modify any file not listed above
-- ❌ DO NOT abbreviate with "// ... rest of code" or "# similar to above"
+- ✅ Use default imports for shared components: `import GlassCard from '...'`
+- ✅ main.py: keep ALL 16 existing router includes + add AI
+- ✅ migrations/env.py: keep ALL existing model imports + add 3 new
+- ✅ routes.tsx: keep ALL existing routes, replace only `/ai` placeholder
+- ✅ Handle Ollama unavailability GRACEFULLY everywhere — no crashes, clear messages
+- ✅ pgvector similarity search using raw SQL text queries
+- ✅ SSE streaming must work through nginx (proxy_buffering off)
+- ✅ Direct httpx calls to Ollama — NO LangChain
+- ❌ DO NOT modify any file not listed
+- ❌ DO NOT abbreviate with "// ... rest" or "# similar"
 - ❌ DO NOT skip any file
-- ❌ DO NOT use named imports `{ Component }` for shared components
+- ❌ DO NOT use LangChain or any LLM framework — direct HTTP only
 ```
 
 
@@ -1504,7 +1069,6 @@ After verification, produce concise report:
 
 you will need to write code as mentioned above
 this is the current directory structure :
-
 madhur@Rajs-MacBook-Pro NavDashboard % tree
 .
 ├── Makefile
@@ -1548,9 +1112,11 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │       │   ├── 919b93c9c09d_add_locations_couples.cpython-312.pyc
 │   │       │   ├── 959926f36bc1_add_pairs.cpython-312.pyc
 │   │       │   ├── aa477f490651_add_troubleshooting_status.cpython-312.pyc
+│   │       │   ├── aa51cc41dd6d_add_documents.cpython-312.pyc
 │   │       │   ├── ca3abdffb9ae_add_users_table.cpython-312.pyc
 │   │       │   └── dd1090696ae2_initial_audit_logs.cpython-312.pyc
 │   │       ├── aa477f490651_add_troubleshooting_status.py
+│   │       ├── aa51cc41dd6d_add_documents.py
 │   │       └── ca3abdffb9ae_add_users_table.py
 │   ├── modules
 │   │   ├── audit_trail
@@ -1579,6 +1145,23 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   ├── schemas.py
 │   │   │   └── service.py
 │   │   ├── backup
+│   │   │   ├── __pycache__
+│   │   │   │   ├── exporter.cpython-312.pyc
+│   │   │   │   ├── importer.cpython-312.pyc
+│   │   │   │   ├── pg_dump_handler.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── exporter.py
+│   │   │   ├── importer.py
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── pg_dump_handler.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
 │   │   ├── comparison
 │   │   │   ├── __pycache__
 │   │   │   │   ├── repository.cpython-312.pyc
@@ -1631,6 +1214,20 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   ├── schemas.py
 │   │   │   └── service.py
 │   │   ├── documents
+│   │   │   ├── __pycache__
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   ├── service.cpython-312.pyc
+│   │   │   │   └── storage.cpython-312.pyc
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   ├── service.py
+│   │   │   └── storage.py
 │   │   ├── init.py
 │   │   ├── inventory
 │   │   │   ├── __pycache__
@@ -1687,6 +1284,21 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   ├── schemas.py
 │   │   │   └── service.py
 │   │   ├── reports
+│   │   │   ├── __pycache__
+│   │   │   │   ├── generators.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   ├── service.cpython-312.pyc
+│   │   │   │   └── templates_pdf.cpython-312.pyc
+│   │   │   ├── generators.py
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── repository.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   ├── service.py
+│   │   │   └── templates_pdf.py
 │   │   ├── search
 │   │   │   ├── __pycache__
 │   │   │   │   ├── indexer.cpython-312.pyc
@@ -1740,6 +1352,11 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │       └── utils.py
 ├── database
 │   ├── backups
+│   │   ├── navdashboard_backup_20260321_205201.sql
+│   │   ├── navdashboard_backup_20260321_210322.sql
+│   │   ├── navdashboard_backup_20260321_210342.sql
+│   │   ├── navdashboard_backup_20260321_210441.sql
+│   │   └── test_backup.sql
 │   └── init
 │       ├── 01_extensions.sql
 │       └── 02_schemas.sql
@@ -1770,6 +1387,14 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   │   │   └── useAuth.ts
 │   │   │   │   └── pages
 │   │   │   │       └── LoginPage.tsx
+│   │   │   ├── backup
+│   │   │   │   ├── components
+│   │   │   │   │   ├── ExportOptions.tsx
+│   │   │   │   │   └── ImportUploader.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useBackup.ts
+│   │   │   │   └── pages
+│   │   │   │       └── BackupPage.tsx
 │   │   │   ├── comparison
 │   │   │   │   ├── components
 │   │   │   │   │   ├── ComparisonSelector.tsx
@@ -1811,6 +1436,14 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   │   └── pages
 │   │   │   │       ├── DeviceDetailPage.tsx
 │   │   │   │       └── DeviceListPage.tsx
+│   │   │   ├── documents
+│   │   │   │   ├── components
+│   │   │   │   │   ├── DocumentList.tsx
+│   │   │   │   │   └── DocumentUploader.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useDocuments.ts
+│   │   │   │   └── pages
+│   │   │   │       └── DocumentsPage.tsx
 │   │   │   ├── map
 │   │   │   │   ├── components
 │   │   │   │   │   ├── DeviceMarker.tsx
@@ -1834,6 +1467,13 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   │   └── pages
 │   │   │   │       ├── PairDetailPage.tsx
 │   │   │   │       └── PairListPage.tsx
+│   │   │   ├── reports
+│   │   │   │   ├── components
+│   │   │   │   │   └── ReportBuilder.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useReports.ts
+│   │   │   │   └── pages
+│   │   │   │       └── ReportsPage.tsx
 │   │   │   ├── search
 │   │   │   │   ├── components
 │   │   │   │   │   ├── AdvancedFilters.tsx
@@ -1909,6 +1549,8 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
     ├── phase 1 report.md
     ├── phase 11 report
     ├── phase 11b prompt.md
+    ├── phase 11b report.md
+    ├── phase 12 prompt.md
     ├── phase 2 reports.md
     ├── phase 3 report.md
     ├── phase 4 report.md
@@ -1918,8 +1560,10 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
     ├── tempdata2.md
     └── tempdata3.md
 
-99 directories, 312 files
-you have 2 
-options 1: get the whole file 
-op 2: write a prompt to get what you want from ai from that file (easy to understand for less important files)
+114 directories, 375 files
+
+
+you have 2 options you can choose both  
+1: get the whole file 
+2: write a prompt to get what you want from ai from that file (easy to understand for less important files)
 tell me which files will you need as soon as possible for this phase you can ask as many time and whenever you want or any other thing too
