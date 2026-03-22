@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import DateTime, String, Text, func, Index, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,9 +11,17 @@ from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
 
 class Device(Base, SoftDeleteMixin, CustomFieldsMixin):
     __tablename__ = "devices"
+    __table_args__ = (
+        Index(
+            "ix_devices_serial_number_not_deleted",
+            "serial_number",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     serial_number: Mapped[str] = mapped_column(
-        String(50), unique=True, index=True, nullable=False
+        String(50), index=True, nullable=False
     )
     device_type: Mapped[str] = mapped_column(String(10), nullable=False)
     couple_id: Mapped[Optional[UUID]] = mapped_column(
