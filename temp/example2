@@ -1,28 +1,32 @@
-** here the Phase 12 prompt** — AI Assistant module:
+
+
+Here's the **Phase 13 prompt** — Location History + Settings + Polish:
 
 ```markdown
 # ═══════════════════════════════════════════════════════════════
-# NAVDASHBOARD — PHASE 12: AI ASSISTANT
+# NAVDASHBOARD — PHASE 13: LOCATION HISTORY + SETTINGS + POLISH
 # ═══════════════════════════════════════════════════════════════
 
 ## PROJECT STATE (DO NOT REGENERATE — ALREADY EXISTS)
 
-NavDashboard is a LiFi device management system. Phases 1–11b are
-complete and working. 16 backend modules, 15 database tables,
-6 Docker services (nginx, frontend, backend, db, redis, minio).
+NavDashboard is a LiFi device management system. Phases 1–12 are
+complete and working. 17 backend modules, 19 database tables,
+6 Docker services.
 
-**Backend modules (16):** auth, devices, couples, pairs, locations,
+**Backend modules (17):** auth, devices, couples, pairs, locations,
 personnel, inventory, troubleshooting, status, dashboard, search,
-audit_trail, comparison, documents, backup, reports
+audit_trail, comparison, documents, backup, reports, ai_assistant
 
-**Database tables (16):** users, audit_logs, devices, device_status_history,
+**Database tables (19):** users, audit_logs, devices, device_status_history,
 personnel, assignment_history, fitting_materials, material_templates,
 locations, location_history, couples, pairs, error_logs,
-troubleshoot_entries, status_change_logs, documentsy7l. 
+troubleshoot_entries, status_change_logs, documents,
+chat_sessions, chat_messages, embedding_documents
 
-**PostgreSQL extensions active:** postgis, uuid-ossp, vector, pg_trgm, btree_gin
+**Docker services:** nginx (:80), frontend (:3000), backend (:8000),
+db (custom postgis+pgvector), redis (:6379), minio (:9000/:9001)
 
-**Current main.py router includes (KEEP ALL 16):**
+**Current main.py router includes (KEEP ALL 17):**
 ```python
 from modules.auth.router import router as auth_router
 from modules.devices.router import router as devices_router
@@ -40,6 +44,7 @@ from modules.comparison.router import router as comparison_router
 from modules.documents.router import router as documents_router
 from modules.backup.router import router as backup_router
 from modules.reports.router import router as reports_router
+from modules.ai_assistant.router import router as ai_router
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(devices_router, prefix="/api/v1/devices", tags=["Devices"])
@@ -57,6 +62,7 @@ app.include_router(comparison_router, prefix="/api/v1/comparison", tags=["Compar
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["Documents"])
 app.include_router(backup_router, prefix="/api/v1/backup", tags=["Backup"])
 app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
+app.include_router(ai_router, prefix="/api/v1/ai", tags=["AI Assistant"])
 ```
 
 **Current migrations/env.py model imports (KEEP ALL):**
@@ -72,6 +78,7 @@ from modules.pairs.models import Pair
 from modules.troubleshooting.models import ErrorLog, TroubleshootEntry
 from modules.status.models import StatusChangeLog
 from modules.documents.models import Document
+from modules.ai_assistant.models import ChatSession, ChatMessage, EmbeddingDocument
 ```
 
 **Current routes.tsx live routes (KEEP ALL):**
@@ -92,9 +99,9 @@ from modules.documents.models import Document
 /documents → DocumentsPage
 /backup → BackupPage
 /reports → ReportsPage
-/ai → PlaceholderPage          ← REPLACE THIS
-/location-history → PlaceholderPage  (keep as placeholder for Phase 13)
-/settings → PlaceholderPage          (keep as placeholder for Phase 13)
+/ai → AIChatPage
+/location-history → PlaceholderPage   ← REPLACE
+/settings → PlaceholderPage           ← REPLACE
 ```
 
 **Shared component imports (use default imports):**
@@ -104,89 +111,73 @@ import GlassButton from '@/shared/components/GlassButton';
 import GlassInput from '@/shared/components/GlassInput';
 import GlassModal from '@/shared/components/GlassModal';
 import PageHeader from '@/shared/components/PageHeader';
+import DataTable from '@/shared/components/DataTable';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import EmptyState from '@/shared/components/EmptyState';
+import StatusBadge from '@/shared/components/StatusBadge';
 import ConfirmDialog from '@/shared/components/ConfirmDialog';
 ```
 
-**Environment variables available (in .env):**
-```
-OLLAMA_BASE_URL=http://host.docker.internal:11434
-OLLAMA_MODEL=llama3
-OLLAMA_EMBED_MODEL=nomic-embed-text
-OLLAMA_EMBED_DIMENSION=768
-```
+**Existing location history data:**
+- The `location_history` table already has entries (created when couple locations change via `PUT /couples/{id}/location`)
+- `GET /api/v1/locations/history` already works (returns paginated location history)
+- `GET /api/v1/locations/history/{couple_id}` already works
+- `GET /api/v1/couples/{id}/location-history` already works
+- The map module already has `LocationTrail.tsx` component that renders polylines
 
-**CRITICAL DEPLOYMENT CONSTRAINT:**
-- On developer Mac: Ollama runs locally, accessible at `http://host.docker.internal:11434`
-- On Oracle Cloud (1 core, 1GB RAM): Ollama is NOT available
-- The AI module MUST gracefully handle Ollama being unavailable
-- When Ollama is unavailable: chat endpoint should return a clear message like "AI assistant is not available. Ollama is not running or not reachable."
-- All other endpoints (sessions, ingest status) must still work without Ollama
+**Existing auth endpoints:**
+- `GET /api/v1/auth/users` — list all users (admin only)
+- `POST /api/v1/auth/register` — create user (admin only)
+- `PUT /api/v1/auth/users/{id}` — update user (admin only)
+- `DELETE /api/v1/auth/users/{id}` — soft delete user (admin only)
+- `GET /api/v1/auth/me` — current user profile
 
----
-
-## ARCHITECTURE DECISION: DIRECT HTTP (NO LANGCHAIN)
-
-Do NOT use LangChain. Use `httpx` to call the Ollama HTTP API directly.
-This reduces dependencies, complexity, and failure points.
-
-**Ollama API endpoints used:**
-- `POST /api/embeddings` — generate embeddings
-  ```json
-  {"model": "nomic-embed-text", "prompt": "text to embed"}
-  → {"embedding": [0.1, 0.2, ...]}  // 768-dim vector
-  ```
-- `POST /api/chat` — chat completion
-  ```json
-  {"model": "llama3", "messages": [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}], "stream": true}
-  → streamed NDJSON: {"message": {"role": "assistant", "content": "token"}, "done": false}
-  ```
-- `GET /api/tags` — list available models
-  ```json
-  → {"models": [{"name": "llama3", ...}, {"name": "nomic-embed-text", ...}]}
-  ```
-
-**pgvector usage:**
-- Store embeddings in `embedding_documents` table using `Vector(768)` column
-- Similarity search: `SELECT ... ORDER BY embedding <=> $1::vector LIMIT k`
-- Use raw SQLAlchemy text queries for vector operations
+**Existing AI endpoints:**
+- `GET /api/v1/ai/health` — Ollama connectivity check
+- `GET /api/v1/ai/ingest/status` — embedding sync status
 
 ---
 
-## FILES TO GENERATE (22 total)
+## COLOR PALETTE (exact values)
 
-### Backend — AI Assistant Module (10 files)
-1. `NavDashboard/backend/modules/ai_assistant/__init__.py`
-2. `NavDashboard/backend/modules/ai_assistant/models.py`
-3. `NavDashboard/backend/modules/ai_assistant/schemas.py`
-4. `NavDashboard/backend/modules/ai_assistant/repository.py`
-5. `NavDashboard/backend/modules/ai_assistant/service.py`
-6. `NavDashboard/backend/modules/ai_assistant/router.py`
-7. `NavDashboard/backend/modules/ai_assistant/embeddings.py`
-8. `NavDashboard/backend/modules/ai_assistant/retriever.py`
-9. `NavDashboard/backend/modules/ai_assistant/prompts.py`
-10. `NavDashboard/backend/modules/ai_assistant/chain.py`
+- Background: `#0A0A0A`, Cards: `#141414`, Secondary: `#1A1A1A`
+- Text primary: `#F2F2F2`, secondary: `#B8B8B8`, muted: `#7A7A7A`
+- Borders: `#242424`, Accent: `#2E2E2E`
+- Status: Working `#5F8F6B`, Not Working `#B68A3C`, Faulty `#9B3E3E`
+- Role badges: Admin `#8C8C8C`, Technician `#6F7A8C`, Viewer `#6E6E6E`
+- Glass: `background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06);`
 
-### Backend — Modified Files (3 files)
-11. `NavDashboard/backend/main.py`
-12. `NavDashboard/backend/migrations/env.py`
-13. `NavDashboard/backend/requirements.txt`
+---
 
-### Frontend — AI Chat Module (7 files)
-14. `NavDashboard/frontend/src/modules/ai_chat/pages/AIChatPage.tsx`
-15. `NavDashboard/frontend/src/modules/ai_chat/components/ChatWindow.tsx`
-16. `NavDashboard/frontend/src/modules/ai_chat/components/ChatMessage.tsx`
-17. `NavDashboard/frontend/src/modules/ai_chat/components/ChatInput.tsx`
-18. `NavDashboard/frontend/src/modules/ai_chat/components/SuggestedQueries.tsx`
-19. `NavDashboard/frontend/src/modules/ai_chat/components/SourceReference.tsx`
-20. `NavDashboard/frontend/src/modules/ai_chat/hooks/useAIChat.ts`
+## FILES TO GENERATE (18 total)
 
-### Frontend — Modified File (1 file)
-21. `NavDashboard/frontend/src/app/routes.tsx`
+### Frontend — Location History Module (4 files)
+1. `NavDashboard/frontend/src/modules/location_history/pages/LocationHistoryPage.tsx`
+2. `NavDashboard/frontend/src/modules/location_history/components/HistoryTimeline.tsx`
+3. `NavDashboard/frontend/src/modules/location_history/components/HistoryMap.tsx`
+4. `NavDashboard/frontend/src/modules/location_history/hooks/useLocationHistory.ts`
 
-### Nginx — Modified File (1 file)
-22. `NavDashboard/nginx/default.conf`
+### Frontend — Settings Module (4 files)
+5. `NavDashboard/frontend/src/modules/settings/pages/SettingsPage.tsx`
+6. `NavDashboard/frontend/src/modules/settings/components/GeneralSettings.tsx`
+7. `NavDashboard/frontend/src/modules/settings/components/UserManagement.tsx`
+8. `NavDashboard/frontend/src/modules/settings/hooks/useSettings.ts`
+
+### Backend — Settings Endpoints (6 files)
+9. `NavDashboard/backend/modules/settings/__init__.py`
+10. `NavDashboard/backend/modules/settings/models.py`
+11. `NavDashboard/backend/modules/settings/schemas.py`
+12. `NavDashboard/backend/modules/settings/service.py`
+13. `NavDashboard/backend/modules/settings/repository.py`
+14. `NavDashboard/backend/modules/settings/router.py`
+
+### Seed Script (1 file)
+15. `NavDashboard/backend/shared/seed.py`
+
+### Modified Files (3 files)
+16. `NavDashboard/backend/main.py`
+17. `NavDashboard/backend/migrations/env.py`
+18. `NavDashboard/frontend/src/app/routes.tsx`
 
 ---
 
@@ -194,747 +185,460 @@ This reduces dependencies, complexity, and failure points.
 
 ---
 
-### MODELS (`models.py`)
+### LOCATION HISTORY MODULE — Frontend Only
 
-```python
-from core.database import Base, SoftDeleteMixin, CustomFieldsMixin
-from sqlalchemy import Column, String, Text, Integer, Boolean, DateTime, ForeignKey, Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID as PgUUID, JSONB
-from sqlalchemy.orm import Mapped, mapped_column
-from pgvector.sqlalchemy import Vector
-import uuid
-import enum
-from datetime import datetime
+This module has NO new backend code. It uses existing endpoints:
+- `GET /api/v1/locations/history?couple_id=&page=&size=&date_from=&date_to=`
+- `GET /api/v1/locations/history/{couple_id}`
+- `GET /api/v1/couples/?size=100` (for couple dropdown)
+
+It also reuses the existing `LocationTrail` component from `@/modules/map/components/LocationTrail`.
+
+**`useLocationHistory.ts`:**
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/shared/api/client';
+import { PaginatedResponse } from '@/shared/types/common';
+
+interface LocationHistoryEntry {
+  id: string;
+  couple_id: string;
+  old_latitude: number;
+  old_longitude: number;
+  new_latitude: number;
+  new_longitude: number;
+  moved_at: string;
+  handled_by: string | null;
+  had_rf: boolean;
+  distance_meters: number | null;
+  fitting_materials_snapshot: Array<Record<string, any>> | null;
+  configuration_snapshot: Record<string, any> | null;
+  notes: string | null;
+  created_at: string;
+  handler_name?: string;
+  couple_name?: string;
+}
+
+// useLocationHistory(coupleId?, dateRange?) 
+//   → GET /api/v1/locations/history with query params
+//   → enabled always
+//   → if coupleId provided: add ?couple_id= param
+//   → if dateRange provided: add ?date_from=&date_to= params
+
+// useAllLocationHistory(filters)
+//   → same endpoint with pagination params
+
+// useCoupleTrailData(coupleId)
+//   → GET /api/v1/locations/history/{coupleId}?size=100
+//   → enabled when coupleId is truthy
+//   → transforms data for map rendering: array of {lat, lng, date, distance}
 ```
 
-**ChatSession:**
-- Inherits Base, SoftDeleteMixin
-- `user_id`: UUID FK → users.id, nullable=False
-- `title`: String, default="New Chat"
+**`LocationHistoryPage.tsx`:**
+- PageHeader: "Location History"
+- Top filter bar:
+  - Couple selector: Ant Design Select, searchable, loads from `GET /api/v1/couples/?size=100`
+    - Option "All Couples" as first option (value = empty string)
+  - Date range: Ant Design RangePicker
+  - "Apply" button (GlassButton)
+- Two-panel layout (responsive — stack on mobile):
+  - **Left panel (50%):** HistoryTimeline — scrollable list of location changes
+  - **Right panel (50%):** HistoryMap — Leaflet map showing movement trail
+- State management:
+  - `selectedCoupleId: string | null` (useState)
+  - `selectedEntryId: string | null` (useState) — when clicking a timeline entry, highlight it on map
+  - `dateRange: [string, string] | null` (useState)
+- When a couple is selected: timeline filters to that couple, map shows its trail
+- When "All Couples" is selected: timeline shows all history, map shows all couples' last positions
+- Selecting a timeline entry → map flies to that location point
 
-**ChatMessage:**
-- Inherits Base (provides id, created_at, updated_at, deleted_at)
-- `session_id`: UUID FK → chat_sessions.id, nullable=False, indexed
-- `role`: String — "user" or "assistant"
-- `content`: Text
-- `sources`: JSONB, nullable=True — list of source references
-- `token_count`: Integer, nullable=True — for tracking usage
+**`HistoryTimeline.tsx`:**
+- Props: `entries: LocationHistoryEntry[]`, `loading: boolean`, `selectedId: string | null`, `onSelect: (id: string) => void`
+- Vertical timeline with glass connecting line (2px, `#2C2C2C`)
+- Each entry is a GlassCard:
+  - **Top row:** Couple name tag (if showing all couples) + date/time (relative, absolute on hover)
+  - **Middle:** 
+    - "From: (lat, lng)" → "To: (lat, lng)" with arrow icon
+    - Distance badge: e.g., "152m" in muted pill
+  - **Details row:**
+    - Handled by: person name
+    - Had RF: Yes/No tag
+  - **Expandable section** (click "Show details"):
+    - Fitting materials snapshot: bullet list of material names + quantities
+    - Configuration snapshot: JSON viewer (formatted)
+    - Notes (if any)
+  - Selected entry: left border accent `#E6E6E6`, slightly brighter background
+- Pagination: "Load more" button at bottom OR scroll-based pagination
+- If no entries: EmptyState "No location changes recorded"
 
-**EmbeddingDocument:**
-- Inherits Base
-- `content`: Text — the text chunk that was embedded
-- `source_type`: String — "device", "couple", "pair", "error_log", "troubleshoot", "location", "personnel", "material", "custom"
-- `source_id`: UUID, nullable=True — FK to original entity if applicable
-- `embedding`: `Vector(768)` — pgvector column, 768 dimensions for nomic-embed-text
-- `metadata_json`: JSONB, nullable=True — extra context about the chunk
-
-**IMPORTANT for the Vector column:**
-```python
-from pgvector.sqlalchemy import Vector
-
-class EmbeddingDocument(Base):
-    __tablename__ = "embedding_documents"
-    # ... other columns ...
-    embedding = Column(Vector(768), nullable=True)
-```
-
-This requires the `pgvector` Python package. Add it to requirements.txt.
-
-Follow the same column definition pattern as your existing models (Device, Couple, etc.). If they use `Column(...)` syntax, use that. If they use `Mapped[...]` with `mapped_column(...)`, use that. Be consistent.
+**`HistoryMap.tsx`:**
+- Props: `entries: LocationHistoryEntry[]`, `selectedEntryId: string | null`, `coupleId: string | null`
+- Leaflet map using dark CartoDB tiles (same as main map module)
+- If `coupleId` is set: show location trail polyline for that couple
+  - Reuse `LocationTrail` component from `@/modules/map/components/LocationTrail` if possible
+  - If importing is complex, duplicate the polyline logic:
+    - Dashed polyline `#7C7C7C` connecting all points chronologically
+    - Circle markers at each point with opacity fading (newest = full opacity, oldest = 0.3)
+    - Tooltip on each point: date + distance moved
+    - Most recent location: larger marker with glow
+- If `coupleId` is null (all couples): show all couples' current locations as markers
+  - Reuse marker style from map module (colored circles by status)
+- When `selectedEntryId` changes: fly to that entry's new location coordinates, highlight the corresponding circle
+- FitBounds: initial view fits all visible points
+- Map container: glass border, rounded corners
 
 ---
 
-### SCHEMAS (`schemas.py`)
+### SETTINGS MODULE — Backend
 
+**`models.py`:**
+```python
+# Settings are stored in a simple key-value table
+from core.database import Base
+from sqlalchemy import Column, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
+import uuid
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+    
+    # Do NOT redefine id if Base already provides it
+    # Just add settings-specific columns:
+    key = Column(String, unique=True, nullable=False, index=True)
+    value = Column(Text, nullable=True)
+    description = Column(String, nullable=True)
+```
+
+Follow the same column definition pattern as existing models. If Base provides id/created_at/updated_at/deleted_at, don't redefine them.
+
+**`schemas.py`:**
 ```python
 from pydantic import BaseModel
-from uuid import UUID
 from datetime import datetime
 
-class ChatMessageCreate(BaseModel):
-    content: str
-
-class ChatMessageResponse(BaseModel):
-    id: UUID
-    session_id: UUID
-    role: str
-    content: str
-    sources: list[dict] | None = None
-    token_count: int | None = None
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-class ChatSessionResponse(BaseModel):
-    id: UUID
-    user_id: UUID
-    title: str
-    created_at: datetime
+class SettingResponse(BaseModel):
+    key: str
+    value: str | None
+    description: str | None
     updated_at: datetime | None = None
-    message_count: int = 0
-    last_message_preview: str | None = None
-
+    
     class Config:
         from_attributes = True
 
-class ChatResponse(BaseModel):
-    message: ChatMessageResponse
-    session_id: UUID
+class SettingUpdate(BaseModel):
+    value: str
 
-class StreamChunk(BaseModel):
-    """For SSE streaming"""
-    token: str
-    done: bool = False
-    sources: list[dict] | None = None  # only sent with final chunk
-
-class IngestStatusResponse(BaseModel):
+class SystemInfoResponse(BaseModel):
+    version: str
+    database_size: str
+    table_count: int
+    total_devices: int
+    total_couples: int
+    total_pairs: int
     total_documents: int
-    last_sync: datetime | None = None
-    ollama_available: bool
-    ollama_models: list[str] = []
-    embedding_model_available: bool
-    chat_model_available: bool
+    total_users: int
+    total_audit_entries: int
+    total_embeddings: int
+    ollama_status: str
+    ollama_url: str
+    ollama_models: list[str]
+    environment: str
 
-class OllamaHealthResponse(BaseModel):
-    available: bool
-    url: str
-    models: list[str] = []
-    error: str | None = None
+class UserCreateRequest(BaseModel):
+    email: str
+    username: str
+    password: str
+    full_name: str
+    role: str  # "ADMIN", "TECHNICIAN", "VIEWER"
+
+class UserUpdateRequest(BaseModel):
+    full_name: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
 ```
 
----
-
-### EMBEDDINGS (`embeddings.py`)
-
-This module handles all interaction with the Ollama embedding API and pgvector storage.
-
+**`repository.py`:**
 ```python
-import httpx
-import logging
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text, delete
-from core.config import settings
-from modules.ai_assistant.models import EmbeddingDocument
-
-logger = logging.getLogger(__name__)
-
-OLLAMA_BASE_URL = getattr(settings, 'OLLAMA_BASE_URL', 'http://host.docker.internal:11434')
-EMBED_MODEL = getattr(settings, 'OLLAMA_EMBED_MODEL', 'nomic-embed-text')
-EMBED_DIM = getattr(settings, 'OLLAMA_EMBED_DIMENSION', 768)
+# get_setting(db, key) → Optional[SystemSetting]
+# get_all_settings(db) → list[SystemSetting]
+# set_setting(db, key, value, description=None) → SystemSetting (upsert)
+# get_system_info(db) → dict  
+#   - Database size: SELECT pg_size_pretty(pg_database_size(current_database()))
+#   - Table count, entity counts from various tables
 ```
 
-Functions:
-
-- `async def check_ollama_available() -> tuple[bool, list[str]]`
-  - Try `httpx.AsyncClient.get(OLLAMA_BASE_URL + "/api/tags", timeout=5.0)`
-  - If success: parse model names, return (True, model_names)
-  - If fail: return (False, [])
-  - NEVER raise — always return gracefully
-
-- `async def embed_text(text: str) -> list[float] | None`
-  - Call `POST {OLLAMA_BASE_URL}/api/embeddings` with `{"model": EMBED_MODEL, "prompt": text}`
-  - Return the embedding vector (list of 768 floats)
-  - If Ollama unavailable: log warning, return None
-  - Timeout: 30 seconds
-
-- `async def embed_and_store(db: AsyncSession, content: str, source_type: str, source_id: UUID | None = None, metadata: dict | None = None) -> EmbeddingDocument | None`
-  - Call `embed_text(content)`
-  - If embedding is None: return None (Ollama unavailable)
-  - Create EmbeddingDocument record with the embedding vector
-  - `db.add(doc)`, `await db.flush()`
-  - Return the document
-
-- `async def batch_embed_and_store(db: AsyncSession, items: list[dict]) -> int`
-  - Each item: `{"content": str, "source_type": str, "source_id": UUID|None, "metadata": dict|None}`
-  - Call `embed_and_store` for each item
-  - Return count of successfully embedded items
-  - Process in batches of 10 with `await db.commit()` after each batch
-
-- `async def sync_all_embeddings(db: AsyncSession) -> dict`
-  - **This is the main ingestion function.**
-  - Queries ALL entities from the database and creates/updates embeddings:
-    1. **Devices**: For each device → embed: `"Device {serial_number}, type: {device_type}, status: {status}, notes: {notes}"`
-    2. **Couples**: For each couple → embed: `"Couple {name}, status: {status}, has_rf: {has_rf}, location: ({lat}, {lng}), notes: {notes}"`
-    3. **Pairs**: For each pair → embed: `"Pair {name}, status: {status}, notes: {notes}"`
-    4. **Error Logs**: For each error → embed: `"Error on {entity_type}: {error_type}, severity: {severity}, description: {description}"`
-    5. **Troubleshoot Entries**: For each step → embed: `"Troubleshoot step: {step_description}, action: {action_taken}, resolution: {resolution}"`
-    6. **Personnel**: For each person → embed: `"Personnel {full_name}, role: {role}, email: {email}"`
-    7. **Fitting Materials**: For each material → embed: `"Material {name}, quantity: {quantity} {unit}, for couple: {couple_id}"`
-    8. **Location History**: For each entry → embed: `"Location change for couple {couple_id}: moved from ({old_lat},{old_lng}) to ({new_lat},{new_lng}), distance: {distance}m"`
-  - Before embedding: delete existing embeddings for that source_type + source_id to avoid duplicates
-  - Return summary: `{"total_synced": N, "by_type": {"device": 10, "couple": 4, ...}, "errors": 0}`
-  - If Ollama unavailable: return `{"total_synced": 0, "error": "Ollama not available"}`
-
-Import models from other modules:
-```python
-from modules.devices.models import Device
-from modules.couples.models import Couple
-from modules.pairs.models import Pair
-from modules.troubleshooting.models import ErrorLog, TroubleshootEntry
-from modules.personnel.models import Person
-from modules.inventory.models import FittingMaterial
-from modules.locations.models import LocationHistory
-```
-
----
-
-### RETRIEVER (`retriever.py`)
-
-Handles similarity search and context assembly.
-
-```python
-import logging
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-from modules.ai_assistant.embeddings import embed_text, EMBED_DIM
-
-logger = logging.getLogger(__name__)
-```
-
-Functions:
-
-- `async def vector_search(db: AsyncSession, query_text: str, limit: int = 5, source_types: list[str] | None = None) -> list[dict]`
-  - Embed the query text using `embed_text()`
-  - If embedding is None: return [] (Ollama unavailable)
-  - Run pgvector similarity search:
-    ```python
-    sql = """
-        SELECT id, content, source_type, source_id, metadata_json,
-               1 - (embedding <=> :query_vec::vector) as similarity
-        FROM embedding_documents
-        WHERE embedding IS NOT NULL
-    """
-    if source_types:
-        sql += " AND source_type = ANY(:source_types)"
-    sql += " ORDER BY embedding <=> :query_vec::vector LIMIT :limit"
-    ```
-  - Convert embedding list to string format for pgvector: `"[0.1, 0.2, ...]"`
-  - Return list of dicts: `[{"content": ..., "source_type": ..., "source_id": ..., "similarity": ..., "metadata": ...}]`
-
-- `async def structured_search(db: AsyncSession, query: str) -> list[dict]`
-  - Perform keyword-based search across entities (similar to search module)
-  - Search devices by serial_number, couples by name, pairs by name, errors by description
-  - Use ILIKE for fuzzy matching
-  - Return list of dicts with entity info
-  - This provides results even when Ollama is down (no embeddings needed)
-
-- `async def hybrid_retrieve(db: AsyncSession, query: str, limit: int = 10) -> list[dict]`
-  - Call both `vector_search` and `structured_search`
-  - Merge results, remove duplicates (by source_id)
-  - Sort by relevance (vector similarity score, then structured matches)
-  - Return top `limit` results
-
-- `def build_context(retrieved_docs: list[dict]) -> str`
-  - Format retrieved documents into a context string for the LLM:
-    ```
-    Context from NavDashboard database:
-
-    [Source: device] Device IU-00001, type: IU, status: WORKING, ...
-    [Source: error_log] Error on couple A2: Signal Degradation, severity: MEDIUM, ...
-    [Source: troubleshoot] Troubleshoot step: Checked OU alignment, action: ...
-    ```
-  - Truncate total context to ~3000 characters to fit in prompt
-  - Return the formatted string
-
-- `def extract_source_references(retrieved_docs: list[dict]) -> list[dict]`
-  - Convert retrieved docs into source reference format for the frontend:
-    ```python
-    [
-        {"entity_type": "device", "entity_id": "...", "name": "IU-00001", "snippet": "..."},
-        {"entity_type": "error_log", "entity_id": "...", "name": "Signal Degradation", "snippet": "..."},
-    ]
-    ```
-
----
-
-### PROMPTS (`prompts.py`)
-
-```python
-SYSTEM_PROMPT = """You are NavDashboard AI, an expert assistant for managing LiFi (Light Fidelity) devices.
-
-You have access to a database containing:
-- Devices: Indoor Units (IU), Outdoor Units (OU), Hybrid Cables (HC), and RF Listeners (RF), each with serial numbers, statuses, and assignments
-- Couples: Pairs of devices (IU + OU + HC, optionally RF) deployed at specific locations
-- Pairs: Two couples linked together forming a complete LiFi communication link
-- Troubleshooting: Error logs with severity levels and step-by-step troubleshooting entries
-- Personnel: Technicians and managers responsible for handling devices
-- Locations: GPS coordinates and movement history of deployed couples
-- Fitting Materials: Hardware and accessories used at each deployment site
-
-When answering questions:
-1. Use the provided context to give accurate, specific answers
-2. Reference device serial numbers, couple names, and pair names when relevant
-3. If the context doesn't contain enough information, say so clearly
-4. For troubleshooting questions, provide step-by-step guidance based on historical data
-5. Keep responses concise but complete
-6. Format lists and steps clearly using markdown"""
-
-QUERY_CLASSIFICATION_PROMPT = """Classify the following user query into one of these categories:
-- DATA_LOOKUP: User wants to find specific device/couple/pair information
-- TROUBLESHOOTING: User needs help diagnosing or fixing an issue
-- STATUS_CHECK: User wants to know the current status of entities
-- ANALYTICS: User wants statistics or trends
-- GENERAL: General question about the system or LiFi technology
-
-Query: {query}
-
-Respond with just the category name."""
-
-NO_OLLAMA_MESSAGE = """I'm sorry, but the AI assistant is currently unavailable. The Ollama service is not running or not reachable.
-
-**To enable the AI assistant:**
-1. Install Ollama from https://ollama.com
-2. Start Ollama: `ollama serve`
-3. Pull required models: `ollama pull llama3` and `ollama pull nomic-embed-text`
-4. The assistant will automatically connect when Ollama is available.
-
-In the meantime, you can use the **Search** feature to find information across all devices, couples, and pairs."""
-
-NO_CONTEXT_MESSAGE = """I don't have enough context in the database to answer this question specifically. 
-
-You might want to:
-1. Run **Sync Embeddings** from the AI settings to index all current data
-2. Try rephrasing your question with specific device serial numbers or couple names
-3. Use the **Search** page for direct database queries"""
-```
-
----
-
-### CHAIN (`chain.py`)
-
-The RAG chain orchestrator. Calls retriever → builds prompt → calls Ollama → returns response.
-
-```python
-import httpx
-import json
-import logging
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import AsyncGenerator
-from core.config import settings
-from modules.ai_assistant.retriever import hybrid_retrieve, build_context, extract_source_references
-from modules.ai_assistant.prompts import SYSTEM_PROMPT, NO_OLLAMA_MESSAGE, NO_CONTEXT_MESSAGE
-from modules.ai_assistant.embeddings import check_ollama_available
-
-logger = logging.getLogger(__name__)
-
-OLLAMA_BASE_URL = getattr(settings, 'OLLAMA_BASE_URL', 'http://host.docker.internal:11434')
-CHAT_MODEL = getattr(settings, 'OLLAMA_MODEL', 'llama3')
-```
-
-Functions:
-
-- `async def generate_response(db: AsyncSession, user_message: str, chat_history: list[dict] | None = None) -> dict`
-  - **Non-streaming version**
-  - 1. Check Ollama availability → if not available, return `{"content": NO_OLLAMA_MESSAGE, "sources": []}`
-  - 2. Call `hybrid_retrieve(db, user_message)` → get relevant context
-  - 3. Build context string with `build_context()`
-  - 4. Extract source references with `extract_source_references()`
-  - 5. Construct messages array:
-    ```python
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT + "\n\n" + context},
-    ]
-    # Add last 6 messages from chat_history (if provided) for conversation continuity
-    if chat_history:
-        for msg in chat_history[-6:]:
-            messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": user_message})
-    ```
-  - 6. Call Ollama: `POST {OLLAMA_BASE_URL}/api/chat` with `{"model": CHAT_MODEL, "messages": messages, "stream": false}`
-  - 7. Parse response, return: `{"content": response_text, "sources": source_references}`
-  - Timeout: 120 seconds (LLM can be slow)
-  - On error: return `{"content": "I encountered an error generating a response. Please try again.", "sources": []}`
-
-- `async def generate_response_stream(db: AsyncSession, user_message: str, chat_history: list[dict] | None = None) -> AsyncGenerator[str, None]`
-  - **Streaming version (Server-Sent Events)**
-  - Steps 1-5 same as non-streaming
-  - 6. Call Ollama with `stream: true`, read NDJSON lines
-  - 7. For each chunk: yield SSE-formatted data:
-    ```python
-    yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
-    ```
-  - 8. After final chunk: yield sources:
-    ```python
-    yield f"data: {json.dumps({'token': '', 'done': True, 'sources': source_references})}\n\n"
-    ```
-  - On error: yield error message as final chunk
-
-- `async def generate_session_title(user_message: str) -> str`
-  - If Ollama available: ask it to generate a short title for the conversation
-    - Prompt: `"Generate a very short title (5 words max) for a conversation that starts with: {user_message}. Respond with just the title, no quotes."`
-  - If Ollama unavailable: return first 50 chars of user_message as title
-  - Timeout: 10 seconds
-
----
-
-### REPOSITORY (`repository.py`)
-
-```python
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, delete
-from uuid import UUID
-from typing import Optional
-from modules.ai_assistant.models import ChatSession, ChatMessage, EmbeddingDocument
-```
-
-Functions:
-
-- `async def create_session(db, user_id: UUID, title: str = "New Chat") -> ChatSession`
-- `async def get_session(db, session_id: UUID) -> Optional[ChatSession]`
-- `async def get_user_sessions(db, user_id: UUID, skip: int = 0, limit: int = 50) -> list[dict]`
-  - Returns sessions with message_count and last_message_preview (LEFT JOIN ChatMessage, ORDER BY latest message timestamp DESC)
-- `async def update_session_title(db, session_id: UUID, title: str) -> ChatSession`
-- `async def delete_session(db, session_id: UUID)` — hard delete session + its messages
-- `async def add_message(db, session_id: UUID, role: str, content: str, sources: list[dict] | None = None, token_count: int | None = None) -> ChatMessage`
-- `async def get_session_messages(db, session_id: UUID, skip: int = 0, limit: int = 100) -> list[ChatMessage]`
-  - ORDER BY created_at ASC (chronological)
-- `async def get_embedding_count(db) -> int`
-- `async def get_last_sync_time(db) -> Optional[datetime]`
-  - MAX(created_at) from embedding_documents
-
----
-
-### SERVICE (`service.py`)
-
-```python
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from modules.ai_assistant import repository, chain, embeddings
-from modules.ai_assistant.schemas import *
-from shared.audit import record_audit
-```
-
-Functions:
-
-- `async def send_message(db, session_id: UUID | None, user_id: UUID, content: str) -> dict`
-  - If session_id is None: create new session, generate title
-  - Save user message to DB
-  - Load chat history (last 10 messages from this session)
-  - Call `chain.generate_response(db, content, chat_history)`
-  - Save assistant message to DB (with sources)
-  - Return: `{"message": ChatMessageResponse, "session_id": UUID}`
-
-- `async def send_message_stream(db, session_id: UUID | None, user_id: UUID, content: str) -> AsyncGenerator`
-  - If session_id is None: create new session, generate title
-  - Save user message to DB
-  - Load chat history
-  - Yield from `chain.generate_response_stream(db, content, chat_history)`
-  - After streaming complete: save full assistant message to DB
-  - **Note:** For streaming, the full response needs to be accumulated to save to DB. Yield tokens as they come, but also collect them.
-
-- `async def get_sessions(db, user_id: UUID) -> list[ChatSessionResponse]`
-- `async def get_session_messages(db, session_id: UUID) -> list[ChatMessageResponse]`
-- `async def delete_session(db, session_id: UUID, user_id: UUID)`
-- `async def trigger_sync(db, user_id: UUID) -> dict`
-  - Call `embeddings.sync_all_embeddings(db)`
-  - Record audit
-  - Return sync summary
-- `async def get_ingest_status(db) -> IngestStatusResponse`
-  - Check Ollama availability
-  - Get embedding count + last sync time
-  - Check if required models are available
-  - Return IngestStatusResponse
-
----
-
-### ROUTER (`router.py`, prefix: `/ai`)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/chat` | Send message, get full response. Body: `{"content": "...", "session_id": "..." (optional)}`. Returns ChatResponse. |
-| POST | `/chat/stream` | Send message, get SSE stream. Body: `{"content": "...", "session_id": "..." (optional)}`. Returns `EventSourceResponse`. |
-| GET | `/sessions` | List chat sessions for current user. Returns list[ChatSessionResponse]. |
-| GET | `/sessions/{session_id}` | Get session with messages. Returns `{"session": ChatSessionResponse, "messages": list[ChatMessageResponse]}`. |
-| DELETE | `/sessions/{session_id}` | Delete a chat session. |
-| POST | `/ingest` | Trigger embedding sync. Returns sync summary dict. |
-| GET | `/ingest/status` | Get sync status + Ollama health. Returns IngestStatusResponse. |
-| GET | `/health` | Check Ollama connectivity. Returns OllamaHealthResponse. |
-
-All require `Depends(get_current_user)`.
-
-**For SSE streaming:**
-```python
-from fastapi.responses import StreamingResponse
-
-@router.post("/chat/stream")
-async def chat_stream(
-    request: ChatMessageCreate,
-    session_id: UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    async def event_generator():
-        async for chunk in service.send_message_stream(db, session_id, current_user.id, request.content):
-            yield chunk
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",  # Disable nginx buffering
-        },
-    )
-```
-
----
-
-### FRONTEND — AI CHAT MODULE
-
-**`useAIChat.ts`:**
-```typescript
-interface ChatSession {
-  id: string;
-  user_id: string;
-  title: string;
-  created_at: string;
-  updated_at: string | null;
-  message_count: number;
-  last_message_preview: string | null;
-}
-
-interface ChatMessageItem {
-  id: string;
-  session_id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  sources: SourceRef[] | null;
-  token_count: number | null;
-  created_at: string;
-}
-
-interface SourceRef {
-  entity_type: string;
-  entity_id: string;
-  name: string;
-  snippet: string;
-}
-
-interface IngestStatus {
-  total_documents: number;
-  last_sync: string | null;
-  ollama_available: boolean;
-  ollama_models: string[];
-  embedding_model_available: boolean;
-  chat_model_available: boolean;
-}
-```
-
-Hooks:
-- `useChatSessions()` → `useQuery` GET `/api/v1/ai/sessions`
-- `useChatMessages(sessionId: string)` → `useQuery` GET `/api/v1/ai/sessions/{sessionId}`, enabled when sessionId truthy
-- `useSendMessage()` → `useMutation` POST `/api/v1/ai/chat` with `{content, session_id}`
-  - On success: invalidate `['chat-sessions']` and `['chat-messages', sessionId]`
-- `useDeleteSession()` → `useMutation` DELETE `/api/v1/ai/sessions/{id}`
-  - On success: invalidate `['chat-sessions']`
-- `useIngestStatus()` → `useQuery` GET `/api/v1/ai/ingest/status`, refetchInterval: 30000
-- `useTriggerIngest()` → `useMutation` POST `/api/v1/ai/ingest`
-- `useSendMessageStream()` → custom hook (NOT useMutation) that:
-  1. POSTs to `/api/v1/ai/chat/stream` using `fetch` with `ReadableStream`
-  2. Reads SSE chunks and updates local state with each token
-  3. Returns `{ sendStream, streamingContent, isStreaming, sources }`
-  4. Implementation:
-  ```typescript
-  export function useSendMessageStream() {
-    const [streamingContent, setStreamingContent] = useState('');
-    const [isStreaming, setIsStreaming] = useState(false);
-    const [sources, setSources] = useState<SourceRef[]>([]);
-    const qc = useQueryClient();
-
-    const sendStream = async (content: string, sessionId?: string) => {
-      setStreamingContent('');
-      setIsStreaming(true);
-      setSources([]);
-
-      const token = localStorage.getItem('token');
-      const url = sessionId
-        ? `/api/v1/ai/chat/stream?session_id=${sessionId}`
-        : '/api/v1/ai/chat/stream';
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content }),
-      });
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = '';
-
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.token) {
-                accumulated += data.token;
-                setStreamingContent(accumulated);
-              }
-              if (data.done && data.sources) {
-                setSources(data.sources || []);
-              }
-            } catch {}
-          }
-        }
-      }
-
-      setIsStreaming(false);
-      qc.invalidateQueries({ queryKey: ['chat-sessions'] });
-      qc.invalidateQueries({ queryKey: ['chat-messages'] });
-    };
-
-    return { sendStream, streamingContent, isStreaming, sources };
+**`service.py`:**
+- Wraps repository calls
+- `get_system_info(db)` — aggregates counts, checks Ollama, assembles SystemInfoResponse
+- `get_all_settings(db)` — returns all settings
+- `update_setting(db, key, value, user_id)` — updates setting, records audit
+- Seeds default settings on first call if empty:
+  ```python
+  DEFAULT_SETTINGS = {
+      "ollama_url": ("http://host.docker.internal:11434", "Ollama API URL"),
+      "ollama_model": ("llama3", "LLM model for chat"),
+      "ollama_embed_model": ("nomic-embed-text", "Embedding model"),
+      "default_map_lat": ("48.8566", "Default map center latitude"),
+      "default_map_lng": ("2.3522", "Default map center longitude"),
+      "default_map_zoom": ("13", "Default map zoom level"),
   }
   ```
 
+**`router.py` (prefix: `/settings`):**
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/` | Any authenticated | List all settings |
+| GET | `/system-info` | Any authenticated | System information summary |
+| PUT | `/{key}` | ADMIN only | Update a setting |
+| GET | `/users` | ADMIN only | List all users (delegates to auth module) |
+| POST | `/users` | ADMIN only | Create user (delegates to auth module) |
+| PUT | `/users/{id}` | ADMIN only | Update user (delegates to auth module) |
+| DELETE | `/users/{id}` | ADMIN only | Deactivate user (delegates to auth module) |
+
+**NOTE on user management:** The settings module's user endpoints are thin wrappers that call the existing auth module's repository/service functions. Import from `modules.auth.repository` and `modules.auth.service`. Do NOT duplicate user CRUD logic.
+
+```python
+from modules.auth import repository as auth_repo
+from modules.auth import service as auth_service
+from modules.auth.schemas import UserCreate, UserResponse
+
+@router.get("/users")
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("ADMIN")),
+):
+    users = await auth_repo.get_multi(db)
+    return users
+```
+
 ---
 
-**`AIChatPage.tsx`:**
-- Two-panel layout:
-  - **Left sidebar** (280px wide, glass background `#0B0B0B`):
-    - "New Chat" button (GlassButton primary, full width) at top
-    - Session list below: each session shows title (truncated), last message preview, relative timestamp
-    - Active session: background `#1E1E1E` with left border accent
-    - Hover: `#1A1A1A`
-    - Delete button on hover (small X icon, with ConfirmDialog)
-    - Bottom section: Ingest status indicator
-      - Green dot + "AI Ready" if Ollama available
-      - Red dot + "AI Offline" if not
-      - "Sync Data" button to trigger embedding sync
-      - Last sync time
-  - **Right main area**:
-    - If no session selected: welcome screen with SuggestedQueries
-    - If session selected: ChatWindow
-- State: `activeSessionId` in useState
-- Clicking "New Chat" → clear activeSessionId, show welcome screen
-- Clicking a session → set activeSessionId, load messages
+### SETTINGS MODULE — Frontend
 
-**`ChatWindow.tsx`:**
-- Props: `sessionId: string | null`, `onSessionCreated: (id: string) => void`
-- Scrollable message area (flex-grow, overflow-y auto)
-- Auto-scrolls to bottom on new messages (useRef + useEffect)
-- Renders ChatMessage components for each message
-- If streaming: render a temporary ChatMessage with `streamingContent` and a typing indicator
-- At bottom: ChatInput
-- Uses `useChatMessages(sessionId)` to load messages
-- Uses `useSendMessageStream()` for sending
+**`useSettings.ts`:**
+```typescript
+interface SystemSetting {
+  key: string;
+  value: string | null;
+  description: string | null;
+  updated_at: string | null;
+}
 
-**`ChatMessage.tsx`:**
-- Props: `message: {role, content, sources, created_at}`, `isStreaming?: boolean`
-- User messages:
-  - Aligned right
-  - Background: `#2A2A2A` with glass blur
-  - Border-radius: 16px 16px 4px 16px
-  - Max-width: 70%
-- Assistant messages:
-  - Aligned left
-  - Background: `#141414` with glass blur
-  - Border-radius: 16px 16px 16px 4px
-  - Max-width: 80%
-  - Content rendered as Markdown (use a simple markdown renderer — parse `**bold**`, `*italic*`, `` `code` ``, `- lists`, `### headings`, ```code blocks```)
-    - For simplicity: use `dangerouslySetInnerHTML` with a basic markdown-to-HTML converter function, OR use `react-markdown` if it's already available, OR write a simple parser
-    - Code blocks: background `#1A1A1A`, border `#2E2E2E`, monospace font, padding
-  - If `sources` present and not empty: render SourceReference components at bottom
-- Typing indicator (if isStreaming): pulsing dots animation `...`
-- Timestamp below message: muted `#7A7A7A`, small text, relative time
+interface SystemInfo {
+  version: string;
+  database_size: string;
+  table_count: number;
+  total_devices: number;
+  total_couples: number;
+  total_pairs: number;
+  total_documents: number;
+  total_users: number;
+  total_audit_entries: number;
+  total_embeddings: number;
+  ollama_status: string;
+  ollama_url: string;
+  ollama_models: string[];
+  environment: string;
+}
 
-**`ChatInput.tsx`:**
-- Glass-styled input area at bottom of chat
-- Textarea (auto-grows up to 4 lines, then scrolls)
-  - Background: `rgba(255,255,255,0.03)`
-  - Border: `1px solid #2A2A2A`
-  - Focus: border `#C9C9C9`
-  - Color: `#F2F2F2`
-  - Placeholder: "Ask about devices, troubleshooting, configurations..."
-- Send button (right side, GlassButton primary, icon: SendOutlined from @ant-design/icons)
-  - Or use → arrow icon
-- Keyboard: Enter to send, Shift+Enter for new line
-- Disabled state while AI is streaming (button shows loading spinner)
-- Props: `onSend: (content: string) => void`, `disabled: boolean`
+interface UserItem {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+}
 
-**`SuggestedQueries.tsx`:**
-- Props: `onSelect: (query: string) => void`
-- Displayed on welcome screen (no active session)
-- Header: "NavDashboard AI Assistant" with robot icon, subtitle "Ask me anything about your LiFi devices"
-- Grid of 6 glass cards (2×3 or 3×2), each with a pre-written query:
-  1. "What is the current status of all pairs?"
-  2. "Show me all faulty devices"
-  3. "How to troubleshoot OU connection issues?"
-  4. "List all devices at each location"
-  5. "What errors were reported recently?"
-  6. "Summarize the system health"
-- Each card: icon + query text
-- Click → calls `onSelect(query)` which triggers sending that message
-- Glass hover effect (border glow)
+// useSettings() → GET /api/v1/settings/ → list[SystemSetting]
+// useSystemInfo() → GET /api/v1/settings/system-info → SystemInfo
+// useUpdateSetting() → mutation PUT /api/v1/settings/{key}
+//   onSuccess: invalidate ['settings']
 
-**`SourceReference.tsx`:**
-- Props: `source: {entity_type, entity_id, name, snippet}`
-- Small glass pill/tag displayed below assistant messages
-- Shows: entity type icon + entity name
-  - device → ApiOutlined
-  - couple → LinkOutlined
-  - pair → SwapOutlined
-  - error_log → WarningOutlined
-  - personnel → UserOutlined
-  - default → FileOutlined
-- Click → navigate to entity detail page:
-  - device → `/devices/{entity_id}`
-  - couple → `/couples/{entity_id}`
-  - pair → `/pairs/{entity_id}`
-  - error_log → `/troubleshooting`
-  - personnel → (no dedicated page, do nothing or navigate to search)
-- Tooltip on hover: shows snippet
-- Style: `background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 4px 12px;`
+// useUsers() → GET /api/v1/settings/users → list[UserItem]
+// useCreateUser() → mutation POST /api/v1/settings/users
+//   onSuccess: invalidate ['users']
+// useUpdateUser() → mutation PUT /api/v1/settings/users/{id}
+//   onSuccess: invalidate ['users']
+// useDeleteUser() → mutation DELETE /api/v1/settings/users/{id}
+//   onSuccess: invalidate ['users']
+```
+
+**`SettingsPage.tsx`:**
+- PageHeader: "Settings"
+- Ant Design Tabs (glass styled):
+  - Tab 1: "General" → GeneralSettings component
+  - Tab 2: "User Management" → UserManagement component (only visible if user role is ADMIN)
+- Tab styling: glass background, active tab indicator `#E6E6E6`
+
+**`GeneralSettings.tsx`:**
+- Uses `useSystemInfo()` and `useSettings()`
+- Two sections:
+
+**Section 1: System Information (read-only GlassCard)**
+- Grid of info items (3 columns):
+  - Version: from systemInfo.version
+  - Environment: from systemInfo.environment
+  - Database Size: from systemInfo.database_size
+  - Tables: from systemInfo.table_count
+  - Total Devices: from systemInfo.total_devices
+  - Total Couples: from systemInfo.total_couples
+  - Total Pairs: from systemInfo.total_pairs
+  - Total Documents: from systemInfo.total_documents
+  - Total Users: from systemInfo.total_users
+  - Audit Entries: from systemInfo.total_audit_entries
+  - AI Embeddings: from systemInfo.total_embeddings
+- Each item: label (muted `#7A7A7A`) + value (primary `#F2F2F2`)
+
+**Section 2: AI Configuration (GlassCard, editable for ADMIN)**
+- Ollama Status: green dot + "Connected" / red dot + "Disconnected"
+- Ollama URL: editable text input (GlassInput), pre-filled from settings
+- Chat Model: editable text input or dropdown of available models (from systemInfo.ollama_models)
+- Embedding Model: editable text input
+- "Save" button (GlassButton, only shown if values changed)
+- If not admin: show values as read-only
+
+**Section 3: Map Defaults (GlassCard, editable for ADMIN)**
+- Default Latitude: number input
+- Default Longitude: number input  
+- Default Zoom: number input (1-18)
+- "Save" button
+
+**`UserManagement.tsx`:**
+- Only rendered for ADMIN users
+- "Create User" button (GlassButton primary) at top right
+- User table (DataTable or custom glass table):
+  - Columns: Name, Email, Username, Role (badge), Active (toggle), Created, Last Login, Actions
+  - Role badges:
+    - ADMIN: background `rgba(140,140,140,0.2)`, text `#8C8C8C`
+    - TECHNICIAN: background `rgba(111,122,140,0.2)`, text `#6F7A8C`
+    - VIEWER: background `rgba(110,110,110,0.2)`, text `#6E6E6E`
+  - Active column: Ant Design Switch (styled dark)
+  - Actions: Edit button, Deactivate button (or Activate if inactive)
+- Create/Edit user modal (GlassModal):
+  - Fields: Full Name, Email, Username, Password (create only), Role (Select: ADMIN, TECHNICIAN, VIEWER)
+  - Glass-styled inputs
+  - Submit button
+- Delete/Deactivate: ConfirmDialog
+
+---
+
+### SEED SCRIPT
+
+**`NavDashboard/backend/shared/seed.py`:**
+
+A comprehensive seed script that creates demo data when run via `python -m shared.seed` inside the backend container.
+
+```python
+"""
+NavDashboard Seed Script
+Creates demo data for development and testing.
+Safe to run multiple times — checks for existing data.
+
+Usage:
+  docker compose exec backend python -m shared.seed
+"""
+import asyncio
+import sys
+import os
+
+# Add parent dir to path so imports work
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+```
+
+**What to seed (only if tables are empty):**
+
+1. **Users (3):** — SKIP if users table has > 1 row (admin already exists)
+   - tech1@navdashboard.com / tech123 / "Sarah Chen" / TECHNICIAN
+   - viewer1@navdashboard.com / viewer123 / "James Wilson" / VIEWER
+
+2. **Personnel (6):** — SKIP if personnel table has > 0 rows
+   - Ahmed Al-Rashid (Technician)
+   - Maria Santos (Installer)
+   - James Chen (Manager)
+   - Fatima Noor (Technician)
+   - Lars Eriksson (Field Engineer)
+   - Priya Patel (Senior Technician)
+
+3. **Devices (12):** — SKIP if devices table has > 0 rows
+   - IU-001 through IU-003 (Indoor Units, WORKING)
+   - OU-001 through OU-003 (Outdoor Units, WORKING/NOT_WORKING/FAULTY)
+   - HC-001 through HC-003 (Hybrid Cables, WORKING)
+   - RF-001 through RF-003 (RF Listeners, WORKING/NOT_WORKING)
+
+4. **Material Templates (2):** — SKIP if material_templates has > 0 rows
+   - "Standard Rooftop Kit": Mounting Bracket ×2, Ethernet Cable Cat6 10m ×1, Weatherproof Sealant ×1, Cable Ties ×20
+   - "Indoor Minimal Kit": Wall Mount Plate ×1, Power Adapter ×1, Short Patch Cable ×1
+
+5. **Couples (4) with Locations and Materials:** — SKIP if couples has > 0 rows
+   - Couple A1: IU-001 + OU-001 + HC-001, no RF, WORKING, Paris (48.8566, 2.3522), Standard Rooftop materials
+   - Couple A2: IU-002 + OU-002 + HC-002 + RF-001, has RF, WORKING, Paris (48.8606, 2.3376), Standard Rooftop materials
+   - Couple B1: IU-003 + OU-003 + HC-003, no RF, NOT_WORKING, Paris (48.8530, 2.3499), Indoor Minimal materials
+   - Couple B2: spare devices, has RF (RF-002), FAULTY, Paris (48.8490, 2.3410), Standard Rooftop materials
+
+6. **Pairs (2):** — SKIP if pairs has > 0 rows
+   - Pair 01: Couple A1 + Couple A2, WORKING
+   - Pair 02: Couple B1 + Couple B2, FAULTY (auto-derived from B2)
+
+7. **Error Logs (5) with Troubleshoot Steps:** — SKIP if error_logs has > 0 rows
+   - Error 1: Device IU-001, "Connection Loss", HIGH, resolved, 2 steps
+   - Error 2: Couple A2, "Signal Degradation", MEDIUM, resolved, 1 step
+   - Error 3: Device OU-003, "Hardware Fault", CRITICAL, open
+   - Error 4: Couple B1, "Configuration Mismatch", LOW, resolved, 3 steps
+   - Error 5: Pair 02, "RF Interference", MEDIUM, open, 1 step
+
+8. **Location History (3 entries):** — SKIP if location_history has > 0 rows
+   - Couple A1 moved from (48.8550, 2.3500) to (48.8566, 2.3522), 200m, with materials snapshot
+   - Couple B1 moved from (48.8510, 2.3470) to (48.8530, 2.3499), 350m
+   - Couple A2 moved from (48.8620, 2.3400) to (48.8606, 2.3376), 250m
+
+9. **Default Settings:** — SKIP if system_settings has > 0 rows
+   - All DEFAULT_SETTINGS from the settings service
+
+**Implementation:**
+- Use `asyncio.run()` to run async operations
+- Create a new async session using `async_session_factory` from `core.database`
+- For each entity type: check count first, skip if data exists
+- Print progress: `"✅ Created 3 users"`, `"⏭️ Skipping personnel (6 already exist)"`
+- Print summary at end: total created by type
+- Handle errors gracefully: if one section fails, continue with next, print error
+- Commit after each section (not one big transaction)
+
+**Password hashing:** Use `from core.security import hash_password` (or whatever the existing function name is — check Phase 2 report: it uses passlib/bcrypt).
+
+**Creating entities:** Use the repository/service functions from each module where possible. If direct model creation is simpler, use SQLAlchemy directly:
+```python
+from modules.devices.models import Device
+device = Device(serial_number="IU-001", device_type="IU", status="WORKING")
+db.add(device)
+await db.flush()
+```
 
 ---
 
 ### MODIFIED FILES
 
-**`main.py`** — Full replacement. Keep ALL existing 16 router includes and add 1 new:
+**`main.py`** — Full replacement. Keep ALL existing 17 router includes and add 1:
 ```python
-from modules.ai_assistant.router import router as ai_router
-app.include_router(ai_router, prefix="/api/v1/ai", tags=["AI Assistant"])
+from modules.settings.router import router as settings_router
+app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
 ```
+Also update `version` to `"1.0.0"`.
 
 **`migrations/env.py`** — Full replacement. Keep ALL existing model imports and add:
 ```python
-from modules.ai_assistant.models import ChatSession, ChatMessage, EmbeddingDocument
+from modules.settings.models import SystemSetting
 ```
 
-**`requirements.txt`** — Full replacement. Keep ALL existing packages and add:
-```
-pgvector>=0.3.0
-```
-If `pgvector` is already present, keep it. Make sure `httpx` is also present (it should be from the original requirements).
-
-**`routes.tsx`** — Full replacement. Replace PlaceholderPage for `/ai` with:
+**`routes.tsx`** — Full replacement. Replace the last 2 PlaceholderPages:
 ```typescript
-import AIChatPage from '@/modules/ai_chat/pages/AIChatPage';
+import LocationHistoryPage from '@/modules/location_history/pages/LocationHistoryPage';
+import SettingsPage from '@/modules/settings/pages/SettingsPage';
 ```
-Keep `/location-history` and `/settings` as PlaceholderPage.
-
-**`nginx/default.conf`** — Full replacement. Add SSE support:
-- For the `/api/` location block, add:
-```nginx
-proxy_buffering off;          # Required for SSE
-proxy_cache off;              # No caching for SSE
-proxy_set_header X-Accel-Buffering no;
-```
-Keep all existing config (proxy headers, timeouts, client_max_body_size, gzip, etc.).
+All routes should now point to real page components. **No more PlaceholderPage imports needed** (but keep the PlaceholderPage component file — don't delete it).
 
 ---
 
@@ -946,16 +650,31 @@ Keep all existing config (proxy headers, timeouts, client_max_body_size, gzip, e
    docker compose up -d --build
    ```
 
-2. **Run migration:**
+2. **Run migration** (for system_settings table):
    ```bash
-   docker compose exec backend alembic revision --autogenerate -m "add_ai_tables"
+   docker compose exec backend alembic revision --autogenerate -m "add_system_settings"
    docker compose exec backend alembic upgrade head
    ```
 
-3. **Verify tables created:**
+3. **Run seed script:**
    ```bash
-   docker compose exec db psql -U navdashboard -d navdashboard -c "\dt"
-   # Should show: chat_sessions, chat_messages, embedding_documents (new)
+   docker compose exec backend python -m shared.seed
+   ```
+   Expected output:
+   ```
+   NavDashboard Seed Script
+   ========================
+   ✅ Created 2 users (tech1, viewer1)
+   ⏭️ Skipping personnel (6 already exist)
+   ⏭️ Skipping devices (9 already exist)
+   ⏭️ Skipping material templates (2 already exist)
+   ⏭️ Skipping couples (4 already exist)
+   ⏭️ Skipping pairs (2 already exist)
+   ⏭️ Skipping error logs (6 already exist)
+   ✅ Created 3 location history entries
+   ✅ Created 6 default settings
+   
+   Seed complete!
    ```
 
 4. **Get token:**
@@ -965,85 +684,66 @@ Keep all existing config (proxy headers, timeouts, client_max_body_size, gzip, e
      -d '{"email":"admin@navdashboard.com","password":"admin123"}' | jq -r .access_token)
    ```
 
-5. **Test AI health (Ollama check):**
+5. **Test settings:**
    ```bash
-   curl -s http://localhost/api/v1/ai/health \
-     -H "Authorization: Bearer $TOKEN" | jq .
-   # If Ollama running: {"available": true, "models": ["llama3", "nomic-embed-text", ...]}
-   # If Ollama not running: {"available": false, "error": "..."}
-   ```
-
-6. **Test ingest status:**
-   ```bash
-   curl -s http://localhost/api/v1/ai/ingest/status \
+   curl -s http://localhost/api/v1/settings/ \
      -H "Authorization: Bearer $TOKEN" | jq .
    ```
 
-7. **Test embedding sync (only if Ollama running):**
+6. **Test system info:**
    ```bash
-   curl -s -X POST http://localhost/api/v1/ai/ingest \
+   curl -s http://localhost/api/v1/settings/system-info \
      -H "Authorization: Bearer $TOKEN" | jq .
-   # Should show: {"total_synced": N, "by_type": {...}}
    ```
 
-8. **Test chat (non-streaming):**
+7. **Test location history:**
    ```bash
-   curl -s -X POST http://localhost/api/v1/ai/chat \
-     -H "Authorization: Bearer $TOKEN" \
+   curl -s "http://localhost/api/v1/locations/history?page=1&size=10" \
+     -H "Authorization: Bearer $TOKEN" | jq .
+   ```
+
+8. **Test frontend pages:**
+   - `/location-history` — select a couple, see timeline + map trail, expand entry to see materials snapshot
+   - `/settings` → General tab → see system info + AI config + map defaults
+   - `/settings` → User Management tab → see users, create user, edit role, toggle active
+   - Run seed script again → should skip everything ("already exist")
+
+9. **Test technician login:**
+   ```bash
+   TECH_TOKEN=$(curl -s -X POST http://localhost/api/v1/auth/login \
      -H "Content-Type: application/json" \
-     -d '{"content": "What devices are currently faulty?"}' | jq .
-   ```
-
-9. **Test chat (streaming):**
-   ```bash
-   curl -N -X POST http://localhost/api/v1/ai/chat/stream \
-     -H "Authorization: Bearer $TOKEN" \
+     -d '{"email":"tech1@navdashboard.com","password":"tech123"}' | jq -r .access_token)
+   
+   # Should see settings but NOT User Management tab
+   # Should NOT be able to update settings
+   curl -s -X PUT http://localhost/api/v1/settings/ollama_url \
+     -H "Authorization: Bearer $TECH_TOKEN" \
      -H "Content-Type: application/json" \
-     -d '{"content": "List all pairs and their status"}'
-   # Should see SSE events streaming in
+     -d '{"value":"http://localhost:11434"}' | jq .
+   # Should return 403
    ```
 
-10. **Test sessions:**
-    ```bash
-    curl -s http://localhost/api/v1/ai/sessions \
-      -H "Authorization: Bearer $TOKEN" | jq .
-    ```
+10. **Verify ALL routes are live** (no more PlaceholderPages):
+    Navigate through every sidebar item. Every page should render real content (even if some are empty due to no data for that specific view).
 
-11. **Test frontend:**
-    - Navigate to `/ai`
-    - If Ollama running: see "AI Ready" indicator, click suggested query, see streaming response with sources
-    - If Ollama NOT running: see "AI Offline" indicator, sending message returns clear unavailability message
-    - Create multiple sessions, switch between them
-    - Delete a session
-
-12. **Test graceful degradation (if Ollama not running):**
-    - `/ai` page loads without errors
-    - Sessions list works
-    - Sending message returns polite "unavailable" message
-    - Ingest status shows `ollama_available: false`
-    - No 500 errors anywhere
-
-13. **Verify existing features:**
-    - `/devices`, `/couples`, `/pairs`, `/map`, `/troubleshooting`, `/search`, `/audit`, `/comparison`, `/documents`, `/backup`, `/reports` all still work
+11. **Verify existing features:**
+    `/devices`, `/couples`, `/pairs`, `/map`, `/troubleshooting`, `/search`, `/audit`, `/comparison`, `/documents`, `/backup`, `/reports`, `/ai` all still work
 
 ---
 
 ## RULES REMINDER
 
-- ✅ Generate ALL 22 files listed — complete contents, no abbreviation
-- ✅ Use exact color hex values from the palette
-- ✅ Use default imports for shared components: `import GlassCard from '...'`
-- ✅ main.py: keep ALL 16 existing router includes + add AI
-- ✅ migrations/env.py: keep ALL existing model imports + add 3 new
-- ✅ routes.tsx: keep ALL existing routes, replace only `/ai` placeholder
-- ✅ Handle Ollama unavailability GRACEFULLY everywhere — no crashes, clear messages
-- ✅ pgvector similarity search using raw SQL text queries
-- ✅ SSE streaming must work through nginx (proxy_buffering off)
-- ✅ Direct httpx calls to Ollama — NO LangChain
-- ❌ DO NOT modify any file not listed
-- ❌ DO NOT abbreviate with "// ... rest" or "# similar"
+- ✅ Generate ALL 18 files listed — complete contents, no abbreviation
+- ✅ Use exact color hex values
+- ✅ Use default imports: `import GlassCard from '...'` NOT `{ GlassCard }`
+- ✅ main.py: keep ALL 17 existing router includes + add settings
+- ✅ migrations/env.py: keep ALL existing model imports + add SystemSetting
+- ✅ routes.tsx: ALL routes point to real pages — zero PlaceholderPages
+- ✅ Seed script: safe to run multiple times, checks for existing data
+- ✅ Settings: user management delegates to auth module — no duplicate CRUD
+- ✅ Location history page: reuse existing backend endpoints, no new backend endpoints needed
+- ❌ DO NOT abbreviate
 - ❌ DO NOT skip any file
-- ❌ DO NOT use LangChain or any LLM framework — direct HTTP only
 ```
 
 
@@ -1064,7 +764,7 @@ After verification, produce concise report:
 3. **Dashboard components** — what renders with real data
 4. **Chart library** — Recharts integration status
 5. **Issues and fixes**
-6. **Phase 11b needs** — what Documents + Backup + Reports can use
+6. **next phase needs** — what next phase can use
 ```
 
 you will need to write code as mentioned above
@@ -1100,25 +800,45 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   └── versions
 │   │       ├── 11ced21b3d5f_add_personnel_inventory.py
 │   │       ├── 3845f6ceaac9_initial_audit_logs.py
+│   │       ├── 79b9861e081b_add_ai_tables.py
 │   │       ├── 8c160d3bc7f0_add_devices.py
 │   │       ├── 919b93c9c09d_add_locations_couples.py
 │   │       ├── 959926f36bc1_add_pairs.py
 │   │       ├── __pycache__
-│   │       │   ├── 03a68ed6aec5_add_locations_couples.cpython-312.pyc
 │   │       │   ├── 11ced21b3d5f_add_personnel_inventory.cpython-312.pyc
 │   │       │   ├── 3845f6ceaac9_initial_audit_logs.cpython-312.pyc
-│   │       │   ├── 5721eacc4a78_add_users_table.cpython-312.pyc
+│   │       │   ├── 79b9861e081b_add_ai_tables.cpython-312.pyc
 │   │       │   ├── 8c160d3bc7f0_add_devices.cpython-312.pyc
 │   │       │   ├── 919b93c9c09d_add_locations_couples.cpython-312.pyc
 │   │       │   ├── 959926f36bc1_add_pairs.cpython-312.pyc
 │   │       │   ├── aa477f490651_add_troubleshooting_status.cpython-312.pyc
 │   │       │   ├── aa51cc41dd6d_add_documents.cpython-312.pyc
-│   │       │   ├── ca3abdffb9ae_add_users_table.cpython-312.pyc
-│   │       │   └── dd1090696ae2_initial_audit_logs.cpython-312.pyc
+│   │       │   └── ca3abdffb9ae_add_users_table.cpython-312.pyc
 │   │       ├── aa477f490651_add_troubleshooting_status.py
 │   │       ├── aa51cc41dd6d_add_documents.py
 │   │       └── ca3abdffb9ae_add_users_table.py
 │   ├── modules
+│   │   ├── ai_assistant
+│   │   │   ├── __pycache__
+│   │   │   │   ├── chain.cpython-312.pyc
+│   │   │   │   ├── embeddings.cpython-312.pyc
+│   │   │   │   ├── models.cpython-312.pyc
+│   │   │   │   ├── prompts.cpython-312.pyc
+│   │   │   │   ├── repository.cpython-312.pyc
+│   │   │   │   ├── retriever.cpython-312.pyc
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   ├── schemas.cpython-312.pyc
+│   │   │   │   └── service.cpython-312.pyc
+│   │   │   ├── chain.py
+│   │   │   ├── embeddings.py
+│   │   │   ├── init.py
+│   │   │   ├── models.py
+│   │   │   ├── prompts.py
+│   │   │   ├── repository.py
+│   │   │   ├── retriever.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
 │   │   ├── audit_trail
 │   │   │   ├── __pycache__
 │   │   │   │   ├── repository.cpython-312.pyc
@@ -1351,6 +1071,7 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │       ├── pagination.py
 │       └── utils.py
 ├── database
+│   ├── Dockerfile
 │   ├── backups
 │   │   ├── navdashboard_backup_20260321_205201.sql
 │   │   ├── navdashboard_backup_20260321_210322.sql
@@ -1374,6 +1095,17 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
 │   │   │   └── routes.tsx
 │   │   ├── main.tsx
 │   │   ├── modules
+│   │   │   ├── ai_chat
+│   │   │   │   ├── components
+│   │   │   │   │   ├── ChatInput.tsx
+│   │   │   │   │   ├── ChatMessage.tsx
+│   │   │   │   │   ├── ChatWindow.tsx
+│   │   │   │   │   ├── SourceReference.tsx
+│   │   │   │   │   └── SuggestedQueries.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useAIChat.ts
+│   │   │   │   └── pages
+│   │   │   │       └── AIChatPage.tsx
 │   │   │   ├── audit_trail
 │   │   │   │   ├── components
 │   │   │   │   │   ├── AuditFilters.tsx
@@ -1544,6 +1276,7 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
     ├── Phase 6 report.md
     ├── Phase 8 report.md
     ├── Phase 9 report 
+    ├── Phase13 prompt.md
     ├── data.md
     ├── example2
     ├── phase 1 report.md
@@ -1551,6 +1284,7 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
     ├── phase 11b prompt.md
     ├── phase 11b report.md
     ├── phase 12 prompt.md
+    ├── phase 12 report.md
     ├── phase 2 reports.md
     ├── phase 3 report.md
     ├── phase 4 report.md
@@ -1560,7 +1294,7 @@ madhur@Rajs-MacBook-Pro NavDashboard % tree
     ├── tempdata2.md
     └── tempdata3.md
 
-114 directories, 375 files
+120 directories, 403 files
 
 
 you have 2 options you can choose both  
