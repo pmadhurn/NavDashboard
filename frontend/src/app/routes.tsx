@@ -34,6 +34,7 @@ import ComparisonPage from '@/modules/comparison/pages/ComparisonPage';
 import DocumentsPage from '@/modules/documents/pages/DocumentsPage';
 import BackupPage from '@/modules/backup/pages/BackupPage';
 import ReportsPage from '@/modules/reports/pages/ReportsPage';
+import AIChatPage from '@/modules/ai_chat/pages/AIChatPage';
 
 export function AppRoutes() {
   return (
@@ -54,7 +55,7 @@ export function AppRoutes() {
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="backup" element={<BackupPage />} />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="ai" element={<PlaceholderPage title="AI Assistant" icon={<RobotOutlined />} />} />
+        <Route path="ai" element={<AIChatPage />} />
         <Route path="location-history" element={<PlaceholderPage title="Location History" icon={<HistoryOutlined />} />} />
         <Route path="settings" element={<PlaceholderPage title="Settings" icon={<SettingOutlined />} />} />
       </Route>

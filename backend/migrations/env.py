@@ -20,6 +20,7 @@ from modules.pairs.models import Pair  # noqa
 from modules.troubleshooting.models import ErrorLog, TroubleshootEntry  # noqa
 from modules.status.models import StatusChangeLog  # noqa
 from modules.documents.models import Document  # noqa
+from modules.ai_assistant.models import ChatSession, ChatMessage, EmbeddingDocument  # noqa
 
 config = context.config
 if config.config_file_name is not None:

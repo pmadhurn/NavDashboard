@@ -1,0 +1,176 @@
+import httpx
+import json
+import logging
+from uuid import UUID
+from typing import AsyncGenerator, Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.config import settings
+from modules.ai_assistant.retriever import hybrid_retrieve, build_context, extract_source_references
+from modules.ai_assistant.prompts import SYSTEM_PROMPT, NO_OLLAMA_MESSAGE, NO_CONTEXT_MESSAGE
+from modules.ai_assistant.embeddings import check_ollama_available
+
+logger = logging.getLogger(__name__)
+
+OLLAMA_BASE_URL = settings.OLLAMA_BASE_URL
+CHAT_MODEL = settings.OLLAMA_MODEL
+
+
+async def generate_response(
+    db: AsyncSession,
+    user_message: str,
+    chat_history: Optional[list[dict]] = None,
+) -> dict:
+    """Non-streaming RAG response."""
+    available, _ = await check_ollama_available()
+    if not available:
+        return {"content": NO_OLLAMA_MESSAGE, "sources": []}
+
+    # Retrieve context
+    retrieved = await hybrid_retrieve(db, user_message)
+    context = build_context(retrieved)
+    source_refs = extract_source_references(retrieved)
+
+    # Build messages
+    system_content = SYSTEM_PROMPT
+    if context:
+        system_content += "\n\n" + context
+
+    messages = [{"role": "system", "content": system_content}]
+
+    if chat_history:
+        for msg in chat_history[-6:]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+
+    messages.append({"role": "user", "content": user_message})
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": CHAT_MODEL,
+                    "messages": messages,
+                    "stream": False,
+                },
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                content = data.get("message", {}).get("content", "")
+                return {"content": content, "sources": source_refs}
+            else:
+                logger.error("Ollama chat error: status=%s body=%s", resp.status_code, resp.text[:300])
+                return {
+                    "content": "I encountered an error generating a response. Please try again.",
+                    "sources": [],
+                }
+    except Exception as e:
+        logger.error("Ollama chat exception: %s", e)
+        return {
+            "content": "I encountered an error generating a response. Please try again.",
+            "sources": [],
+        }
+
+
+async def generate_response_stream(
+    db: AsyncSession,
+    user_message: str,
+    chat_history: Optional[list[dict]] = None,
+) -> AsyncGenerator[str, None]:
+    """Streaming RAG response via SSE."""
+    available, _ = await check_ollama_available()
+    if not available:
+        yield f"data: {json.dumps({'token': NO_OLLAMA_MESSAGE, 'done': True, 'sources': []})}\n\n"
+        return
+
+    # Retrieve context
+    retrieved = await hybrid_retrieve(db, user_message)
+    context = build_context(retrieved)
+    source_refs = extract_source_references(retrieved)
+
+    # Build messages
+    system_content = SYSTEM_PROMPT
+    if context:
+        system_content += "\n\n" + context
+
+    messages = [{"role": "system", "content": system_content}]
+
+    if chat_history:
+        for msg in chat_history[-6:]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+
+    messages.append({"role": "user", "content": user_message})
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream(
+                "POST",
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": CHAT_MODEL,
+                    "messages": messages,
+                    "stream": True,
+                },
+            ) as resp:
+                if resp.status_code != 200:
+                    yield f"data: {json.dumps({'token': 'Error: Failed to get response from AI model.', 'done': True, 'sources': []})}\n\n"
+                    return
+
+                async for line in resp.aiter_lines():
+                    if not line.strip():
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                        token = chunk.get("message", {}).get("content", "")
+                        done = chunk.get("done", False)
+
+                        if token:
+                            yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
+
+                        if done:
+                            yield f"data: {json.dumps({'token': '', 'done': True, 'sources': source_refs})}\n\n"
+                            return
+                    except json.JSONDecodeError:
+                        continue
+
+        # If we get here without a done signal
+        yield f"data: {json.dumps({'token': '', 'done': True, 'sources': source_refs})}\n\n"
+
+    except Exception as e:
+        logger.error("Ollama stream error: %s", e)
+        yield f"data: {json.dumps({'token': 'I encountered an error generating a response. Please try again.', 'done': True, 'sources': []})}\n\n"
+
+
+async def generate_session_title(user_message: str) -> str:
+    """Generate a short title for a chat session."""
+    available, _ = await check_ollama_available()
+    if not available:
+        return user_message[:50].strip() or "New Chat"
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": CHAT_MODEL,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Generate a very short title (5 words max) for a conversation "
+                                f"that starts with: {user_message[:200]}. Respond with just the title, no quotes."
+                            ),
+                        }
+                    ],
+                    "stream": False,
+                },
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                title = data.get("message", {}).get("content", "").strip()
+                return title[:100] if title else user_message[:50]
+            return user_message[:50].strip() or "New Chat"
+    except Exception as e:
+        logger.warning("Title generation failed: %s", e)
+        return user_message[:50].strip() or "New Chat"

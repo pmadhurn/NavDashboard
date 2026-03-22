@@ -60,7 +60,9 @@ services:
       start_period: 15s
 
   db:
-    image: imresamu/postgis:16-3.5
+    build:
+      context: ./database
+      dockerfile: Dockerfile
     environment:
       POSTGRES_DB: navdashboard
       POSTGRES_USER: navdashboard

@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "NavDashboard"
     API_V1_PREFIX: str = "/api/v1"
 
+    # Ollama / AI Assistant
+    OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
+    OLLAMA_MODEL: str = "llama3"
+    OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
+    OLLAMA_EMBED_DIMENSION: int = 768
+
     @property
     def async_database_url(self) -> str:
         return (

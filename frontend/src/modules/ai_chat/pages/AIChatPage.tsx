@@ -1,0 +1,315 @@
+import React, { useState, useCallback } from 'react';
+import {
+  RobotOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  SyncOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+} from '@ant-design/icons';
+import PageHeader from '@/shared/components/PageHeader';
+import GlassButton from '@/shared/components/GlassButton';
+import ConfirmDialog from '@/shared/components/ConfirmDialog';
+import ChatWindow from '../components/ChatWindow';
+import SuggestedQueries from '../components/SuggestedQueries';
+import {
+  useChatSessions,
+  useDeleteSession,
+  useIngestStatus,
+  useTriggerIngest,
+  useSendMessageStream,
+  type ChatSession,
+} from '../hooks/useAIChat';
+
+function formatRelativeTime(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+export default function AIChatPage() {
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const { data: sessions = [], isLoading: sessionsLoading } = useChatSessions();
+  const deleteSession = useDeleteSession();
+  const { data: ingestStatus } = useIngestStatus();
+  const triggerIngest = useTriggerIngest();
+
+  const { sendStream, streamingContent, isStreaming, sources, streamSessionId } = useSendMessageStream();
+
+  const handleNewChat = () => {
+    setActiveSessionId(null);
+  };
+
+  const handleSessionCreated = useCallback((id: string) => {
+    setActiveSessionId(id);
+  }, []);
+
+  const handleDeleteConfirm = async () => {
+    if (deleteTarget) {
+      await deleteSession.mutateAsync(deleteTarget);
+      if (activeSessionId === deleteTarget) {
+        setActiveSessionId(null);
+      }
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleSuggestedQuery = async (query: string) => {
+    await sendStream(query);
+  };
+
+  // When stream creates a new session, set it as active
+  React.useEffect(() => {
+    if (streamSessionId && !activeSessionId) {
+      setActiveSessionId(streamSessionId);
+    }
+  }, [streamSessionId, activeSessionId]);
+
+  return (
+    <div style={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
+      <PageHeader title="AI Assistant" icon={<RobotOutlined />} />
+
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        {/* Left sidebar */}
+        <div
+          style={{
+            width: 280,
+            flexShrink: 0,
+            background: 'rgba(11,11,11,0.8)',
+            backdropFilter: 'blur(20px)',
+            borderRight: '1px solid rgba(255,255,255,0.06)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {/* New Chat button */}
+          <div style={{ padding: 16 }}>
+            <GlassButton
+              onClick={handleNewChat}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <PlusOutlined /> New Chat
+            </GlassButton>
+          </div>
+
+          {/* Sessions list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px' }}>
+            {sessions.map((session: ChatSession) => (
+              <div
+                key={session.id}
+                onClick={() => setActiveSessionId(session.id)}
+                style={{
+                  padding: '10px 12px',
+                  marginBottom: 4,
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  background:
+                    activeSessionId === session.id
+                      ? '#1E1E1E'
+                      : 'transparent',
+                  borderLeft:
+                    activeSessionId === session.id
+                      ? '3px solid #C9C9C9'
+                      : '3px solid transparent',
+                  transition: 'all 0.15s ease',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+                onMouseEnter={(e) => {
+                  if (activeSessionId !== session.id) {
+                    e.currentTarget.style.background = '#1A1A1A';
+                  }
+                  const del = e.currentTarget.querySelector('[data-delete]') as HTMLElement;
+                  if (del) del.style.opacity = '1';
+                }}
+                onMouseLeave={(e) => {
+                  if (activeSessionId !== session.id) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                  const del = e.currentTarget.querySelector('[data-delete]') as HTMLElement;
+                  if (del) del.style.opacity = '0';
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: '#E0E0E0',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                    }}
+                  >
+                    {session.title}
+                  </span>
+                  <button
+                    data-delete
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(session.id);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#7A7A7A',
+                      cursor: 'pointer',
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                      padding: 2,
+                      fontSize: 12,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <DeleteOutlined />
+                  </button>
+                </div>
+                {session.last_message_preview && (
+                  <span
+                    style={{
+                      color: '#7A7A7A',
+                      fontSize: 11,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {session.last_message_preview}
+                  </span>
+                )}
+                <span style={{ color: '#5A5A5A', fontSize: 10 }}>
+                  {formatRelativeTime(session.created_at)} · {session.message_count} msgs
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Ingest status at bottom */}
+          <div
+            style={{
+              padding: 16,
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: ingestStatus?.ollama_available ? '#4CAF50' : '#F44336',
+                  display: 'inline-block',
+                }}
+              />
+              <span style={{ color: '#C9C9C9', fontSize: 12 }}>
+                {ingestStatus?.ollama_available ? 'AI Ready' : 'AI Offline'}
+              </span>
+            </div>
+            {ingestStatus?.total_documents !== undefined && (
+              <div style={{ color: '#7A7A7A', fontSize: 11, marginBottom: 4 }}>
+                {ingestStatus.total_documents} docs indexed
+              </div>
+            )}
+            {ingestStatus?.last_sync && (
+              <div style={{ color: '#7A7A7A', fontSize: 11, marginBottom: 8 }}>
+                Last sync: {formatRelativeTime(ingestStatus.last_sync)}
+              </div>
+            )}
+            <GlassButton
+              onClick={() => triggerIngest.mutate()}
+              disabled={triggerIngest.isPending || !ingestStatus?.ollama_available}
+              style={{
+                width: '100%',
+                fontSize: 12,
+                padding: '6px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <SyncOutlined spin={triggerIngest.isPending} />
+              {triggerIngest.isPending ? 'Syncing...' : 'Sync Data'}
+            </GlassButton>
+          </div>
+        </div>
+
+        {/* Right main area */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {activeSessionId ? (
+            <ChatWindow
+              sessionId={activeSessionId}
+              onSessionCreated={handleSessionCreated}
+            />
+          ) : (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1 }}>
+                <SuggestedQueries onSelect={handleSuggestedQuery} />
+              </div>
+              {/* Show streaming content even when no session yet */}
+              {isStreaming && (
+                <div
+                  style={{
+                    padding: '0 16px 16px',
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <div
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      borderRadius: 12,
+                      padding: 16,
+                      color: '#E0E0E0',
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {streamingContent || 'Thinking...'}
+                    <span style={{ animation: 'pulse 1.4s ease-in-out infinite' }}>▌</span>
+                  </div>
+                </div>
+              )}
+              <style>{`
+                @keyframes pulse {
+                  0%, 100% { opacity: 0.3; }
+                  50% { opacity: 1; }
+                }
+              `}</style>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Chat Session"
+        message="Are you sure you want to delete this chat session? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </div>
+  );
+}
