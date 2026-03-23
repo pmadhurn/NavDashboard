@@ -17,6 +17,7 @@ from modules.devices.schemas import (
 from shared.audit import record_audit
 from shared.filters import apply_filters
 from shared.pagination import PaginatedResponse, PaginationParams, paginate
+from shared.propagation import propagate_device_status_change
 
 
 def _to_response(device: Device) -> DeviceResponse:
@@ -79,7 +80,8 @@ async def update_device(
     old_values = {"serial_number": device.serial_number, "status": device.status}
 
     # If status is changing, create history
-    if device_in.status and device_in.status != device.status:
+    status_changed = device_in.status and device_in.status != device.status
+    if status_changed:
         history_entry = DeviceStatusHistory(
             device_id=device.id,
             old_status=device.status,
@@ -92,6 +94,10 @@ async def update_device(
     updated = await repository.update(db, device_id, device_in)
     if not updated:
         raise NotFoundException("Device not found")
+
+    # Cascade status to couple → pair
+    if status_changed:
+        await propagate_device_status_change(db, updated)
 
     await record_audit(
         db,
@@ -148,6 +154,9 @@ async def change_device_status(
     updated = await repository.update(db, device_id, DeviceUpdate(status=status))
     if not updated:
         raise NotFoundException("Device not found")
+
+    # Cascade status to couple → pair
+    await propagate_device_status_change(db, updated)
 
     await record_audit(
         db,

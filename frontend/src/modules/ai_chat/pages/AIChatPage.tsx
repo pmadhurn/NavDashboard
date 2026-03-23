@@ -4,19 +4,17 @@ import {
   PlusOutlined,
   DeleteOutlined,
   SyncOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
 } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
 import GlassButton from '@/shared/components/GlassButton';
 import ConfirmDialog from '@/shared/components/ConfirmDialog';
 import ChatWindow from '../components/ChatWindow';
+import ChatInput from '../components/ChatInput';
 import SuggestedQueries from '../components/SuggestedQueries';
 import {
   useChatSessions,
   useDeleteSession,
-  useIngestStatus,
-  useTriggerIngest,
+  useAutoSync,
   useSendMessageStream,
   type ChatSession,
 } from '../hooks/useAIChat';
@@ -40,12 +38,13 @@ export default function AIChatPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const { data: sessions = [], isLoading: sessionsLoading } = useChatSessions();
+  const { data: sessions = [] } = useChatSessions();
   const deleteSession = useDeleteSession();
-  const { data: ingestStatus } = useIngestStatus();
-  const triggerIngest = useTriggerIngest();
 
-  const { sendStream, streamingContent, isStreaming, sources, streamSessionId } = useSendMessageStream();
+  // Auto-sync on page open — also gives us ingestStatus & triggerIngest
+  const { ingestStatus, triggerIngest } = useAutoSync();
+
+  const { sendStream, streamingContent, isStreaming, streamSessionId } = useSendMessageStream();
 
   const handleNewChat = () => {
     setActiveSessionId(null);
@@ -65,7 +64,8 @@ export default function AIChatPage() {
     }
   };
 
-  const handleSuggestedQuery = async (query: string) => {
+  // Send from landing view (suggested query or typed message)
+  const handleLandingSend = async (query: string) => {
     await sendStream(query);
   };
 
@@ -81,7 +81,7 @@ export default function AIChatPage() {
       <PageHeader title="AI Assistant" icon={<RobotOutlined />} />
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        {/* Left sidebar */}
+        {/* ── Left sidebar ── */}
         <div
           style={{
             width: 280,
@@ -255,7 +255,7 @@ export default function AIChatPage() {
           </div>
         </div>
 
-        {/* Right main area */}
+        {/* ── Right main area ── */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {activeSessionId ? (
             <ChatWindow
@@ -263,34 +263,60 @@ export default function AIChatPage() {
               onSessionCreated={handleSessionCreated}
             />
           ) : (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ flex: 1 }}>
-                <SuggestedQueries onSelect={handleSuggestedQuery} />
-              </div>
-              {/* Show streaming content even when no session yet */}
-              {isStreaming && (
-                <div
-                  style={{
-                    padding: '0 16px 16px',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
+            /* ── Landing view: suggestions + chat input ── */
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              {/* Scrollable centre area with suggestions */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  minHeight: 0,
+                }}
+              >
+                <SuggestedQueries onSelect={handleLandingSend} />
+
+                {/* Show streaming content while waiting for session to be created */}
+                {isStreaming && (
                   <div
                     style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      borderRadius: 12,
-                      padding: 16,
-                      color: '#E0E0E0',
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      whiteSpace: 'pre-wrap',
+                      padding: '0 40px 24px',
+                      maxWidth: 800,
+                      width: '100%',
+                      margin: '0 auto',
                     }}
                   >
-                    {streamingContent || 'Thinking...'}
-                    <span style={{ animation: 'pulse 1.4s ease-in-out infinite' }}>▌</span>
+                    <div
+                      style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        borderRadius: 16,
+                        padding: '16px 20px',
+                        color: '#E0E0E0',
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {streamingContent || 'Thinking...'}
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          animation: 'pulse 1.4s ease-in-out infinite',
+                        }}
+                      >
+                        ▌
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Always-visible chat input at the bottom */}
+              <ChatInput onSend={handleLandingSend} disabled={isStreaming} />
+
               <style>{`
                 @keyframes pulse {
                   0%, 100% { opacity: 0.3; }

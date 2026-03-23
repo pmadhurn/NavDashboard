@@ -34,10 +34,11 @@ async def register_user(db: AsyncSession, user_in: UserCreate, current_user_role
     user = await repository.create(db, user_in)
     await record_audit(
         db,
+        action="CREATE",
         entity_type="user",
         entity_id=user.id,
-        action="CREATE",
-        changes={"email": user.email, "username": user.username, "role": user.role},
+        user_id=user.id,
+        new_values={"email": user.email, "username": user.username, "role": user.role},
     )
     return user
 

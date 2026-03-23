@@ -30,6 +30,7 @@ from modules.personnel import repository as personnel_repository
 from shared.audit import record_audit
 from shared.filters import apply_filters
 from shared.pagination import PaginatedResponse, PaginationParams
+from shared.propagation import propagate_couple_status_change
 
 from . import repository
 from .models import Couple
@@ -217,6 +218,11 @@ async def create_couple(
     )
 
     await db.refresh(couple)
+
+    # Cascade status to pair if couple is assigned to one
+    if couple.pair_id:
+        await propagate_couple_status_change(db, couple)
+
     return await _build_couple_response(db, couple)
 
 
@@ -227,12 +233,17 @@ async def update_couple(
     if not couple:
         raise NotFoundException("Couple not found")
 
+    old_status = couple.status
     old_values = _make_json_safe({"name": couple.name, "status": couple.status})
     update_data = couple_in.model_dump(exclude_unset=True)
 
     updated = await repository.update(db, couple_id, update_data)
     if not updated:
         raise NotFoundException("Couple not found")
+
+    # Cascade status change to pair
+    if updated.status != old_status and updated.pair_id:
+        await propagate_couple_status_change(db, updated)
 
     await record_audit(
         db,

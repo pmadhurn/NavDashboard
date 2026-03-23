@@ -67,6 +67,10 @@ async def soft_delete(db: AsyncSession, id: UUID) -> User:
     if not user:
         return None  # type: ignore[return-value]
     user.deleted_at = datetime.now(timezone.utc)
+    user.is_active = False
+    # Free the unique username/email slots so they can be reused
+    user.username = f"{user.username}__deleted_{user.id}"
+    user.email = f"{user.email}__deleted_{user.id}"
     await db.commit()
     await db.refresh(user)
     return user

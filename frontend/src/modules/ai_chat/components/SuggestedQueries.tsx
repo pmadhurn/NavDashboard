@@ -48,16 +48,15 @@ export default function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100%',
-        padding: 40,
+        padding: '32px 40px 16px',
       }}
     >
-      <RobotOutlined style={{ fontSize: 48, color: '#C9C9C9', marginBottom: 16 }} />
-      <h1 style={{ color: '#F2F2F2', fontSize: 24, fontWeight: 600, margin: 0 }}>
+      <RobotOutlined style={{ fontSize: 48, color: '#C9C9C9', marginBottom: 12 }} />
+      <h1 style={{ color: '#F2F2F2', fontSize: 22, fontWeight: 600, margin: 0 }}>
         NavDashboard AI Assistant
       </h1>
-      <p style={{ color: '#7A7A7A', fontSize: 14, marginTop: 8, marginBottom: 32 }}>
-        Ask me anything about your LiFi devices
+      <p style={{ color: '#7A7A7A', fontSize: 14, marginTop: 6, marginBottom: 24 }}>
+        Ask me anything about your LiFi devices, or pick a suggestion below
       </p>
 
       <div

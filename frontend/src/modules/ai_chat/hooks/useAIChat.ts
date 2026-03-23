@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
 
@@ -181,4 +181,22 @@ export function useSendMessageStream() {
   };
 
   return { sendStream, streamingContent, isStreaming, sources, streamSessionId };
+}
+
+export function useAutoSync() {
+  const { data: ingestStatus } = useIngestStatus();
+  const triggerIngest = useTriggerIngest();
+  const hasFired = useRef(false);
+
+  useEffect(() => {
+    if (hasFired.current) return;
+    if (!ingestStatus) return; // status hasn't loaded yet
+
+    if (ingestStatus.ollama_available) {
+      hasFired.current = true;
+      triggerIngest.mutate();
+    }
+  }, [ingestStatus]);
+
+  return { ingestStatus, triggerIngest };
 }

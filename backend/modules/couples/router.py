@@ -56,7 +56,7 @@ async def get_map_data(
 async def create_couple(
     couple_in: CoupleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
 ):
     return await service.create_couple(db, couple_in, current_user.id)
 
@@ -75,7 +75,7 @@ async def update_couple(
     id: UUID,
     couple_in: CoupleUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
 ):
     return await service.update_couple(db, id, couple_in, current_user.id)
 
@@ -84,7 +84,7 @@ async def update_couple(
 async def delete_couple(
     id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
 ):
     return await service.delete_couple(db, id, current_user.id)
 
@@ -94,7 +94,7 @@ async def change_location(
     id: UUID,
     location_in: LocationChangeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
 ):
     return await service.change_couple_location(db, id, location_in, current_user.id)
 

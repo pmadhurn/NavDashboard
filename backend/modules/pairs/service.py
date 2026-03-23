@@ -14,6 +14,7 @@ from modules.personnel.models import Person
 from shared.audit import record_audit
 from shared.filters import apply_filters
 from shared.pagination import PaginatedResponse, PaginationParams
+from shared.propagation import derive_status_from_children as _derive_pair_status
 
 from . import repository
 from .models import Pair
@@ -28,16 +29,6 @@ STATUS_COLORS: dict[str, str] = {
 
 def _get_status_color(status: str) -> str:
     return STATUS_COLORS.get(status, "#888888")
-
-
-def _derive_pair_status(statuses: list[str]) -> str:
-    for s in statuses:
-        if s == "FAULTY":
-            return "FAULTY"
-    for s in statuses:
-        if s == "NOT_WORKING":
-            return "NOT_WORKING"
-    return "WORKING"
 
 
 def _make_json_safe(data: dict) -> dict:
