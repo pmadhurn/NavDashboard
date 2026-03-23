@@ -28,3 +28,7 @@ database/backups/*.dump
 *.swp
 *.swo
 .DS_Store
+
+#venv
+
+venv
