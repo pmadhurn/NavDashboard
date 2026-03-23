@@ -12,7 +12,7 @@ import type { LocationHistory, MapDataPoint } from '@/shared/types/locations'
 export function useCouples(filters?: Record<string, unknown>) {
   return useQuery<PaginatedResponse<Couple>>({
     queryKey: ['couples', filters],
-    queryFn: () => api.get<PaginatedResponse<Couple>>('/couples', filters),
+    queryFn: () => api.get<PaginatedResponse<Couple>>('/couples/', filters),
   })
 }
 
@@ -27,7 +27,7 @@ export function useCouple(id: string) {
 export function useCreateCouple() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: CoupleCreate) => api.post<Couple>('/couples', data),
+    mutationFn: (data: CoupleCreate) => api.post<Couple>('/couples/', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['couples'] })
     },

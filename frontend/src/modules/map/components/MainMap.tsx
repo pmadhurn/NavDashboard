@@ -98,6 +98,22 @@ function MapClickHandler({
   return null
 }
 
+function MapResizer() {
+  const map = useMap()
+  useEffect(() => {
+    // Ensure map properly calculates its size after container mount/resize
+    setTimeout(() => map.invalidateSize(), 150)
+    
+    const obs = new ResizeObserver(() => {
+      map.invalidateSize()
+    })
+    obs.observe(map.getContainer())
+
+    return () => obs.disconnect()
+  }, [map])
+  return null
+}
+
 export default function MainMap({
   markers,
   selectedCoupleId,
@@ -139,6 +155,7 @@ export default function MainMap({
       }}
       zoomControl={true}
     >
+      <MapResizer />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

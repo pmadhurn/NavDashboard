@@ -141,18 +141,20 @@ export function useSendMessageStream() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let accumulated = '';
+      let buffer = '';
 
       while (reader) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const data = JSON.parse(line.substring(6));
               if (data.session_id && !streamSessionId) {
                 setStreamSessionId(data.session_id);
               }

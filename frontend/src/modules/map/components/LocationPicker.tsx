@@ -53,6 +53,17 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
   return null
 }
 
+function MapResizer() {
+  const map = useMap()
+  React.useEffect(() => {
+    setTimeout(() => map.invalidateSize(), 150)
+    const obs = new ResizeObserver(() => map.invalidateSize())
+    obs.observe(map.getContainer())
+    return () => obs.disconnect()
+  }, [map])
+  return null
+}
+
 export default function LocationPicker({
   value,
   onChange,
@@ -68,8 +79,6 @@ export default function LocationPicker({
     if (value) return [value.latitude, value.longitude]
     return [mapLat, mapLng]
   }, [value, mapLat, mapLng])
-
-  if (!settings) return null;
 
   const handleDragEnd = useCallback(
     (e: L.DragEndEvent) => {
@@ -116,6 +125,8 @@ export default function LocationPicker({
     outline: 'none',
   }
 
+  if (!settings) return null;
+
   return (
     <div>
       <div
@@ -134,6 +145,7 @@ export default function LocationPicker({
           style={{ width: '100%', height: '100%' }}
           zoomControl={true}
         >
+          <MapResizer />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

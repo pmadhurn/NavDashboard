@@ -19,6 +19,7 @@ import {
   SettingOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useUiStore } from '@/shared/stores/uiStore';
 
@@ -26,6 +27,7 @@ const navItems = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/devices', icon: <ApiOutlined />, label: 'Devices' },
   { key: '/couples', icon: <LinkOutlined />, label: 'Couples' },
+  { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel' },
   { key: '/pairs', icon: <SwapOutlined />, label: 'Pairs' },
   { key: '/map', icon: <EnvironmentOutlined />, label: 'Map' },
   { key: '/troubleshooting', icon: <ToolOutlined />, label: 'Troubleshooting' },
@@ -66,24 +68,41 @@ export default function Sidebar() {
       {/* Brand */}
       <div
         style={{
-          padding: collapsed ? '20px 0' : '20px 20px',
-          textAlign: 'center',
+          padding: collapsed ? '16px 0' : '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          gap: collapsed ? 0 : 12,
           borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+          height: 64,
+          boxSizing: 'border-box',
         }}
       >
-        <div
+        <img
+          src="/logo.png"
+          alt="NavDashboard Logo"
           style={{
-            fontSize: collapsed ? 16 : 18,
-            fontWeight: 700,
-            color: '#E6E6E6',
-            letterSpacing: collapsed ? 0 : 1,
-            textShadow: '0 0 20px rgba(230, 230, 230, 0.15)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
+            width: 32,
+            height: 32,
+            objectFit: 'contain',
+            filter: 'drop-shadow(0px 2px 8px rgba(139, 195, 74, 0.3))',
           }}
-        >
-          {collapsed ? 'ND' : 'NavDashboard'}
-        </div>
+        />
+        {!collapsed && (
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: '#E6E6E6',
+              letterSpacing: 1,
+              textShadow: '0 0 20px rgba(230, 230, 230, 0.15)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+            }}
+          >
+            NavDashboard
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

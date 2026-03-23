@@ -17,7 +17,7 @@ async def vector_search(
     source_types: Optional[list[str]] = None,
 ) -> list[dict]:
     """Perform pgvector similarity search on embedding_documents."""
-    embedding = await embed_text(query_text)
+    embedding = await embed_text(db, query_text)
     if embedding is None:
         return []
 

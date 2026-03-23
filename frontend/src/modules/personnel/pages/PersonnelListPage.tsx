@@ -1,73 +1,71 @@
 import React, { useState, useCallback } from 'react'
 import { Select, message } from 'antd'
-import { PlusOutlined, DatabaseOutlined } from '@ant-design/icons'
+import { PlusOutlined, DatabaseOutlined, UserOutlined } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
 import GlassCard from '@/shared/components/GlassCard'
 import GlassButton from '@/shared/components/GlassButton'
 import GlassInput from '@/shared/components/GlassInput'
 import ConfirmDialog from '@/shared/components/ConfirmDialog'
-import DeviceTable from '../components/DeviceTable'
-import DeviceForm from '../components/DeviceForm'
-import { useDevices, useDeleteDevice, useSeedDevices } from '../hooks/useDevices'
+import PersonnelTable from '../components/PersonnelTable'
+import PersonnelForm from '../components/PersonnelForm'
+import { usePersonnelList, useDeletePerson, useSeedPersonnel } from '../hooks/usePersonnel'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { useAuthStore } from '@/shared/stores/authStore'
-import type { Device } from '@/shared/types/devices'
+import type { Person } from '@/shared/types/personnel'
 
-export default function DeviceListPage() {
+export default function PersonnelListPage() {
   const user = useAuthStore((s) => s.user)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [deviceType, setDeviceType] = useState<string | undefined>(undefined)
-  const [status, setStatus] = useState<string | undefined>(undefined)
+  const [role, setRole] = useState<string | undefined>(undefined)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
 
   const [formOpen, setFormOpen] = useState(false)
-  const [editDevice, setEditDevice] = useState<Device | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Device | null>(null)
+  const [editPerson, setEditPerson] = useState<Person | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Person | null>(null)
 
   const filters: Record<string, unknown> = { page, size: pageSize }
-  if (deviceType) filters.device_type = deviceType
-  if (status) filters.status = status
-  if (debouncedSearch) filters.serial_number__contains = debouncedSearch
+  if (role) filters.role = role
+  if (debouncedSearch) filters.full_name__contains = debouncedSearch
 
-  const { data, isLoading } = useDevices(filters)
-  const deleteDevice = useDeleteDevice()
-  const seedDevices = useSeedDevices()
+  const { data, isLoading } = usePersonnelList(filters)
+  const deletePerson = useDeletePerson()
+  const seedPersonnel = useSeedPersonnel()
 
   const handlePageChange = useCallback((p: number, s: number) => {
     setPage(p)
     setPageSize(s)
   }, [])
 
-  const handleEdit = useCallback((device: Device) => {
-    setEditDevice(device)
+  const handleEdit = useCallback((person: Person) => {
+    setEditPerson(person)
     setFormOpen(true)
   }, [])
 
-  const handleDelete = useCallback((device: Device) => {
-    setDeleteTarget(device)
+  const handleDelete = useCallback((person: Person) => {
+    setDeleteTarget(person)
   }, [])
 
   const confirmDelete = async () => {
     if (!deleteTarget) return
     try {
-      await deleteDevice.mutateAsync(deleteTarget.id)
-      message.success('Device deleted')
+      await deletePerson.mutateAsync(deleteTarget.id)
+      message.success('Personnel deleted')
     } catch {
-      message.error('Failed to delete device')
+      message.error('Failed to delete personnel')
     }
     setDeleteTarget(null)
   }
 
   const handleSeed = async () => {
     try {
-      const result = await seedDevices.mutateAsync()
+      const result = await seedPersonnel.mutateAsync()
       if (Array.isArray(result) && result.length > 0) {
-        message.success(`Seeded ${result.length} devices`)
+        message.success(`Seeded ${result.length} personnel`)
       } else {
-        message.info('Devices already exist, skipping seed')
+        message.info('Personnel already exist, skipping seed')
       }
     } catch {
       message.error('Seed failed')
@@ -76,28 +74,31 @@ export default function DeviceListPage() {
 
   const handleFormClose = () => {
     setFormOpen(false)
-    setEditDevice(null)
+    setEditPerson(null)
   }
 
   const handleAddClick = () => {
-    setEditDevice(null)
+    setEditPerson(null)
     setFormOpen(true)
   }
+
+  const ROLES = ['TECHNICIAN', 'ENGINEER', 'MANAGER', 'CONTRACTOR', 'OTHER']
 
   return (
     <div>
       <PageHeader
-        title="Devices"
-        subtitle={`${data?.total ?? 0} total devices`}
+        title="Personnel"
+        icon={<UserOutlined />}
+        subtitle={`${data?.total ?? 0} total personnel`}
         actions={
           <>
             {user?.role === 'ADMIN' && (
               <GlassButton
                 icon={<DatabaseOutlined />}
                 onClick={handleSeed}
-                loading={seedDevices.isPending}
+                loading={seedPersonnel.isPending}
               >
-                Seed Devices
+                Seed Personnel
               </GlassButton>
             )}
             <GlassButton
@@ -105,7 +106,7 @@ export default function DeviceListPage() {
               icon={<PlusOutlined />}
               onClick={handleAddClick}
             >
-              Add Device
+              Add Personnel
             </GlassButton>
           </>
         }
@@ -114,38 +115,18 @@ export default function DeviceListPage() {
       <GlassCard style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Select
-            placeholder="Device Type"
+            placeholder="Role"
             allowClear
-            value={deviceType}
+            value={role}
             onChange={(val) => {
-              setDeviceType(val)
+              setRole(val)
               setPage(1)
             }}
             style={{ width: 160 }}
-            options={[
-              { label: 'IU', value: 'IU' },
-              { label: 'OU', value: 'OU' },
-              { label: 'HC', value: 'HC' },
-              { label: 'RF', value: 'RF' },
-            ]}
-          />
-          <Select
-            placeholder="Status"
-            allowClear
-            value={status}
-            onChange={(val) => {
-              setStatus(val)
-              setPage(1)
-            }}
-            style={{ width: 160 }}
-            options={[
-              { label: 'Working', value: 'WORKING' },
-              { label: 'Not Working', value: 'NOT_WORKING' },
-              { label: 'Faulty', value: 'FAULTY' },
-            ]}
+            options={ROLES.map(r => ({ label: r, value: r }))}
           />
           <GlassInput
-            placeholder="Search serial number..."
+            placeholder="Search name..."
             value={search}
             onChange={(val) => {
               setSearch(val)
@@ -157,7 +138,7 @@ export default function DeviceListPage() {
       </GlassCard>
 
       <GlassCard>
-        <DeviceTable
+        <PersonnelTable
           data={data?.items ?? []}
           loading={isLoading}
           pagination={{
@@ -171,19 +152,20 @@ export default function DeviceListPage() {
         />
       </GlassCard>
 
-      <DeviceForm
+      <PersonnelForm
         open={formOpen}
         onClose={handleFormClose}
-        device={editDevice}
+        person={editPerson}
       />
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Delete Device"
-        message={`Are you sure you want to delete device "${deleteTarget?.serial_number}"? This action cannot be undone.`}
+        title="Delete Personnel"
+        message={`Are you sure you want to delete "${deleteTarget?.full_name}"?`}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
-        confirmLoading={deleteDevice.isPending}
+        danger
+        loading={deletePerson.isPending}
       />
     </div>
   )

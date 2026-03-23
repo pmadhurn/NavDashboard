@@ -29,7 +29,7 @@ async def send_message(
     """Send a message and get a full (non-streaming) AI response."""
     # Create session if needed
     if session_id is None:
-        title = await chain.generate_session_title(content)
+        title = await chain.generate_session_title(db, content)
         session = await repository.create_session(db, user_id, title)
         session_id = session.id
     else:
@@ -83,7 +83,7 @@ async def send_message_stream(
     """Send a message and stream the AI response via SSE."""
     # Create session if needed
     if session_id is None:
-        title = await chain.generate_session_title(content)
+        title = await chain.generate_session_title(db, content)
         session = await repository.create_session(db, user_id, title)
         session_id = session.id
     else:
@@ -211,12 +211,12 @@ async def trigger_sync(
 
 
 async def get_ingest_status(db: AsyncSession) -> IngestStatusResponse:
-    available, models = await embeddings.check_ollama_available()
+    available, models = await embeddings.check_ollama_available(db)
     doc_count = await repository.get_embedding_count(db)
     last_sync = await repository.get_last_sync_time(db)
 
-    embed_model = settings_embed_model()
-    chat_model = settings_chat_model()
+    from modules.ai_assistant.config import get_ai_config
+    _, chat_model, embed_model = await get_ai_config(db)
 
     return IngestStatusResponse(
         total_documents=doc_count,

@@ -7,6 +7,7 @@ import DeviceListPage from '@/modules/devices/pages/DeviceListPage';
 import DeviceDetailPage from '@/modules/devices/pages/DeviceDetailPage';
 import CoupleListPage from '@/modules/couples/pages/CoupleListPage';
 import CoupleDetailPage from '@/modules/couples/pages/CoupleDetailPage';
+import PersonnelListPage from '@/modules/personnel/pages/PersonnelListPage';
 import PairListPage from '@/modules/pairs/pages/PairListPage';
 import PairDetailPage from '@/modules/pairs/pages/PairDetailPage';
 import MapViewPage from '@/modules/map/pages/MapViewPage';
@@ -30,6 +31,7 @@ export function AppRoutes() {
         <Route path="devices/:id" element={<DeviceDetailPage />} />
         <Route path="couples" element={<CoupleListPage />} />
         <Route path="couples/:id" element={<CoupleDetailPage />} />
+        <Route path="personnel" element={<PersonnelListPage />} />
         <Route path="pairs" element={<PairListPage />} />
         <Route path="pairs/:id" element={<PairDetailPage />} />
         <Route path="map" element={<MapViewPage />} />

@@ -13,7 +13,7 @@ import type {
 export function useDevices(filters?: Record<string, unknown>) {
   return useQuery<PaginatedResponse<Device>>({
     queryKey: ['devices', filters],
-    queryFn: () => api.get<PaginatedResponse<Device>>('/devices', filters),
+    queryFn: () => api.get<PaginatedResponse<Device>>('/devices/', filters),
   })
 }
 
@@ -28,7 +28,7 @@ export function useDevice(id: string) {
 export function useCreateDevice() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: DeviceCreate) => api.post<Device>('/devices', data),
+    mutationFn: (data: DeviceCreate) => api.post<Device>('/devices/', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['devices'] })
     },
