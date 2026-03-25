@@ -143,6 +143,29 @@ async def create_error(
             "description": error.description,
         },
     )
+
+    # Auto-set associated device to FAULTY and propagate to couple → pair
+    if error_in.device_id:
+        try:
+            from shared.propagation import propagate_device_status_change
+
+            device_stmt = select(Device).where(
+                Device.id == error_in.device_id, Device.deleted_at.is_(None)
+            )
+            device_result = await db.execute(device_stmt)
+            device = device_result.scalar_one_or_none()
+            if device and device.status != "FAULTY":
+                device.status = "FAULTY"
+                device.updated_at = datetime.now(timezone.utc)
+                await db.flush()
+                await db.refresh(device)
+                await propagate_device_status_change(db, device)
+                logger.info(
+                    "Device %s set to FAULTY via error log %s", device.id, error.id
+                )
+        except Exception as exc:
+            logger.warning("Failed to propagate FAULTY status: %s", exc)
+
     return await _build_error_response(db, error, include_steps=True)
 
 

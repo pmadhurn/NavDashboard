@@ -44,7 +44,7 @@ async def list_personnel(
 async def create_person(
     person_in: PersonCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("ADMIN", "TECHNICIAN")),
 ):
     return await service.create_person(db, person_in, current_user.id)
 
@@ -75,7 +75,7 @@ async def update_person(
     person_id: UUID,
     person_in: PersonUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("ADMIN", "TECHNICIAN")),
 ):
     return await service.update_person(db, person_id, person_in, current_user.id)
 
@@ -84,7 +84,7 @@ async def update_person(
 async def delete_person(
     person_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("ADMIN")),
 ):
     return await service.delete_person(db, person_id, current_user.id)
 

@@ -21,6 +21,16 @@ import ReportsPage from '@/modules/reports/pages/ReportsPage';
 import AIChatPage from '@/modules/ai_chat/pages/AIChatPage';
 import LocationHistoryPage from '@/modules/location_history/pages/LocationHistoryPage';
 import SettingsPage from '@/modules/settings/pages/SettingsPage';
+import { useAuthStore } from '@/shared/stores/authStore';
+
+// Route guard for admin-only pages
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  if (user && user.role !== 'ADMIN') {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
 
 export function AppRoutes() {
   return (
@@ -31,20 +41,21 @@ export function AppRoutes() {
         <Route path="devices/:id" element={<DeviceDetailPage />} />
         <Route path="couples" element={<CoupleListPage />} />
         <Route path="couples/:id" element={<CoupleDetailPage />} />
-        <Route path="personnel" element={<PersonnelListPage />} />
         <Route path="pairs" element={<PairListPage />} />
         <Route path="pairs/:id" element={<PairDetailPage />} />
         <Route path="map" element={<MapViewPage />} />
         <Route path="troubleshooting" element={<TroubleshootingPage />} />
-        <Route path="search" element={<SearchPage />} />
-        <Route path="audit" element={<AuditTrailPage />} />
         <Route path="comparison" element={<ComparisonPage />} />
         <Route path="documents" element={<DocumentsPage />} />
-        <Route path="backup" element={<BackupPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="ai" element={<AIChatPage />} />
         <Route path="location-history" element={<LocationHistoryPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        {/* Admin-only routes */}
+        <Route path="personnel" element={<AdminRoute><PersonnelListPage /></AdminRoute>} />
+        <Route path="search" element={<AdminRoute><SearchPage /></AdminRoute>} />
+        <Route path="audit" element={<AdminRoute><AuditTrailPage /></AdminRoute>} />
+        <Route path="backup" element={<AdminRoute><BackupPage /></AdminRoute>} />
+        <Route path="reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
+        <Route path="ai" element={<AdminRoute><AIChatPage /></AdminRoute>} />
+        <Route path="settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
       </Route>
       <Route path="login" element={<LoginPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

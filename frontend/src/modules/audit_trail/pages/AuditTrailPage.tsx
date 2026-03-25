@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { Row, Col, Pagination } from 'antd';
+import { Row, Col, Pagination, message, Popconfirm } from 'antd';
 import {
   UnorderedListOutlined,
   FieldTimeOutlined,
   PlusCircleOutlined,
   EditOutlined,
   DeleteOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import DataTable from '@/shared/components/DataTable';
-import { useAuditEntries, useAuditStats } from '../hooks/useAuditTrail';
+import { useAuditEntries, useAuditStats, useRevertAudit } from '../hooks/useAuditTrail';
+import { useAuthStore } from '@/shared/stores/authStore';
 import AuditTimeline from '../components/AuditTimeline';
 import AuditFilters from '../components/AuditFilters';
+
+const REVERTABLE_ACTIONS = ['UPDATE', 'STATUS_CHANGE', 'DELETE'];
 
 const AuditTrailPage: React.FC = () => {
   const [view, setView] = useState<'timeline' | 'table'>('timeline');
@@ -26,6 +30,9 @@ const AuditTrailPage: React.FC = () => {
   const { data: statsData, isLoading: statsLoading } = useAuditStats();
   const { data: entriesData, isLoading: entriesLoading } =
     useAuditEntries(filters);
+  const revertMutation = useRevertAudit();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === 'ADMIN';
 
   const stats = statsData;
   const entries = entriesData?.items || [];
@@ -41,6 +48,15 @@ const AuditTrailPage: React.FC = () => {
 
   const handlePageChange = (page: number, size?: number) => {
     setFilters((prev) => ({ ...prev, page, size: size || prev.size }));
+  };
+
+  const handleRevert = async (auditId: string) => {
+    try {
+      await revertMutation.mutateAsync(auditId);
+      message.success('Changes reverted successfully');
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Failed to revert');
+    }
   };
 
   const tableColumns = [
@@ -60,6 +76,7 @@ const AuditTrailPage: React.FC = () => {
         let color = '#7A7A7A';
         if (val === 'CREATE' || val === 'SEED_CREATE') color = '#5F8F6B';
         if (val === 'DELETE') color = '#9B3E3E';
+        if (val === 'REVERT') color = '#B68A3C';
         return (
           <span
             style={{
@@ -106,6 +123,41 @@ const AuditTrailPage: React.FC = () => {
         <span style={{ color: '#B8B8B8' }}>{val || '—'}</span>
       ),
     },
+    ...(isAdmin
+      ? [
+          {
+            title: 'Revert',
+            key: 'revert',
+            width: 100,
+            render: (_: unknown, record: any) => {
+              const canRevert =
+                REVERTABLE_ACTIONS.includes(record.action) &&
+                record.old_values &&
+                Object.keys(record.old_values).length > 0;
+              if (!canRevert) return null;
+              return (
+                <Popconfirm
+                  title="Revert this change?"
+                  description="This will restore the previous values."
+                  onConfirm={() => handleRevert(record.id)}
+                  okText="Revert"
+                  cancelText="Cancel"
+                >
+                  <GlassButton
+                    size="sm"
+                    variant="ghost"
+                    icon={<UndoOutlined />}
+                    loading={revertMutation.isPending}
+                    style={{ color: '#B68A3C' }}
+                  >
+                    Revert
+                  </GlassButton>
+                </Popconfirm>
+              );
+            },
+          },
+        ]
+      : []),
   ];
 
   return (

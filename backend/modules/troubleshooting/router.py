@@ -84,6 +84,58 @@ async def list_errors(
     return await service.list_errors(db, params, filters if filters else None)
 
 
+@router.get("/faulty-devices")
+async def get_faulty_devices(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """List all devices with FAULTY status and their open error logs."""
+    from sqlalchemy import select, and_
+    from modules.devices.models import Device
+    from modules.troubleshooting.models import ErrorLog
+
+    # Get all faulty devices
+    dev_stmt = select(Device).where(
+        and_(Device.deleted_at.is_(None), Device.status == "FAULTY")
+    )
+    dev_result = await db.execute(dev_stmt)
+    devices = dev_result.scalars().all()
+
+    results = []
+    for d in devices:
+        # Fetch open errors for this device
+        err_stmt = select(ErrorLog).where(
+            and_(
+                ErrorLog.deleted_at.is_(None),
+                ErrorLog.device_id == d.id,
+                ErrorLog.resolved == False,
+            )
+        )
+        err_result = await db.execute(err_stmt)
+        open_errors = err_result.scalars().all()
+
+        results.append({
+            "device_id": str(d.id),
+            "serial_number": d.serial_number,
+            "device_type": d.device_type,
+            "status": d.status,
+            "couple_id": str(d.couple_id) if d.couple_id else None,
+            "open_error_count": len(open_errors),
+            "errors": [
+                {
+                    "id": str(e.id),
+                    "error_type": e.error_type,
+                    "severity": e.severity,
+                    "description": e.description,
+                    "reported_at": e.reported_at.isoformat() if e.reported_at else None,
+                }
+                for e in open_errors
+            ],
+        })
+
+    return results
+
+
 @router.get("/stats", response_model=ErrorStatsResponse)
 async def get_error_stats(
     db: AsyncSession = Depends(get_db),

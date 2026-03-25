@@ -5,13 +5,11 @@ import StatusOverview from '../components/StatusOverview'
 import PairStatusPie from '../components/PairStatusPie'
 import DeviceChart from '../components/DeviceChart'
 import ErrorTrendChart from '../components/ErrorTrendChart'
-import RecentActivity from '../components/RecentActivity'
 import {
   useDashboardStats,
   useStatusDistribution,
   useDeviceTypeBreakdown,
   useErrorTrends,
-  useRecentActivity,
   usePairStatus,
 } from '../hooks/useDashboard'
 
@@ -22,8 +20,6 @@ export default function DashboardPage() {
   const { data: deviceBreakdown, isLoading: deviceLoading } =
     useDeviceTypeBreakdown()
   const { data: errorTrends, isLoading: errorLoading } = useErrorTrends(30)
-  const { data: recentActivity, isLoading: activityLoading } =
-    useRecentActivity(20)
   const { data: pairStatus, isLoading: pairLoading } = usePairStatus()
 
   return (
@@ -57,11 +53,6 @@ export default function DashboardPage() {
         </div>
         <div style={{ gridColumn: 'span 6' }}>
           <ErrorTrendChart data={errorTrends} loading={errorLoading} />
-        </div>
-
-        {/* Row 4: Recent activity — full width */}
-        <div style={{ gridColumn: 'span 12' }}>
-          <RecentActivity items={recentActivity} loading={activityLoading} />
         </div>
       </div>
 

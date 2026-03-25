@@ -22,24 +22,33 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useUiStore } from '@/shared/stores/uiStore';
+import { useAuthStore } from '@/shared/stores/authStore';
 
-const navItems = [
+interface NavItem {
+  key: string;
+  icon: React.ReactNode;
+  label: string;
+  adminOnly?: boolean;
+}
+
+const allNavItems: NavItem[] = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/devices', icon: <ApiOutlined />, label: 'Devices' },
   { key: '/couples', icon: <LinkOutlined />, label: 'Couples' },
-  { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel' },
   { key: '/pairs', icon: <SwapOutlined />, label: 'Pairs' },
   { key: '/map', icon: <EnvironmentOutlined />, label: 'Map' },
   { key: '/troubleshooting', icon: <ToolOutlined />, label: 'Troubleshooting' },
-  { key: '/ai', icon: <RobotOutlined />, label: 'AI Assistant' },
   { key: '/location-history', icon: <HistoryOutlined />, label: 'Location History' },
   { key: '/documents', icon: <FileOutlined />, label: 'Documents' },
-  { key: '/reports', icon: <BarChartOutlined />, label: 'Reports' },
-  { key: '/audit', icon: <AuditOutlined />, label: 'Audit Trail' },
-  { key: '/search', icon: <SearchOutlined />, label: 'Search' },
   { key: '/comparison', icon: <DiffOutlined />, label: 'Comparison' },
-  { key: '/backup', icon: <CloudDownloadOutlined />, label: 'Backup' },
-  { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
+  // Admin-only sections below
+  { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel', adminOnly: true },
+  { key: '/ai', icon: <RobotOutlined />, label: 'AI Assistant', adminOnly: true },
+  { key: '/reports', icon: <BarChartOutlined />, label: 'Reports', adminOnly: true },
+  { key: '/audit', icon: <AuditOutlined />, label: 'Audit Trail', adminOnly: true },
+  { key: '/search', icon: <SearchOutlined />, label: 'Search', adminOnly: true },
+  { key: '/backup', icon: <CloudDownloadOutlined />, label: 'Backup', adminOnly: true },
+  { key: '/settings', icon: <SettingOutlined />, label: 'Settings', adminOnly: true },
 ];
 
 export default function Sidebar() {
@@ -47,6 +56,11 @@ export default function Sidebar() {
   const location = useLocation();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === 'ADMIN';
+
+  // Filter nav items based on user role
+  const navItems = allNavItems.filter((item) => !item.adminOnly || isAdmin);
 
   const selectedKey = navItems.find(
     (item) =>

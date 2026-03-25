@@ -37,6 +37,14 @@ def _fmt_val(val) -> str:
     return str(val)
 
 
+def _fmt_custom_fields(cf) -> str:
+    """Serialize custom_fields JSONB to a readable string."""
+    if not cf or not isinstance(cf, dict):
+        return "-"
+    parts = [f"{k}: {v}" for k, v in cf.items() if v is not None]
+    return "; ".join(parts) if parts else "-"
+
+
 # ═══════════════════════════════════════════
 # DEVICE INVENTORY
 # ═══════════════════════════════════════════
@@ -60,7 +68,7 @@ async def generate_device_inventory_pdf(
         **{f"Status {k}": str(v) for k, v in status_counts.items()},
     })
 
-    headers = ["Serial Number", "Type", "Status", "Couple ID", "Handler ID", "Notes"]
+    headers = ["Serial Number", "Type", "Status", "Couple ID", "Handler ID", "Notes", "Custom Fields"]
     rows = []
     for d in devices:
         rows.append([
@@ -70,6 +78,7 @@ async def generate_device_inventory_pdf(
             _fmt_uuid(d.couple_id),
             _fmt_uuid(d.handling_person_id),
             _fmt_val(d.notes)[:50] if d.notes else "-",
+            _fmt_custom_fields(d.custom_fields),
         ])
 
     add_table_to_pdf(elements, headers, rows, "Device List")
@@ -112,7 +121,7 @@ async def generate_device_inventory_xlsx(
         row_idx += 1
 
     ws = workbook.add_worksheet("Devices")
-    headers = ["Serial Number", "Type", "Status", "Couple ID", "Handler ID", "Notes", "Created At"]
+    headers = ["Serial Number", "Type", "Status", "Couple ID", "Handler ID", "Notes", "Custom Fields", "Created At"]
     for col, h in enumerate(headers):
         ws.write(0, col, h, header_fmt)
 
@@ -123,9 +132,10 @@ async def generate_device_inventory_xlsx(
         ws.write(row, 3, _fmt_uuid(d.couple_id))
         ws.write(row, 4, _fmt_uuid(d.handling_person_id))
         ws.write(row, 5, _fmt_val(d.notes))
-        ws.write(row, 6, _fmt_dt(d.created_at))
+        ws.write(row, 6, _fmt_custom_fields(d.custom_fields))
+        ws.write(row, 7, _fmt_dt(d.created_at))
 
-    ws.set_column(0, 6, 18)
+    ws.set_column(0, 7, 18)
 
     workbook.close()
     buffer.seek(0)
@@ -435,8 +445,11 @@ async def generate_full_system_pdf(
         "Location Movements": str(len(history)),
     })
 
-    dev_headers = ["Serial Number", "Type", "Status"]
-    dev_rows = [[_fmt_val(d.serial_number), _fmt_val(d.device_type), _fmt_val(d.status)] for d in devices[:100]]
+    dev_headers = ["Serial Number", "Type", "Status", "Custom Fields"]
+    dev_rows = [
+        [_fmt_val(d.serial_number), _fmt_val(d.device_type), _fmt_val(d.status), _fmt_custom_fields(d.custom_fields)]
+        for d in devices[:100]
+    ]
     add_table_to_pdf(elements, dev_headers, dev_rows, "Devices (top 100)")
 
     err_headers = ["Date", "Type", "Severity", "Status"]
@@ -492,7 +505,7 @@ async def generate_full_system_xlsx(
 
     # Devices sheet
     ws_dev = workbook.add_worksheet("Devices")
-    dh = ["Serial Number", "Type", "Status", "Couple ID", "Handler", "Notes", "Created"]
+    dh = ["Serial Number", "Type", "Status", "Couple ID", "Handler", "Notes", "Custom Fields", "Created"]
     for col, h in enumerate(dh):
         ws_dev.write(0, col, h, header_fmt)
     for row, d in enumerate(devices, 1):
@@ -502,8 +515,9 @@ async def generate_full_system_xlsx(
         ws_dev.write(row, 3, _fmt_uuid(d.couple_id))
         ws_dev.write(row, 4, _fmt_uuid(d.handling_person_id))
         ws_dev.write(row, 5, _fmt_val(d.notes))
-        ws_dev.write(row, 6, _fmt_dt(d.created_at))
-    ws_dev.set_column(0, 6, 18)
+        ws_dev.write(row, 6, _fmt_custom_fields(d.custom_fields))
+        ws_dev.write(row, 7, _fmt_dt(d.created_at))
+    ws_dev.set_column(0, 7, 18)
 
     # Errors sheet
     ws_err = workbook.add_worksheet("Errors")

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
 import { PaginatedResponse } from '@/shared/types/common';
 
@@ -54,5 +54,15 @@ export function useAuditStats() {
   return useQuery({
     queryKey: ['audit', 'stats'],
     queryFn: () => api.get<AuditStats>('/audit/stats'),
+  });
+}
+
+export function useRevertAudit() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, string>({
+    mutationFn: (auditId) => api.post(`/audit/${auditId}/revert`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+    },
   });
 }

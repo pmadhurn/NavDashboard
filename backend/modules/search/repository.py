@@ -17,7 +17,14 @@ async def search_devices(
     filters: Optional[dict] = None,
     limit: int = 20,
 ) -> list[dict]:
+    from sqlalchemy import cast, String as SAString
+
     conditions = build_ilike_conditions(Device, ["serial_number", "notes"], query)
+    # Also search inside JSONB custom_fields by casting to text
+    if Device.custom_fields is not None:
+        pattern = f"%{query}%"
+        conditions.append(cast(Device.custom_fields, SAString).ilike(pattern))
+
     if not conditions:
         return []
 
@@ -47,7 +54,10 @@ async def search_devices(
             "name": row.serial_number,
             "description": row.notes,
             "status": row.status,
-            "extra": {"device_type": row.device_type},
+            "extra": {
+                "device_type": row.device_type,
+                "custom_fields": row.custom_fields,
+            },
         }
         for row in rows
     ]

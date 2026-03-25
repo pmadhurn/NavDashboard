@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   SwapOutlined,
   ApiOutlined,
@@ -19,6 +20,7 @@ interface CardDef {
   key: keyof DashboardStats
   icon: React.ReactNode
   accent: string
+  link?: string
 }
 
 const cards: CardDef[] = [
@@ -27,18 +29,21 @@ const cards: CardDef[] = [
     key: 'total_pairs',
     icon: <SwapOutlined style={{ fontSize: 24, color: '#7A7A7A' }} />,
     accent: '#2E2E2E',
+    link: '/pairs',
   },
   {
     label: 'Total Devices',
     key: 'total_devices',
     icon: <ApiOutlined style={{ fontSize: 24, color: '#7A7A7A' }} />,
     accent: '#2E2E2E',
+    link: '/devices',
   },
   {
     label: 'Active Errors',
     key: 'active_errors',
     icon: <WarningOutlined style={{ fontSize: 24, color: '#7A7A7A' }} />,
     accent: '#9B3E3E',
+    link: '/troubleshooting',
   },
   {
     label: 'Working Devices',
@@ -49,6 +54,8 @@ const cards: CardDef[] = [
 ]
 
 export default function StatsCards({ stats, loading }: StatsCardsProps) {
+  const navigate = useNavigate()
+
   return (
     <div
       style={{
@@ -73,7 +80,10 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               borderLeft: `3px solid ${dynamicAccent}`,
               position: 'relative',
               minHeight: 120,
+              cursor: card.link ? 'pointer' : 'default',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             }}
+            onClick={() => card.link && navigate(card.link)}
           >
             {loading ? (
               <div
@@ -114,6 +124,18 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
                 >
                   {value}
                 </div>
+                {card.link && (
+                  <div
+                    style={{
+                      color: '#5F8F6B',
+                      fontSize: 11,
+                      marginTop: 4,
+                      opacity: 0.7,
+                    }}
+                  >
+                    Click to view →
+                  </div>
+                )}
               </div>
             )}
           </GlassCard>
