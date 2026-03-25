@@ -145,10 +145,9 @@ const AuditTrailPage: React.FC = () => {
                 >
                   <GlassButton
                     size="sm"
-                    variant="ghost"
+                    variant="secondary"
                     icon={<UndoOutlined />}
                     loading={revertMutation.isPending}
-                    style={{ color: '#B68A3C' }}
                   >
                     Revert
                   </GlassButton>
@@ -236,20 +235,14 @@ const AuditTrailPage: React.FC = () => {
         <GlassButton
           icon={<FieldTimeOutlined />}
           onClick={() => setView('timeline')}
-          style={{
-            borderColor: view === 'timeline' ? '#5F8F6B' : undefined,
-            color: view === 'timeline' ? '#5F8F6B' : '#B8B8B8',
-          }}
+          variant={view === 'timeline' ? 'primary' : 'ghost'}
         >
           Timeline
         </GlassButton>
         <GlassButton
           icon={<UnorderedListOutlined />}
           onClick={() => setView('table')}
-          style={{
-            borderColor: view === 'table' ? '#5F8F6B' : undefined,
-            color: view === 'table' ? '#5F8F6B' : '#B8B8B8',
-          }}
+          variant={view === 'table' ? 'primary' : 'ghost'}
         >
           Table
         </GlassButton>
@@ -265,9 +258,8 @@ const AuditTrailPage: React.FC = () => {
         <GlassCard>
           <DataTable
             columns={tableColumns}
-            dataSource={entries}
+            data={entries}
             rowKey="id"
-            pagination={false}
           />
         </GlassCard>
       )}
