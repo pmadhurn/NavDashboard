@@ -35,7 +35,7 @@ services:
     image: cloudflare/cloudflared:latest
     command: tunnel run
     environment:
-      - TUNNEL_TOKEN=eyJhIjoiYWM1ZmMwM2E5ZWE2NmU3OGFiNTlkN2NjMzk0NTc4ZGEiLCJ0IjoiMzAzNTZlYjAtMDhlOS00YTQ3LWE3NWQtYTcyOTM3YTUzODUyIiwicyI6IllUaGlaV1k0TnpjdE9UTTVNeTAwWmpZMkxUazBZakF0TXpaak9ESXhOelkwWVRFeSJ9
+      - TUNNEL_TOKEN=eyJhIjoiYWM1ZmMwM2E5ZWE2NmU3OGFiNTlkN2NjMzk0NTc4ZGEiLCJ0IjoiN2E2MDhkMmItZWVmYS00MGQzLTkyODYtMjFmMDIzNmE4NjY1IiwicyI6IlpUWXlOMlUxWkRFdE5XSmpOUzAwWTJNeUxUZ3lNbUV0T0dVeU5XUmxaV1UxT1ROayJ9
     networks:
       - navdashboard
 
