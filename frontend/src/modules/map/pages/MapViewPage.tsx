@@ -135,6 +135,7 @@ export default function MapViewPage() {
           coupleDetail={coupleDetail}
           onViewDetail={handleViewDetail}
           onViewHistory={handleViewHistory}
+          pairs={pairs}
         />
 
         {/* Filters - top right */}
