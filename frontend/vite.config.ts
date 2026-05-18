@@ -13,7 +13,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     strictPort: true,
-    allowedHosts: ['localhost', 'mn.navdashboard.com', 'www.navdashboard.com', 'test.navdashboard.com'],
+    allowedHosts: ['localhost', 'navdashboard.com', 'www.navdashboard.com', 'test.navdashboard.com'],
     watch: {
       usePolling: true,
     },
