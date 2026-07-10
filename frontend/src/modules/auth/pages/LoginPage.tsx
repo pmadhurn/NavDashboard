@@ -9,6 +9,12 @@ import { useLogin, useGoogleLogin } from '@/modules/auth/hooks/useAuth';
 import { useAuthStore } from '@/shared/stores/authStore';
 import GoogleSignInButton, { googleSignInEnabled } from '@/modules/auth/components/GoogleSignInButton';
 
+/** Pull the API's `detail` off an axios error, falling back when it is absent. */
+function errorDetail(error: unknown, fallback: string): string {
+  const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  return typeof detail === 'string' && detail ? detail : fallback;
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
@@ -29,8 +35,8 @@ export default function LoginPage() {
           navigate('/', { replace: true });
         }
       },
-      onError: () => {
-        message.error('Google sign-in failed');
+      onError: (error) => {
+        message.error(errorDetail(error, 'Google sign-in failed'));
       },
     });
   };
@@ -53,8 +59,11 @@ export default function LoginPage() {
         onSuccess: () => {
           navigate('/', { replace: true });
         },
-        onError: () => {
-          message.error('Invalid email or password');
+        onError: (error) => {
+          // The API distinguishes bad credentials from a disabled account and one
+          // awaiting approval; surfacing its reason stops users from chasing a
+          // password that was never the problem.
+          message.error(errorDetail(error, 'Invalid email or password'));
         },
       }
     );
@@ -104,7 +113,7 @@ export default function LoginPage() {
             </label>
             <GlassInput
               type="email"
-              placeholder="admin@navdashboard.com"
+              placeholder="you@example.com"
               value={email}
               onChange={setEmail}
               prefix={<MailOutlined style={{ color: '#7A7A7A' }} />}

@@ -20,7 +20,7 @@ async def main():
             )
             db.add(user)
             await db.commit()
-            print("Admin user created successfully! (admin@navdashboard.com / admin123)")
+            print("Admin user created successfully! (admin@navdashboard.local / admin123)")
         else:
             print("Admin user already exists!")
 

@@ -6,7 +6,7 @@ import Sidebar from './Sidebar';
 import WorkspaceRail from './WorkspaceRail';
 import { useUiStore } from '@/shared/stores/uiStore';
 import { useAuthStore } from '@/shared/stores/authStore';
-import { useLogout } from '@/modules/auth/hooks/useAuth';
+import { useLogout, useCurrentUser } from '@/modules/auth/hooks/useAuth';
 import { getRoleColor } from '@/shared/utils/colors';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { workspaceForPath, workspaceByKey } from '@/shared/config/workspaces';
@@ -36,6 +36,11 @@ export default function Layout() {
   const logout = useLogout();
   const isMobile = useIsMobile();
   const [searchValue, setSearchValue] = useState('');
+
+  // Revalidate the locally cached user against the server: role and permissions
+  // may have changed since the token was issued. A 401 here logs the user out
+  // via the api client's response interceptor.
+  useCurrentUser();
 
   useEffect(() => {
     if (!token) {

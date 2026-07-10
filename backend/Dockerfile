@@ -17,4 +17,7 @@ COPY . .
 
 EXPOSE 8000
 
+# Invoked via `sh` so the entrypoint runs even when the bind-mounted source
+# tree drops the executable bit (common on Windows/WSL checkouts).
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

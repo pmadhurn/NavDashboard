@@ -85,27 +85,27 @@ app.add_middleware(
 
 @app.exception_handler(NotFoundException)
 async def not_found_handler(request: Request, exc: NotFoundException):
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
+    return JSONResponse(status_code=404, content={"detail": exc.detail})
 
 
 @app.exception_handler(BadRequestException)
 async def bad_request_handler(request: Request, exc: BadRequestException):
-    return JSONResponse(status_code=400, content={"detail": str(exc)})
+    return JSONResponse(status_code=400, content={"detail": exc.detail})
 
 
 @app.exception_handler(UnauthorizedException)
 async def unauthorized_handler(request: Request, exc: UnauthorizedException):
-    return JSONResponse(status_code=401, content={"detail": str(exc)})
+    return JSONResponse(status_code=401, content={"detail": exc.detail})
 
 
 @app.exception_handler(ForbiddenException)
 async def forbidden_handler(request: Request, exc: ForbiddenException):
-    return JSONResponse(status_code=403, content={"detail": str(exc)})
+    return JSONResponse(status_code=403, content={"detail": exc.detail})
 
 
 @app.exception_handler(ConflictException)
 async def conflict_handler(request: Request, exc: ConflictException):
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
+    return JSONResponse(status_code=409, content={"detail": exc.detail})
 
 
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX + "/auth", tags=["auth"])

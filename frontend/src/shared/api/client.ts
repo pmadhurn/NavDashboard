@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '@/shared/stores/authStore'
 
 const axiosInstance = axios.create({
   baseURL: '/api/v1',
@@ -13,12 +14,22 @@ axiosInstance.interceptors.request.use((config) => {
   return config
 })
 
+// A 401 from the sign-in endpoints means "those credentials were rejected", not
+// "your session expired" — redirecting there would reload the page and discard
+// the error before the login form could show it.
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/google']
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.href = '/login'
+    const url = error.config?.url ?? ''
+    const isAuthAttempt = AUTH_ENDPOINTS.some((path) => url.startsWith(path))
+
+    if (error.response?.status === 401 && !isAuthAttempt) {
+      useAuthStore.getState().logout()
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   },
