@@ -56,23 +56,25 @@ export default function SourceReference({ source }: SourceReferenceProps) {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 6,
-        background: 'rgba(255,255,255,0.05)',
+        background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 20,
-        padding: '4px 12px',
-        color: '#C9C9C9',
+        padding: '4px 10px',
+        color: '#9A9A9A',
         fontSize: 12,
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         outline: 'none',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+        e.currentTarget.style.color = '#C9C9C9';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
         e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+        e.currentTarget.style.color = '#9A9A9A';
       }}
     >
       {iconMap[source.entity_type] || <FileOutlined />}

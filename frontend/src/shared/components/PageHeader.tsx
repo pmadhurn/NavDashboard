@@ -5,6 +5,7 @@ import { useUiStore } from '@/shared/stores/uiStore';
 
 interface PageHeaderProps {
   title: string;
+  icon?: React.ReactNode;
   subtitle?: string;
   breadcrumbs?: { label: string; path?: string }[];
   actions?: React.ReactNode;
@@ -12,6 +13,7 @@ interface PageHeaderProps {
 
 export default function PageHeader({
   title,
+  icon,
   subtitle,
   breadcrumbs,
   actions,
@@ -53,8 +55,12 @@ export default function PageHeader({
               color: '#F2F2F2',
               margin: 0,
               lineHeight: 1.3,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
             }}
           >
+            {icon && <span style={{ fontSize: 22 }}>{icon}</span>}
             {title}
           </h1>
           {subtitle && (

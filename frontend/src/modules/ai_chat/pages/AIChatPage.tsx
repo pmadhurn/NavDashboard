@@ -4,8 +4,9 @@ import {
   PlusOutlined,
   DeleteOutlined,
   SyncOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
-import PageHeader from '@/shared/components/PageHeader';
+import { Switch, Select, Tooltip } from 'antd';
 import GlassButton from '@/shared/components/GlassButton';
 import ConfirmDialog from '@/shared/components/ConfirmDialog';
 import ChatWindow from '../components/ChatWindow';
@@ -37,6 +38,8 @@ function formatRelativeTime(dateStr?: string | null): string {
 export default function AIChatPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [showThink, setShowThink] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
 
   const { data: sessions = [] } = useChatSessions();
   const deleteSession = useDeleteSession();
@@ -66,7 +69,7 @@ export default function AIChatPage() {
 
   // Send from landing view (suggested query or typed message)
   const handleLandingSend = async (query: string) => {
-    await sendStream(query);
+    await sendStream(query, undefined, showThink);
   };
 
   // When stream creates a new session, set it as active
@@ -77,14 +80,45 @@ export default function AIChatPage() {
   }, [streamSessionId, activeSessionId]);
 
   return (
-    <div style={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
-      <PageHeader title="AI Assistant" icon={<RobotOutlined />} />
+    <div style={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid #242424', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <RobotOutlined style={{ fontSize: 20, color: '#C9C9C9' }} />
+            <h1 style={{ fontSize: 20, fontWeight: 600, color: '#F2F2F2', margin: 0 }}>AI Assistant</h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Model selector */}
+            {ingestStatus?.ollama_models && ingestStatus.ollama_models.length > 0 && (
+              <Select
+                value={selectedModel || ingestStatus.ollama_models[0]}
+                onChange={setSelectedModel}
+                style={{ width: 140, minWidth: 100 }}
+                size="small"
+                options={ingestStatus.ollama_models.map((m) => ({ label: m.split('/').pop() || m, value: m }))}
+                dropdownStyle={{ background: '#1E1E1E' }}
+              />
+            )}
+            {/* Thinking toggle */}
+            <Tooltip title={showThink ? 'Hide thinking' : 'Show thinking'}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <BulbOutlined style={{ color: showThink ? '#C9C9C9' : '#5A5A5A', fontSize: 14 }} />
+                <Switch
+                  size="small"
+                  checked={showThink}
+                  onChange={setShowThink}
+                />
+              </div>
+            </Tooltip>
+          </div>
+        </div>
+      </div>
 
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
         {/* ── Left sidebar ── */}
         <div
           style={{
-            width: 280,
+            width: 220,
             flexShrink: 0,
             background: 'rgba(11,11,11,0.8)',
             backdropFilter: 'blur(20px)',
@@ -95,10 +129,10 @@ export default function AIChatPage() {
           }}
         >
           {/* New Chat button */}
-          <div style={{ padding: 16 }}>
+          <div style={{ padding: 12 }}>
             <GlassButton
               onClick={handleNewChat}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
               <PlusOutlined /> New Chat
             </GlassButton>
@@ -208,11 +242,11 @@ export default function AIChatPage() {
           {/* Ingest status at bottom */}
           <div
             style={{
-              padding: 16,
+              padding: 12,
               borderTop: '1px solid rgba(255,255,255,0.06)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span
                 style={{
                   width: 8,
@@ -222,17 +256,17 @@ export default function AIChatPage() {
                   display: 'inline-block',
                 }}
               />
-              <span style={{ color: '#C9C9C9', fontSize: 12 }}>
+              <span style={{ color: '#C9C9C9', fontSize: 11 }}>
                 {ingestStatus?.ollama_available ? 'AI Ready' : 'AI Offline'}
               </span>
             </div>
             {ingestStatus?.total_documents !== undefined && (
-              <div style={{ color: '#7A7A7A', fontSize: 11, marginBottom: 4 }}>
+              <div style={{ color: '#7A7A7A', fontSize: 10, marginBottom: 4 }}>
                 {ingestStatus.total_documents} docs indexed
               </div>
             )}
             {ingestStatus?.last_sync && (
-              <div style={{ color: '#7A7A7A', fontSize: 11, marginBottom: 8 }}>
+              <div style={{ color: '#7A7A7A', fontSize: 10, marginBottom: 6 }}>
                 Last sync: {formatRelativeTime(ingestStatus.last_sync)}
               </div>
             )}
@@ -241,16 +275,16 @@ export default function AIChatPage() {
               disabled={triggerIngest.isPending || !ingestStatus?.ollama_available}
               style={{
                 width: '100%',
-                fontSize: 12,
-                padding: '6px 12px',
+                fontSize: 11,
+                padding: '4px 8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
+                gap: 4,
               }}
             >
               <SyncOutlined spin={triggerIngest.isPending} />
-              {triggerIngest.isPending ? 'Syncing...' : 'Sync Data'}
+              {triggerIngest.isPending ? 'Syncing...' : 'Sync'}
             </GlassButton>
           </div>
         </div>
@@ -261,6 +295,8 @@ export default function AIChatPage() {
             <ChatWindow
               sessionId={activeSessionId}
               onSessionCreated={handleSessionCreated}
+              showThink={showThink}
+              selectedModel={selectedModel}
             />
           ) : (
             /* ── Landing view: suggestions + chat input ── */
