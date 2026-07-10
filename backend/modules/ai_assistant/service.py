@@ -94,6 +94,7 @@ async def send_message_stream(
     session_id: Optional[UUID],
     user_id: UUID,
     content: str,
+    think: bool = False,
 ) -> AsyncGenerator[str, None]:
     """Send a message and stream the AI response via SSE."""
     # Create session if needed
@@ -123,7 +124,11 @@ async def send_message_stream(
     sources = []
 
     async for chunk_str in chain.generate_response_stream(
-        db, content, chat_history, allowed_types=allowed_types
+        db,
+        content,
+        chat_history,
+        allowed_types=allowed_types,
+        think=think,
     ):
         yield chunk_str
         # Parse chunk to accumulate

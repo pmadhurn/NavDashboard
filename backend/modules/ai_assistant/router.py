@@ -47,12 +47,13 @@ async def chat(
 async def chat_stream(
     request: ChatMessageCreate,
     session_id: Optional[UUID] = Query(None),
+    think: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(ai_view),
 ):
     async def event_generator():
         async for chunk in service.send_message_stream(
-            db, session_id, current_user.id, request.content
+            db, session_id, current_user.id, request.content, think=think
         ):
             yield chunk
 

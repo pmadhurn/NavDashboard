@@ -105,22 +105,26 @@ export function useTriggerIngest() {
 
 export function useSendMessageStream() {
   const [streamingContent, setStreamingContent] = useState('');
+  const [streamingThink, setStreamingThink] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [sources, setSources] = useState<SourceRef[]>([]);
   const [streamSessionId, setStreamSessionId] = useState<string | null>(null);
   const qc = useQueryClient();
 
-  const sendStream = async (content: string, sessionId?: string) => {
+  const sendStream = async (content: string, sessionId?: string, think: boolean = false) => {
     setStreamingContent('');
+    setStreamingThink('');
     setIsStreaming(true);
     setSources([]);
     setStreamSessionId(null);
 
     const token = localStorage.getItem('access_token');
     let url = '/api/v1/ai/chat/stream';
-    if (sessionId) {
-      url += `?session_id=${sessionId}`;
-    }
+    const params = new URLSearchParams();
+    if (sessionId) params.append('session_id', sessionId);
+    if (think) params.append('think', 'true');
+    const queryString = params.toString();
+    if (queryString) url += '?' + queryString;
 
     try {
       const response = await fetch(url, {
@@ -141,6 +145,7 @@ export function useSendMessageStream() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let accumulated = '';
+      let accumulatedThink = '';
       let buffer = '';
 
       while (reader) {
@@ -162,7 +167,11 @@ export function useSendMessageStream() {
                 accumulated += data.token;
                 setStreamingContent(accumulated);
               }
-              if (data.done && data.sources) {
+              if (data.think) {
+                accumulatedThink += data.think;
+                setStreamingThink(accumulatedThink);
+              }
+              if (data.done) {
                 setSources(data.sources || []);
               }
             } catch {
@@ -180,7 +189,7 @@ export function useSendMessageStream() {
     qc.invalidateQueries({ queryKey: ['chat-messages'] });
   };
 
-  return { sendStream, streamingContent, isStreaming, sources, streamSessionId };
+  return { sendStream, streamingContent, streamingThink, isStreaming, sources, streamSessionId };
 }
 
 export function useAutoSync() {

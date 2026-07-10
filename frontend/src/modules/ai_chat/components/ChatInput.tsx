@@ -8,6 +8,7 @@ interface ChatInputProps {
 
 export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [value, setValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -35,15 +36,19 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
   };
 
+  const borderColor = disabled ? '#1A1A1A' : isFocused ? '#4A4A4A' : '#2A2A2A';
+  const sendButtonBg = disabled || !value.trim() ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)';
+  const sendButtonColor = disabled || !value.trim() ? '#4A4A4A' : '#C9C9C9';
+
   return (
     <div
       style={{
         display: 'flex',
         alignItems: 'flex-end',
-        gap: 10,
-        padding: 16,
+        gap: 12,
+        padding: '14px 16px',
         borderTop: '1px solid rgba(255,255,255,0.06)',
-        background: 'rgba(255,255,255,0.02)',
+        background: 'rgba(255,255,255,0.01)',
       }}
     >
       <textarea
@@ -51,6 +56,8 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         disabled={disabled}
         placeholder="Ask about devices, troubleshooting, configurations..."
         rows={1}
@@ -58,7 +65,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           flex: 1,
           resize: 'none',
           background: 'rgba(255,255,255,0.03)',
-          border: '1px solid #2A2A2A',
+          border: `1px solid ${borderColor}`,
           borderRadius: 12,
           padding: '10px 14px',
           color: '#F2F2F2',
@@ -66,15 +73,9 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           lineHeight: 1.5,
           outline: 'none',
           fontFamily: 'inherit',
-          transition: 'border-color 0.2s ease',
+          transition: 'border-color 0.2s ease, background 0.2s ease',
           overflow: 'hidden',
           maxHeight: 120,
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = '#C9C9C9';
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = '#2A2A2A';
         }}
       />
       <button
@@ -85,10 +86,8 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           height: 42,
           borderRadius: 12,
           border: 'none',
-          background: disabled || !value.trim()
-            ? 'rgba(255,255,255,0.05)'
-            : 'rgba(255,255,255,0.12)',
-          color: disabled || !value.trim() ? '#5A5A5A' : '#F2F2F2',
+          background: sendButtonBg,
+          color: sendButtonColor,
           cursor: disabled || !value.trim() ? 'not-allowed' : 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -99,12 +98,12 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         }}
         onMouseEnter={(e) => {
           if (!disabled && value.trim()) {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.18)';
+            e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
           }
         }}
         onMouseLeave={(e) => {
           if (!disabled && value.trim()) {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
           }
         }}
       >

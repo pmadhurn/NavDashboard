@@ -94,6 +94,7 @@ async def generate_response_stream(
     user_message: str,
     chat_history: Optional[list[dict]] = None,
     allowed_types: Optional[list[str]] = None,
+    think: bool = False,
 ) -> AsyncGenerator[str, None]:
     """Streaming RAG response via SSE."""
     url, chat_model, _ = await get_ai_config(db)
@@ -129,12 +130,14 @@ async def generate_response_stream(
                     "model": chat_model,
                     "messages": messages,
                     "stream": True,
+                    "think": think,
                 },
             ) as resp:
                 if resp.status_code != 200:
                     yield f"data: {json.dumps({'token': 'Error: Failed to get response from AI model.', 'done': True, 'sources': []})}\n\n"
                     return
 
+                accumulated_think = ""
                 async for line in resp.aiter_lines():
                     if not line.strip():
                         continue
@@ -143,11 +146,17 @@ async def generate_response_stream(
                         token = chunk.get("message", {}).get("content", "")
                         done = chunk.get("done", False)
 
+                        # Extract thinking content if present and enabled
+                        thinking = chunk.get("message", {}).get("thinking")
+                        if thinking and think:
+                            accumulated_think += thinking
+                            yield f"data: {json.dumps({'think': thinking, 'done': False})}\n\n"
+
                         if token:
                             yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
 
                         if done:
-                            yield f"data: {json.dumps({'token': '', 'done': True, 'sources': source_refs})}\n\n"
+                            yield f"data: {json.dumps({'token': '', 'done': True, 'sources': source_refs, 'think': accumulated_think if think else None})}\n\n"
                             return
                     except json.JSONDecodeError:
                         continue

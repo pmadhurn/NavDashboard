@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { CaretDownOutlined, CaretRightOutlined, BulbOutlined } from '@ant-design/icons';
 import SourceReference from './SourceReference';
 import type { SourceRef } from '../hooks/useAIChat';
 
@@ -8,8 +9,10 @@ interface ChatMessageProps {
     content: string;
     sources?: SourceRef[] | null;
     created_at?: string;
+    think?: string | null;
   };
   isStreaming?: boolean;
+  showThink?: boolean;
 }
 
 function simpleMarkdownToHtml(text: string): string {
@@ -67,8 +70,11 @@ function formatRelativeTime(dateStr?: string): string {
   return `${diffDay}d ago`;
 }
 
-export default function ChatMessage({ message, isStreaming }: ChatMessageProps) {
+export default function ChatMessage({ message, isStreaming, showThink }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const [thinkExpanded, setThinkExpanded] = useState(false);
+
+  const hasThink = showThink && message.think && message.think.trim();
 
   return (
     <div
@@ -100,6 +106,48 @@ export default function ChatMessage({ message, isStreaming }: ChatMessageProps) 
             style={{ color: '#E0E0E0', fontSize: 14, lineHeight: 1.6 }}
             dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(message.content) }}
           />
+        )}
+
+        {/* Thinking content - collapsible */
+        hasThink && (
+          <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+            <button
+              onClick={() => setThinkExpanded(!thinkExpanded)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'none',
+                border: 'none',
+                color: '#7A7A7A',
+                fontSize: 12,
+                cursor: 'pointer',
+                padding: 0,
+                marginBottom: thinkExpanded ? 8 : 0,
+              }}
+            >
+              {thinkExpanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+              <BulbOutlined style={{ color: '#7A7A7A' }} />
+              <span style={{ color: '#7A7A7A' }}>Thinking</span>
+            </button>
+            {thinkExpanded && (
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  color: '#9A9A9A',
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap',
+                  fontStyle: 'italic',
+                }}
+              >
+                {message.think}
+              </div>
+            )}
+          </div>
         )}
 
         {isStreaming && (

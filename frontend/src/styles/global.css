@@ -499,3 +499,29 @@ body {
   .ant-btn { min-height: 38px; }
   .ant-select-selector { min-height: 38px !important; }
 }
+
+/* ═══════════════════════════════════════════════════ */
+/* COLOR PICKER POPUP — OVERRIDE LEAFLET DEFAULTS      */
+/* ═══════════════════════════════════════════════════ */
+
+.color-picker-popup .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+  padding: 0 !important;
+}
+
+.color-picker-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+}
+
+.color-picker-popup .leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.color-picker-popup .leaflet-popup-close-button {
+  display: none !important;
+}

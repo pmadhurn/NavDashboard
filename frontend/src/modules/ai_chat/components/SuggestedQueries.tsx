@@ -48,23 +48,23 @@ export default function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '32px 40px 16px',
+        padding: '16px 24px 8px',
       }}
     >
-      <RobotOutlined style={{ fontSize: 48, color: '#C9C9C9', marginBottom: 12 }} />
-      <h1 style={{ color: '#F2F2F2', fontSize: 22, fontWeight: 600, margin: 0 }}>
+      <RobotOutlined style={{ fontSize: 36, color: '#6A6A6A', marginBottom: 8 }} />
+      <h1 style={{ color: '#E6E6E6', fontSize: 18, fontWeight: 600, margin: 0 }}>
         NavDashboard AI Assistant
       </h1>
-      <p style={{ color: '#7A7A7A', fontSize: 14, marginTop: 6, marginBottom: 24 }}>
-        Ask me anything about your LiFi devices, or pick a suggestion below
+      <p style={{ color: '#6A6A6A', fontSize: 12, marginTop: 4, marginBottom: 16 }}>
+        Ask about devices, troubleshooting, configurations
       </p>
 
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: 12,
-          maxWidth: 800,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 8,
+          maxWidth: 720,
           width: '100%',
         }}
       >
@@ -75,30 +75,32 @@ export default function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              padding: '14px 18px',
-              background: 'rgba(255,255,255,0.03)',
+              gap: 10,
+              padding: '10px 14px',
+              background: 'rgba(255,255,255,0.02)',
               backdropFilter: 'blur(20px)',
               border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 12,
+              borderRadius: 10,
               cursor: 'pointer',
               textAlign: 'left',
-              color: '#E0E0E0',
-              fontSize: 13,
+              color: '#A0A0A0',
+              fontSize: 12,
               lineHeight: 1.4,
               transition: 'all 0.2s ease',
               outline: 'none',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.color = '#D0D0D0';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
               e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+              e.currentTarget.style.color = '#A0A0A0';
             }}
           >
-            <span style={{ flexShrink: 0 }}>{item.icon}</span>
+            <span style={{ flexShrink: 0, fontSize: 16 }}>{item.icon}</span>
             <span>{item.query}</span>
           </button>
         ))}

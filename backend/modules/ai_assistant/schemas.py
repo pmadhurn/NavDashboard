@@ -43,6 +43,7 @@ class StreamChunk(BaseModel):
     token: str
     done: bool = False
     sources: list[dict] | None = None
+    think: str | None = None
 
 
 class IngestStatusResponse(BaseModel):

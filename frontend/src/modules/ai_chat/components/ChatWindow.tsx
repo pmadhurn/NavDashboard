@@ -8,9 +8,11 @@ import LoadingSpinner from '@/shared/components/LoadingSpinner';
 interface ChatWindowProps {
   sessionId: string | null;
   onSessionCreated: (id: string) => void;
+  showThink?: boolean;
+  selectedModel?: string;
 }
 
-export default function ChatWindow({ sessionId, onSessionCreated }: ChatWindowProps) {
+export default function ChatWindow({ sessionId, onSessionCreated, showThink = false }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { data, isLoading } = useChatMessages(sessionId);
   const { sendStream, streamingContent, isStreaming, sources, streamSessionId } = useSendMessageStream();
@@ -32,7 +34,7 @@ export default function ChatWindow({ sessionId, onSessionCreated }: ChatWindowPr
 
   const handleSend = async (content: string) => {
     setPendingUserMessage(content);
-    await sendStream(content, sessionId || undefined);
+    await sendStream(content, sessionId || undefined, showThink);
     setPendingUserMessage(null);
   };
 
@@ -93,6 +95,7 @@ export default function ChatWindow({ sessionId, onSessionCreated }: ChatWindowPr
               sources: sources.length > 0 ? sources : null,
             }}
             isStreaming
+            showThink={showThink}
           />
         )}
 

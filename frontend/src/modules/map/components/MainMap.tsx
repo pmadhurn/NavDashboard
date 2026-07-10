@@ -5,8 +5,10 @@ import 'leaflet/dist/leaflet.css'
 import DeviceMarker from './DeviceMarker'
 import DevicePopup from './DevicePopup'
 import LocationTrail from './LocationTrail'
+import CoupleConnections from './CoupleConnections'
 import type { MapDataPoint, LocationHistory } from '@/shared/types/locations'
 import type { Couple } from '@/shared/types/couples'
+import type { Pair } from '@/shared/types/pairs'
 import { useSettings } from '../../settings/hooks/useSettings'
 
 interface MainMapProps {
@@ -20,6 +22,7 @@ interface MainMapProps {
   onViewHistory: (coupleId: string) => void
   pickerMode?: boolean
   pickerPosition?: { lat: number; lng: number } | null
+  pairs?: Pair[]
 }
 
 const PICKER_ICON = L.divIcon({
@@ -125,6 +128,7 @@ export default function MainMap({
   onViewHistory,
   pickerMode,
   pickerPosition,
+  pairs = [],
 }: MainMapProps) {
   const { data: settings } = useSettings()
 
@@ -165,6 +169,15 @@ export default function MainMap({
       <FlyToSelected selectedCoupleId={selectedCoupleId} markers={markers} />
 
       {(pickerMode || onMapClick) && <MapClickHandler onClick={onMapClick} />}
+
+      {/* Connection lines between couples in the same pair */}
+      {pairs.length > 0 && (
+        <CoupleConnections
+          markers={markers}
+          pairs={pairs}
+          selectedCoupleId={selectedCoupleId}
+        />
+      )}
 
       {/* Render couple markers */}
       {markers.map((point) => {
