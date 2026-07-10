@@ -53,6 +53,31 @@ export interface PairStatusData {
 
 // ─── Hooks ─────────────────────────────────────────────────
 
+export interface HomeSummary {
+  devices_working: number
+  devices_faulty: number
+  devices_total: number
+  couples_total: number
+  pairs_total: number
+  active_errors: number
+  projects_active: number
+  equipment_out: number
+  damaged_open: number
+  my_expenses_month_total: number
+  my_expenses_month_count: number
+  my_advance_balance: number
+  pending_user_approvals: number
+}
+
+export function useHomeSummary() {
+  return useQuery<HomeSummary>({
+    queryKey: ['dashboard', 'home'],
+    queryFn: () => api.get<HomeSummary>('/dashboard/home'),
+    refetchInterval: 60000,
+    staleTime: 30000,
+  })
+}
+
 export function useDashboardStats() {
   return useQuery<DashboardStats>({
     queryKey: ['dashboard', 'stats'],

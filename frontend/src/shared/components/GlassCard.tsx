@@ -52,7 +52,7 @@ export default function GlassCard({
 
   return (
     <div
-      className={className}
+      className={`glass-card ${className}`.trim()}
       style={baseStyle}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}

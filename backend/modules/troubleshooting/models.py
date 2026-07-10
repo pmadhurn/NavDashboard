@@ -23,6 +23,12 @@ class ErrorLog(Base, SoftDeleteMixin, CustomFieldsMixin):
     pair_id: Mapped[Optional[UUID]] = mapped_column(
         PG_UUID(as_uuid=True), nullable=True
     )
+    project_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True, index=True
+    )
+    asset_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True, index=True
+    )
     error_type: Mapped[str] = mapped_column(String(200), nullable=False)
     severity: Mapped[str] = mapped_column(String(20), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)

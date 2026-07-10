@@ -20,6 +20,20 @@ from shared.audit import record_audit
 logger = logging.getLogger(__name__)
 
 
+async def _allowed_types_for_user(db: AsyncSession, user_id: UUID) -> Optional[list[str]]:
+    """Source types this user may retrieve; None = unrestricted (admin)."""
+    from core.dependencies import get_permission_map
+    from modules.ai_assistant.retriever import allowed_source_types
+    from modules.auth import repository as auth_repository
+
+    user = await auth_repository.get_by_id(db, user_id)
+    if not user:
+        return []
+    if user.role == "ADMIN":
+        return None
+    return allowed_source_types(await get_permission_map(db, user))
+
+
 async def send_message(
     db: AsyncSession,
     session_id: Optional[UUID],
@@ -45,8 +59,9 @@ async def send_message(
     messages = await repository.get_session_messages(db, session_id, limit=10)
     chat_history = [{"role": m.role, "content": m.content} for m in messages]
 
-    # Generate response
-    result = await chain.generate_response(db, content, chat_history)
+    # Generate response (retrieval scoped to the user's permissions)
+    allowed_types = await _allowed_types_for_user(db, user_id)
+    result = await chain.generate_response(db, content, chat_history, allowed_types=allowed_types)
 
     # Save assistant message
     assistant_msg = await repository.add_message(
@@ -102,11 +117,14 @@ async def send_message_stream(
     # Emit session_id for the client
     yield f"data: {json.dumps({'session_id': str(session_id), 'token': '', 'done': False})}\n\n"
 
-    # Stream response and accumulate
+    # Stream response and accumulate (retrieval scoped to the user's permissions)
+    allowed_types = await _allowed_types_for_user(db, user_id)
     accumulated = ""
     sources = []
 
-    async for chunk_str in chain.generate_response_stream(db, content, chat_history):
+    async for chunk_str in chain.generate_response_stream(
+        db, content, chat_history, allowed_types=allowed_types
+    ):
         yield chunk_str
         # Parse chunk to accumulate
         try:

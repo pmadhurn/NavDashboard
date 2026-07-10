@@ -81,6 +81,66 @@ async def download_document(
     )
 
 
+@router.post("/{document_id}/share-link")
+async def create_share_link(
+    document_id: UUID,
+    expires_hours: int = Query(24, ge=1, le=168),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    storage: MinIOStorage = Depends(get_storage),
+):
+    """Create a short-lived signed URL that allows downloading without login."""
+    from datetime import datetime, timedelta, timezone
+
+    from jose import jwt
+
+    from core.config import settings
+
+    doc = await service.get_document(db, document_id, storage)
+    token = jwt.encode(
+        {
+            "doc": str(document_id),
+            "scope": "document_share",
+            "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
+        },
+        settings.SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+    return {
+        "url": f"/api/v1/documents/shared/{token}",
+        "expires_hours": expires_hours,
+        "filename": doc.original_filename,
+    }
+
+
+@router.get("/shared/{token}")
+async def download_shared(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+    storage: MinIOStorage = Depends(get_storage),
+):
+    """Download via a signed share link (no login required)."""
+    from jose import JWTError, jwt
+
+    from core.config import settings
+    from core.exceptions import UnauthorizedException
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except JWTError:
+        raise UnauthorizedException("This share link is invalid or has expired")
+
+    if payload.get("scope") != "document_share" or not payload.get("doc"):
+        raise UnauthorizedException("This share link is invalid or has expired")
+
+    doc, file_bytes = await service.download_document(db, UUID(payload["doc"]), storage)
+    return StreamingResponse(
+        io.BytesIO(file_bytes),
+        media_type=doc.mime_type or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{doc.original_filename}"'},
+    )
+
+
 @router.delete("/{document_id}")
 async def delete_document(
     document_id: UUID,

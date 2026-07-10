@@ -11,6 +11,7 @@ interface GlassInputProps {
   error?: string;
   disabled?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  onPressEnter?: () => void;
 }
 
 const sizeMap = {
@@ -29,6 +30,7 @@ export default function GlassInput({
   error,
   disabled = false,
   size = 'md',
+  onPressEnter,
 }: GlassInputProps) {
   const wrapperStyle: React.CSSProperties = {
     background: 'rgba(255, 255, 255, 0.05)',
@@ -91,6 +93,7 @@ export default function GlassInput({
         placeholder={placeholder}
         value={value}
         onChange={handleChange}
+        onPressEnter={onPressEnter}
         prefix={prefix}
         suffix={suffix}
         disabled={disabled}

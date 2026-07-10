@@ -14,6 +14,8 @@ from shared.pagination import PaginatedResponse, PaginationParams
 from . import service
 from .schemas import (
     AssignmentHistoryResponse,
+    BackfillResult,
+    LinkUserRequest,
     PersonCreate,
     PersonResponse,
     PersonUpdate,
@@ -59,6 +61,26 @@ async def search_personnel(
 
     persons = await repository.search_by_name(db, q)
     return [PersonResponse.model_validate(p, from_attributes=True) for p in persons]
+
+
+@router.post("/backfill-links", response_model=BackfillResult)
+async def backfill_links(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("ADMIN")),
+):
+    """Auto-link personnel to login users by exact email match."""
+    return await service.backfill_user_links(db, current_user.id)
+
+
+@router.post("/{person_id}/link-user", response_model=PersonResponse)
+async def link_user(
+    person_id: UUID,
+    body: LinkUserRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("ADMIN")),
+):
+    """Link a person to a login user (or unlink when user_id is null)."""
+    return await service.link_user(db, person_id, body.user_id, current_user.id)
 
 
 @router.get("/{person_id}", response_model=PersonResponse)

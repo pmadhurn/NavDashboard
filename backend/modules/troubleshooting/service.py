@@ -144,6 +144,23 @@ async def create_error(
         },
     )
 
+    # Project-linked issues appear in the project timeline
+    if error_in.project_id:
+        try:
+            from modules.projects.service import add_timeline_event
+
+            await add_timeline_event(
+                db,
+                error_in.project_id,
+                "ISSUE",
+                f"Issue reported: {error.error_type}",
+                body=error.description,
+                created_by=user_id,
+                metadata={"error_id": str(error.id), "severity": error.severity},
+            )
+        except Exception as exc:
+            logger.warning("Failed to add project timeline entry: %s", exc)
+
     # Auto-set associated device to FAULTY and propagate to couple → pair
     if error_in.device_id:
         try:

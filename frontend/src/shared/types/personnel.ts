@@ -5,6 +5,7 @@ export interface Person {
   email?: string | null
   phone?: string | null
   notes?: string | null
+  user_id?: string | null
   custom_fields?: Record<string, unknown> | null
   created_at: string
   updated_at?: string | null

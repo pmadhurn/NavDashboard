@@ -422,3 +422,80 @@ body {
   background: rgba(255, 255, 255, 0.1) !important;
   color: #F2F2F2 !important;
 }
+/* ─── NavOS motion & polish ────────────────────────────────
+   Subtle microinteractions that make the app feel alive without
+   getting in the way. All of it is disabled for users who ask for
+   reduced motion. */
+
+@keyframes navos-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes navos-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* Page content eases in on route change */
+.ant-layout-content > * {
+  animation: navos-fade-in 0.28s ease-out;
+}
+
+/* Cards lift slightly on hover; clickable ones lift more */
+.glass-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.glass-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
+[style*="cursor: pointer"] > .glass-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Buttons acknowledge a press */
+.ant-btn:active { transform: scale(0.97); }
+.ant-btn { transition: transform 0.1s ease, background 0.2s ease, border-color 0.2s ease; }
+
+/* Skeleton shimmer for loading placeholders */
+.navos-skeleton {
+  background: linear-gradient(90deg, #141414 25%, #1e1e1e 37%, #141414 63%);
+  background-size: 800px 100%;
+  animation: navos-shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+
+/* Table rows respond to hover */
+.ant-table-tbody > tr { transition: background 0.15s ease; }
+
+/* Menu items slide a touch on hover — never when the sidebar is collapsed,
+   which would shift the centred icons */
+.ant-menu:not(.ant-menu-inline-collapsed) .ant-menu-item {
+  transition: padding-left 0.18s ease, background 0.18s ease !important;
+}
+.ant-menu:not(.ant-menu-inline-collapsed) .ant-menu-item:hover {
+  padding-left: 28px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ant-layout-content > *,
+  .navos-skeleton { animation: none !important; }
+  .glass-card,
+  .glass-card:hover,
+  .ant-btn,
+  .ant-btn:active,
+  .ant-menu-item,
+  .ant-menu-item:hover {
+    transform: none !important;
+    transition: none !important;
+    padding-left: inherit !important;
+  }
+}
+
+/* Touch targets stay comfortable on phones */
+@media (max-width: 767px) {
+  .ant-btn { min-height: 38px; }
+  .ant-select-selector { min-height: 38px !important; }
+}

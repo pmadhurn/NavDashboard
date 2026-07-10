@@ -32,11 +32,22 @@ class PersonResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     notes: Optional[str] = None
+    user_id: Optional[UUID] = None
     custom_fields: Optional[dict] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class LinkUserRequest(BaseModel):
+    user_id: Optional[UUID] = None  # None = unlink
+
+
+class BackfillResult(BaseModel):
+    linked: int
+    already_linked: int
+    unmatched_personnel: int
 
 
 class AssignmentHistoryResponse(BaseModel):

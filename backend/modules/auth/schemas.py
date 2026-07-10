@@ -28,12 +28,21 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
+    auth_provider: str = "LOCAL"
+    status: str = "ACTIVE"
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     custom_fields: Optional[dict] = None
+    permissions: Optional[dict[str, str]] = None
 
     model_config = {"from_attributes": True}
+
+
+class PermissionsUpdate(BaseModel):
+    """Full section -> level map; replaces the user's permissions."""
+
+    permissions: dict[str, str]
 
 
 class LoginRequest(BaseModel):
@@ -50,3 +59,15 @@ class TokenResponse(BaseModel):
 class PasswordChange(BaseModel):
     old_password: str
     new_password: str = Field(min_length=6)
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str
+
+
+class GoogleAuthResponse(BaseModel):
+    """pending=True means the account was created (or exists) but awaits admin approval."""
+
+    pending: bool = False
+    message: Optional[str] = None
+    token: Optional[TokenResponse] = None

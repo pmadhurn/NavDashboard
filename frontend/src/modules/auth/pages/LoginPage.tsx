@@ -5,15 +5,35 @@ import { message } from 'antd';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassInput from '@/shared/components/GlassInput';
 import GlassButton from '@/shared/components/GlassButton';
-import { useLogin } from '@/modules/auth/hooks/useAuth';
+import { useLogin, useGoogleLogin } from '@/modules/auth/hooks/useAuth';
 import { useAuthStore } from '@/shared/stores/authStore';
+import GoogleSignInButton, { googleSignInEnabled } from '@/modules/auth/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
   const { mutate: login, isPending } = useLogin();
+  const { mutate: googleLogin } = useGoogleLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+
+  const handleGoogleCredential = (credential: string) => {
+    googleLogin(credential, {
+      onSuccess: (data) => {
+        if (data.pending) {
+          setPendingMessage(
+            data.message || 'Your account is awaiting admin approval.'
+          );
+        } else if (data.token) {
+          navigate('/', { replace: true });
+        }
+      },
+      onError: () => {
+        message.error('Google sign-in failed');
+      },
+    });
+  };
 
   useEffect(() => {
     if (token) {
@@ -122,6 +142,41 @@ export default function LoginPage() {
             Sign In
           </GlassButton>
         </form>
+        {pendingMessage && (
+          <div
+            style={{
+              marginTop: 16,
+              padding: '12px 16px',
+              borderRadius: 10,
+              background: 'rgba(139, 195, 74, 0.08)',
+              border: '1px solid rgba(139, 195, 74, 0.25)',
+              color: '#B8B8B8',
+              fontSize: 13,
+              textAlign: 'center',
+            }}
+          >
+            {pendingMessage}
+          </div>
+        )}
+        {googleSignInEnabled && (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                margin: '20px 0',
+                color: '#7A7A7A',
+                fontSize: 12,
+              }}
+            >
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              or
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            </div>
+            <GoogleSignInButton onCredential={handleGoogleCredential} />
+          </>
+        )}
       </GlassCard>
     </div>
   );

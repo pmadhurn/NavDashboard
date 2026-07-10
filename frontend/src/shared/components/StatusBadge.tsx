@@ -1,8 +1,7 @@
-import React from 'react';
 import { getStatusColor } from '@/shared/utils/colors';
 
 interface StatusBadgeProps {
-  status: 'WORKING' | 'NOT_WORKING' | 'FAULTY';
+  status: string;
   size?: 'sm' | 'md';
 }
 

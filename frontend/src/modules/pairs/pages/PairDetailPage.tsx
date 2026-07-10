@@ -11,6 +11,7 @@ import {
   LinkOutlined,
 } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
+import ShareButton from '@/shared/components/ShareButton'
 import GlassCard from '@/shared/components/GlassCard'
 import GlassButton from '@/shared/components/GlassButton'
 import StatusBadge from '@/shared/components/StatusBadge'
@@ -188,6 +189,7 @@ export default function PairDetailPage() {
         ]}
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
+            <ShareButton title={`Pair ${pair.name} — ${pair.status}`} url={`/pairs/${pair.id}`} />
             <GlassButton icon={<EditOutlined />} variant="ghost" onClick={() => setFormOpen(true)}>
               Edit
             </GlassButton>

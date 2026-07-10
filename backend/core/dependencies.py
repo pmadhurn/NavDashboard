@@ -37,6 +37,9 @@ async def get_current_user(
     if not user.is_active:
         raise UnauthorizedException("Account disabled")
 
+    if getattr(user, "status", "ACTIVE") == "PENDING":
+        raise UnauthorizedException("Account is awaiting admin approval")
+
     return user
 
 
@@ -47,3 +50,39 @@ def require_role(*roles: str):
         return current_user
 
     return role_checker
+
+
+async def get_permission_map(db: AsyncSession, user) -> dict[str, str]:
+    """Resolve a user's section -> level map.
+
+    ADMIN role gets full access. Users without explicit rows fall back to
+    their legacy role's default map.
+    """
+    from core.permissions import ROLE_DEFAULT_PERMISSIONS, full_access_map
+    from modules.auth.repository import get_permissions
+
+    if user.role == "ADMIN":
+        return full_access_map()
+
+    rows = await get_permissions(db, user.id)
+    if rows:
+        return {row.section: row.level for row in rows}
+    return dict(ROLE_DEFAULT_PERMISSIONS.get(user.role, {}))
+
+
+def require_permission(section: str, level: str = "VIEW"):
+    """Route dependency: current user must have at least `level` on `section`."""
+
+    async def permission_checker(
+        current_user=Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ):
+        from core.permissions import LEVEL_NONE, level_satisfies
+
+        perm_map = await get_permission_map(db, current_user)
+        user_level = perm_map.get(section, LEVEL_NONE)
+        if not level_satisfies(user_level, level):
+            raise ForbiddenException("Insufficient permissions")
+        return current_user
+
+    return permission_checker

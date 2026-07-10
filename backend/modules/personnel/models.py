@@ -5,6 +5,7 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base, CustomFieldsMixin, SoftDeleteMixin
@@ -18,6 +19,11 @@ class Person(Base, SoftDeleteMixin, CustomFieldsMixin):
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Links this field-staff record to a login account (one identity). Nullable:
+    # a Person may have no login, and a User may have no Person.
+    user_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=True
+    )
 
 
 class AssignmentHistory(Base):

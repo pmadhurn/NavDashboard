@@ -7,8 +7,13 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user
+from core.dependencies import get_current_user, require_permission
 from modules.auth.models import User
+
+# All chat/session routes require at least VIEW on the 'ai' section; the
+# retrieval layer further scopes what data each user's chats can see.
+ai_view = require_permission("ai", "VIEW")
+ai_manage = require_permission("ai", "MANAGE")
 from modules.ai_assistant import service
 from modules.ai_assistant.schemas import (
     ChatMessageCreate,
@@ -29,7 +34,7 @@ async def chat(
     request: ChatMessageCreate,
     session_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_view),
 ):
     result = await service.send_message(db, session_id, current_user.id, request.content)
     return ChatResponse(
@@ -43,7 +48,7 @@ async def chat_stream(
     request: ChatMessageCreate,
     session_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_view),
 ):
     async def event_generator():
         async for chunk in service.send_message_stream(
@@ -65,7 +70,7 @@ async def chat_stream(
 @router.get("/sessions")
 async def list_sessions(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_view),
 ):
     sessions = await service.get_sessions(db, current_user.id)
     return sessions
@@ -75,7 +80,7 @@ async def list_sessions(
 async def get_session(
     session_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_view),
 ):
     detail = await service.get_session_detail(db, session_id)
     if detail is None:
@@ -88,7 +93,7 @@ async def get_session(
 async def delete_session(
     session_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_view),
 ):
     await service.delete_session(db, session_id, current_user.id)
     return {"detail": "Session deleted"}
@@ -97,7 +102,7 @@ async def delete_session(
 @router.post("/ingest")
 async def trigger_ingest(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_manage),
 ):
     result = await service.trigger_sync(db, current_user.id)
     return result
@@ -106,7 +111,7 @@ async def trigger_ingest(
 @router.get("/ingest/status", response_model=IngestStatusResponse)
 async def ingest_status(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_view),
 ):
     return await service.get_ingest_status(db)
 
@@ -114,7 +119,7 @@ async def ingest_status(
 @router.get("/health", response_model=OllamaHealthResponse)
 async def health(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(ai_view),
 ):
     return await service.get_health(db)
     

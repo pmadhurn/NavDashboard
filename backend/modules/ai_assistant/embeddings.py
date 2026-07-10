@@ -203,5 +203,68 @@ async def sync_all_embeddings(db: AsyncSession) -> dict:
         ),
     )
 
+    # 9. Projects
+    from modules.projects.models import Project, ProjectTimelineEntry
+
+    await _sync_entity(
+        "project",
+        select(Project).where(Project.deleted_at.is_(None)),
+        lambda p: (
+            f"Project {p.name}, type: {p.project_type}, status: {p.status}, "
+            f"customer: {p.customer_name or 'n/a'}, site: {p.site_location or 'n/a'}, "
+            f"description: {p.description or 'none'}"
+        ),
+    )
+
+    # 10. Project timeline entries
+    await _sync_entity(
+        "project_timeline",
+        select(ProjectTimelineEntry),
+        lambda t: f"Project activity ({t.entry_type}): {t.title}. {t.body or ''}",
+    )
+
+    # 11. Assets
+    from modules.assets.models import Asset, AssetReport
+
+    await _sync_entity(
+        "asset",
+        select(Asset).where(Asset.deleted_at.is_(None)),
+        lambda a: (
+            f"Asset {a.asset_code} {a.name}, status: {a.status}, kind: {a.item_kind}, "
+            f"serial: {a.serial_number or 'n/a'}, notes: {a.notes or 'none'}"
+        ),
+    )
+
+    # 12. Asset reports (damaged / requirements)
+    await _sync_entity(
+        "asset_report",
+        select(AssetReport).where(AssetReport.deleted_at.is_(None)),
+        lambda r: f"{r.report_type.title()} report: {r.title}, qty: {r.quantity}, status: {r.status}. {r.details or ''}",
+    )
+
+    # 13. Expenses
+    from modules.finance.models import Expense
+
+    await _sync_entity(
+        "expense",
+        select(Expense).where(Expense.deleted_at.is_(None)),
+        lambda x: (
+            f"Expense {x.title}, amount: {x.currency} {float(x.amount):,.2f}, "
+            f"date: {x.expense_date:%Y-%m-%d}, category: {x.category or 'n/a'}"
+        ),
+    )
+
+    # 14. Download items (metadata only, not file contents)
+    from modules.downloads.models import DownloadItem
+
+    await _sync_entity(
+        "download_item",
+        select(DownloadItem).where(
+            DownloadItem.deleted_at.is_(None),
+            DownloadItem.visibility == "PUBLIC",
+        ),
+        lambda d: f"Download {d.title} ({d.item_type}): {d.description or 'no description'}",
+    )
+
     await db.commit()
     return summary

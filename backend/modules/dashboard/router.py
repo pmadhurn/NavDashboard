@@ -8,12 +8,21 @@ from modules.dashboard.schemas import (
     DashboardStats,
     DeviceTypeBreakdown,
     ErrorTrendPoint,
+    HomeSummary,
     PairStatusData,
     RecentActivityItem,
     StatusDistribution,
 )
 
 router = APIRouter()
+
+
+@router.get("/home", response_model=HomeSummary)
+async def home_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await service.get_home_summary(db, current_user.id)
 
 
 @router.get("/stats", response_model=DashboardStats)

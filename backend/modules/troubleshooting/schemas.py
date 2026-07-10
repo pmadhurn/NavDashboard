@@ -19,6 +19,8 @@ class ErrorLogCreate(BaseModel):
     device_id: Optional[UUID] = None
     couple_id: Optional[UUID] = None
     pair_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
+    asset_id: Optional[UUID] = None
     error_type: str = Field(min_length=1, max_length=200)
     severity: str = Field(pattern="^(LOW|MEDIUM|HIGH|CRITICAL)$")
     description: str = Field(min_length=1)
@@ -68,6 +70,8 @@ class ErrorLogResponse(BaseModel):
     device_id: Optional[UUID] = None
     couple_id: Optional[UUID] = None
     pair_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
+    asset_id: Optional[UUID] = None
     error_type: str
     severity: str
     severity_color: str

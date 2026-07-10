@@ -20,8 +20,26 @@ from shared.pagination import PaginatedResponse, PaginationParams, paginate
 from shared.propagation import propagate_device_status_change
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def _to_response(device: Device) -> DeviceResponse:
     return DeviceResponse.model_validate(device, from_attributes=True)
+
+
+async def _mirror_device_asset(db: AsyncSession, device: Device | None) -> None:
+    """Best-effort: keep the unified-inventory mirror asset in sync. Never let a
+    mirror failure break a device operation."""
+    if device is None:
+        return
+    try:
+        from modules.assets.service import sync_device_asset
+
+        await sync_device_asset(db, device)
+    except Exception as exc:
+        logger.warning("Device→asset mirror failed for %s: %s", device.id, exc)
 
 
 async def list_devices(
@@ -60,6 +78,7 @@ async def create_device(
         user_id=user_id,
         new_values={"serial_number": device.serial_number, "device_type": device.device_type},
     )
+    await _mirror_device_asset(db, device)
     return _to_response(device)
 
 
@@ -108,6 +127,7 @@ async def update_device(
         old_values=old_values,
         new_values=device_in.model_dump(exclude_unset=True),
     )
+    await _mirror_device_asset(db, updated)
     return _to_response(updated)
 
 
@@ -126,6 +146,7 @@ async def delete_device(
         user_id=user_id,
         old_values={"serial_number": device.serial_number},
     )
+    await _mirror_device_asset(db, deleted)
     return _to_response(deleted)
 
 

@@ -8,6 +8,7 @@ import {
   WifiOutlined,
 } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
+import ShareButton from '@/shared/components/ShareButton'
 import GlassCard from '@/shared/components/GlassCard'
 import GlassButton from '@/shared/components/GlassButton'
 import GlassModal from '@/shared/components/GlassModal'
@@ -112,6 +113,10 @@ export default function CoupleDetailPage() {
         ]}
         actions={
           <>
+            <ShareButton
+              title={`Couple ${couple.name} — ${couple.status}`}
+              url={`/couples/${couple.id}`}
+            />
             <GlassButton
               variant="ghost"
               icon={<EnvironmentOutlined />}

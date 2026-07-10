@@ -40,8 +40,8 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader
-        title="Settings"
-        subtitle="System configuration and user management"
+        title="Admin"
+        subtitle="Users, permissions, and system configuration"
       />
       <Tabs
         items={tabItems}

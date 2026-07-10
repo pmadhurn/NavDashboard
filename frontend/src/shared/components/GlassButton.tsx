@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from 'antd';
 
 interface GlassButtonProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;

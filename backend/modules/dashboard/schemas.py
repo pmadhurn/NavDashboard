@@ -51,3 +51,22 @@ class PairStatusData(BaseModel):
     status: str
     count: int
     color: str
+
+
+class HomeSummary(BaseModel):
+    """Cross-module KPIs for the NavOS landing page. Widgets are permission-gated
+    on the frontend; this returns whatever is cheap to compute for everyone."""
+
+    devices_working: int = 0
+    devices_faulty: int = 0
+    devices_total: int = 0
+    couples_total: int = 0
+    pairs_total: int = 0
+    active_errors: int = 0
+    projects_active: int = 0
+    equipment_out: int = 0
+    damaged_open: int = 0
+    my_expenses_month_total: float = 0
+    my_expenses_month_count: int = 0
+    my_advance_balance: float = 0
+    pending_user_approvals: int = 0

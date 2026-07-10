@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Switch } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
   StopOutlined,
   UserOutlined,
+  CheckOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
@@ -19,8 +21,11 @@ import {
   useCreateUser,
   useUpdateUser,
   useDeleteUser,
+  usePendingUsers,
+  useApproveUser,
 } from '../hooks/useSettings';
 import type { UserItem } from '../hooks/useSettings';
+import PermissionMatrixModal from './PermissionMatrixModal';
 
 const roleBadgeStyles: Record<string, { bg: string; color: string }> = {
   ADMIN: { bg: 'rgba(140, 140, 140, 0.2)', color: '#8C8C8C' },
@@ -28,8 +33,10 @@ const roleBadgeStyles: Record<string, { bg: string; color: string }> = {
   VIEWER: { bg: 'rgba(110, 110, 110, 0.2)', color: '#6E6E6E' },
 };
 
+const defaultRoleBadgeStyle = { bg: 'rgba(110, 110, 110, 0.2)', color: '#6E6E6E' };
+
 function RoleBadge({ role }: { role: string }) {
-  const style = roleBadgeStyles[role] ?? roleBadgeStyles.VIEWER;
+  const style = roleBadgeStyles[role] ?? defaultRoleBadgeStyle;
   return (
     <span
       style={{
@@ -66,14 +73,17 @@ const emptyForm: UserFormState = {
 
 export default function UserManagement() {
   const { data: users, isLoading } = useUsers();
+  const { data: pendingUsers } = usePendingUsers();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
+  const approveUser = useApproveUser();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [deleteConfirm, setDeleteConfirm] = useState<UserItem | null>(null);
+  const [permissionsUser, setPermissionsUser] = useState<UserItem | null>(null);
 
   const handleOpenCreate = () => {
     setEditingUser(null);
@@ -136,6 +146,68 @@ export default function UserManagement() {
 
   return (
     <div>
+      {/* Pending approvals */}
+      {pendingUsers && pendingUsers.length > 0 && (
+        <GlassCard padding="sm" style={{ marginBottom: 20 }}>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#E6E6E6',
+              marginBottom: 12,
+            }}
+          >
+            Pending approval ({pendingUsers.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {pendingUsers.map((pending) => (
+              <div
+                key={pending.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(140, 132, 104, 0.08)',
+                  border: '1px solid rgba(140, 132, 104, 0.2)',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div>
+                  <div style={{ color: '#F2F2F2', fontSize: 13 }}>
+                    {pending.full_name}
+                  </div>
+                  <div style={{ color: '#7A7A7A', fontSize: 12 }}>
+                    {pending.email}
+                    {pending.auth_provider === 'GOOGLE' && ' · via Google'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <GlassButton
+                    size="sm"
+                    icon={<CheckOutlined />}
+                    loading={approveUser.isPending}
+                    onClick={() => approveUser.mutate(pending.id)}
+                  >
+                    Approve
+                  </GlassButton>
+                  <GlassButton
+                    variant="danger"
+                    size="sm"
+                    icon={<StopOutlined />}
+                    onClick={() => setDeleteConfirm(pending)}
+                  >
+                    Reject
+                  </GlassButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
+
       {/* Top bar */}
       <div
         style={{
@@ -249,6 +321,14 @@ export default function UserManagement() {
                           onClick={() => handleOpenEdit(user)}
                         >
                           Edit
+                        </GlassButton>
+                        <GlassButton
+                          variant="ghost"
+                          size="sm"
+                          icon={<SafetyOutlined />}
+                          onClick={() => setPermissionsUser(user)}
+                        >
+                          Permissions
                         </GlassButton>
                         <GlassButton
                           variant="danger"
@@ -409,6 +489,12 @@ export default function UserManagement() {
           </div>
         </div>
       </GlassModal>
+
+      {/* Permission matrix modal */}
+      <PermissionMatrixModal
+        user={permissionsUser}
+        onClose={() => setPermissionsUser(null)}
+      />
 
       {/* Delete/Deactivate confirm dialog */}
       <ConfirmDialog

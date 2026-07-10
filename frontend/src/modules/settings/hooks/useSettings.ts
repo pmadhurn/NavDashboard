@@ -33,6 +33,8 @@ export interface UserItem {
   full_name: string;
   role: string;
   is_active: boolean;
+  auth_provider?: string;
+  status?: string;
   created_at: string;
   last_login: string | null;
 }
@@ -111,6 +113,57 @@ export function useUpdateUser() {
     },
     onError: (err: any) => {
       message.error(err?.response?.data?.detail || 'Failed to update user');
+    },
+  });
+}
+
+export function usePendingUsers() {
+  return useQuery({
+    queryKey: ['pending-users'],
+    queryFn: () => api.get<UserItem[]>('/auth/users/pending'),
+    refetchInterval: 60 * 1000,
+  });
+}
+
+export function useApproveUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<UserItem>(`/auth/users/${id}/approve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-users'] });
+      queryClient.invalidateQueries({ queryKey: ['settings-users'] });
+      message.success('User approved');
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to approve user');
+    },
+  });
+}
+
+export type PermissionMap = Record<string, string>;
+
+export function useUserPermissions(userId: string | null) {
+  return useQuery({
+    queryKey: ['user-permissions', userId],
+    queryFn: () =>
+      api.get<{ permissions: PermissionMap }>(`/auth/users/${userId}/permissions`),
+    enabled: !!userId,
+  });
+}
+
+export function useSetUserPermissions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, permissions }: { id: string; permissions: PermissionMap }) =>
+      api.put<{ permissions: PermissionMap }>(`/auth/users/${id}/permissions`, {
+        permissions,
+      }),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['user-permissions', vars.id] });
+      message.success('Permissions updated');
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to update permissions');
     },
   });
 }

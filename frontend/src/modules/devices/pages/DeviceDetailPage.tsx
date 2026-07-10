@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Tag, Table, Select, Input, message } from 'antd'
 import { EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
+import ShareButton from '@/shared/components/ShareButton'
 import GlassCard from '@/shared/components/GlassCard'
 import GlassButton from '@/shared/components/GlassButton'
 import GlassModal from '@/shared/components/GlassModal'
@@ -120,6 +121,10 @@ export default function DeviceDetailPage() {
         ]}
         actions={
           <>
+            <ShareButton
+              title={`Device ${device.serial_number} (${device.device_type}) — ${device.status}`}
+              url={`/devices/${device.id}`}
+            />
             <GlassButton icon={<SwapOutlined />} onClick={openStatusModal}>
               Change Status
             </GlassButton>

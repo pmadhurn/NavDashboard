@@ -3,6 +3,7 @@ import { Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import EmptyState from './EmptyState';
 import LoadingSpinner from './LoadingSpinner';
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 
 interface DataTableProps<T> {
   columns: ColumnsType<T>;
@@ -32,13 +33,23 @@ export default function DataTable<T extends object>({
   emptyText = 'No data available',
   rowKey = 'id',
 }: DataTableProps<T>) {
+  const isMobile = useIsMobile();
+
   if (loading && data.length === 0) {
     return <LoadingSpinner text="Loading data..." />;
   }
 
+  // On mobile, drop columns marked `responsive: ['md']`-style secondary info:
+  // columns can opt out of mobile via `className: 'hide-on-mobile'`.
+  const visibleColumns = isMobile
+    ? columns.filter((col) => col.className !== 'hide-on-mobile')
+    : columns;
+
   return (
     <Table<T>
-      columns={columns}
+      columns={visibleColumns}
+      scroll={isMobile ? { x: 'max-content' } : undefined}
+      size={isMobile ? 'small' : undefined}
       dataSource={data}
       loading={loading}
       rowKey={rowKey}

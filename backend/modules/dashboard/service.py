@@ -5,6 +5,7 @@ from modules.dashboard.schemas import (
     DashboardStats,
     DeviceTypeBreakdown,
     ErrorTrendPoint,
+    HomeSummary,
     PairStatusData,
     RecentActivityItem,
     StatusDistribution,
@@ -79,3 +80,106 @@ async def get_pair_status_data(db: AsyncSession) -> list[PairStatusData]:
             color=color,
         ))
     return result
+
+
+async def get_home_summary(db: AsyncSession, user_id) -> HomeSummary:
+    """Aggregate cross-module KPIs for the landing page in a single call.
+
+    Each metric is wrapped defensively so a missing table/module never breaks
+    the whole landing page.
+    """
+    from datetime import datetime, timezone
+
+    from sqlalchemy import func, select
+
+    summary = HomeSummary()
+
+    async def _scalar(stmt, default=0):
+        try:
+            return (await db.execute(stmt)).scalar_one() or default
+        except Exception:
+            return default
+
+    # Devices / couples / pairs / errors — reuse the existing repository helpers
+    try:
+        counts = await repository.get_entity_counts(db)
+        summary.devices_total = counts.get("total_devices", 0)
+        summary.couples_total = counts.get("total_couples", 0)
+        summary.pairs_total = counts.get("total_pairs", 0)
+        status = await repository.get_device_status_counts(db)
+        summary.devices_working = status.get("devices_working", 0)
+        summary.devices_faulty = status.get("devices_faulty", 0)
+        summary.active_errors = await repository.get_active_error_count(db)
+    except Exception:
+        pass
+
+    # Active projects
+    try:
+        from modules.projects.models import Project
+
+        summary.projects_active = await _scalar(
+            select(func.count()).select_from(Project).where(
+                Project.deleted_at.is_(None), Project.status == "ACTIVE"
+            )
+        )
+    except Exception:
+        pass
+
+    # Equipment currently out + open damaged reports
+    try:
+        from modules.assets.models import Asset, AssetReport
+
+        summary.equipment_out = await _scalar(
+            select(func.count()).select_from(Asset).where(
+                Asset.deleted_at.is_(None), Asset.status == "WITH_PROJECT"
+            )
+        )
+        summary.damaged_open = await _scalar(
+            select(func.count()).select_from(AssetReport).where(
+                AssetReport.deleted_at.is_(None),
+                AssetReport.report_type == "DAMAGED",
+                AssetReport.status != "RESOLVED",
+            )
+        )
+    except Exception:
+        pass
+
+    # My expenses this month
+    try:
+        from modules.finance.models import Expense
+
+        month_start = datetime.now(timezone.utc).replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        summary.my_expenses_month_total = float(
+            await _scalar(
+                select(func.coalesce(func.sum(Expense.amount), 0)).where(
+                    Expense.deleted_at.is_(None),
+                    Expense.added_by == user_id,
+                    Expense.expense_date >= month_start,
+                )
+            )
+        )
+        summary.my_expenses_month_count = await _scalar(
+            select(func.count()).select_from(Expense).where(
+                Expense.deleted_at.is_(None),
+                Expense.added_by == user_id,
+                Expense.expense_date >= month_start,
+            )
+        )
+    except Exception:
+        pass
+
+    # Pending user approvals (useful for admins; harmless otherwise)
+    try:
+        from modules.auth.models import User
+
+        summary.pending_user_approvals = await _scalar(
+            select(func.count()).select_from(User).where(
+                User.deleted_at.is_(None), User.status == "PENDING"
+            )
+        )
+    except Exception:
+        pass
+
+    return summary

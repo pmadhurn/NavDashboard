@@ -33,4 +33,20 @@ export const api = {
     axiosInstance.put(url, data).then(res => res.data),
   del: <T>(url: string): Promise<T> =>
     axiosInstance.delete(url).then(res => res.data),
+  upload: <T>(url: string, formData: FormData): Promise<T> =>
+    axiosInstance
+      .post(url, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then(res => res.data),
+  /** GET a file and trigger a browser download with the given filename. */
+  downloadFile: async (url: string, filename: string): Promise<void> => {
+    const res = await axiosInstance.get(url, { responseType: 'blob' })
+    const objectUrl = URL.createObjectURL(res.data)
+    const link = document.createElement('a')
+    link.href = objectUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(objectUrl)
+  },
 }

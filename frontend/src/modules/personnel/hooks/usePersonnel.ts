@@ -67,3 +67,27 @@ export function usePersonAssignments(id: string) {
     enabled: !!id,
   })
 }
+
+export function useLinkPersonUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string | null }) =>
+      api.post<Person>(`/personnel/${id}/link-user`, { user_id: userId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['personnel'] })
+    },
+  })
+}
+
+export function useBackfillPersonLinks() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ linked: number; already_linked: number; unmatched_personnel: number }>(
+        '/personnel/backfill-links'
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['personnel'] })
+    },
+  })
+}

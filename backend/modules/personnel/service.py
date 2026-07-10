@@ -12,7 +12,13 @@ from shared.pagination import PaginatedResponse, PaginationParams, paginate
 
 from . import repository
 from .models import Person
-from .schemas import AssignmentHistoryResponse, PersonCreate, PersonResponse, PersonUpdate
+from .schemas import (
+    AssignmentHistoryResponse,
+    BackfillResult,
+    PersonCreate,
+    PersonResponse,
+    PersonUpdate,
+)
 
 
 def _to_response(person: Person) -> PersonResponse:
@@ -34,6 +40,97 @@ async def get_person(db: AsyncSession, person_id: UUID) -> PersonResponse:
     if not person:
         raise NotFoundException(detail=f"Person {person_id} not found")
     return _to_response(person)
+
+
+# ── Identity resolvers (one person ↔ one login) ──────────────────────────────
+
+async def person_for_user(db: AsyncSession, user_id: UUID) -> Person | None:
+    stmt = select(Person).where(Person.user_id == user_id, Person.deleted_at.is_(None))
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def user_for_person(db: AsyncSession, person_id: UUID):
+    person = await repository.get_by_id(db, person_id)
+    return person.user_id if person else None
+
+
+async def link_user(
+    db: AsyncSession, person_id: UUID, target_user_id: UUID | None, changed_by: UUID
+) -> PersonResponse:
+    """Link (or unlink when target_user_id is None) a Person to a login User."""
+    from core.exceptions import ConflictException
+
+    person = await repository.get_by_id(db, person_id)
+    if not person:
+        raise NotFoundException(detail=f"Person {person_id} not found")
+
+    if target_user_id is not None:
+        existing = await person_for_user(db, target_user_id)
+        if existing and existing.id != person_id:
+            raise ConflictException("That login is already linked to another person")
+
+    person.user_id = target_user_id
+    await db.commit()
+    await db.refresh(person)
+    await record_audit(
+        db,
+        action="UPDATE",
+        entity_type="personnel",
+        entity_id=person.id,
+        user_id=changed_by,
+        new_values={"user_id": str(target_user_id) if target_user_id else None},
+    )
+    return _to_response(person)
+
+
+async def backfill_user_links(db: AsyncSession, changed_by: UUID) -> BackfillResult:
+    """Auto-link personnel to users by exact (case-insensitive) email match.
+    Name-only matches are intentionally NOT auto-linked."""
+    from sqlalchemy import func
+
+    from modules.auth.models import User
+
+    linked = already = unmatched = 0
+    persons = (
+        await db.execute(select(Person).where(Person.deleted_at.is_(None)))
+    ).scalars().all()
+
+    for person in persons:
+        if person.user_id is not None:
+            already += 1
+            continue
+        if not person.email:
+            unmatched += 1
+            continue
+        user = (
+            await db.execute(
+                select(User).where(
+                    func.lower(User.email) == person.email.lower(),
+                    User.deleted_at.is_(None),
+                )
+            )
+        ).scalar_one_or_none()
+        if not user:
+            unmatched += 1
+            continue
+        # skip if that user is already linked elsewhere
+        if await person_for_user(db, user.id):
+            unmatched += 1
+            continue
+        person.user_id = user.id
+        linked += 1
+
+    await db.commit()
+    if linked:
+        await record_audit(
+            db,
+            action="UPDATE",
+            entity_type="personnel",
+            entity_id=changed_by,
+            user_id=changed_by,
+            new_values={"backfilled_links": linked},
+        )
+    return BackfillResult(linked=linked, already_linked=already, unmatched_personnel=unmatched)
 
 
 async def create_person(

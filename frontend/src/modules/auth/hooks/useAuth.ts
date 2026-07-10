@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '@/shared/api/client'
-import { useAuthStore } from '@/shared/stores/authStore'
+import { useAuthStore, PermissionMap } from '@/shared/stores/authStore'
 
 interface User {
   id: string
@@ -9,6 +9,9 @@ interface User {
   full_name: string
   role: string
   is_active: boolean
+  auth_provider?: string
+  status?: string
+  permissions?: PermissionMap
 }
 
 interface LoginRequest {
@@ -30,6 +33,26 @@ export function useLogin() {
       api.post<TokenResponse>('/auth/login', data),
     onSuccess: (data) => {
       setAuth(data.access_token, data.user)
+    },
+  })
+}
+
+interface GoogleAuthResponse {
+  pending: boolean
+  message?: string
+  token?: TokenResponse
+}
+
+export function useGoogleLogin() {
+  const setAuth = useAuthStore(state => state.setAuth)
+
+  return useMutation({
+    mutationFn: (credential: string) =>
+      api.post<GoogleAuthResponse>('/auth/google', { credential }),
+    onSuccess: (data) => {
+      if (data.token) {
+        setAuth(data.token.access_token, data.token.user)
+      }
     },
   })
 }

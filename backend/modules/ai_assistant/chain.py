@@ -15,10 +15,27 @@ from modules.ai_assistant.config import get_ai_config
 logger = logging.getLogger(__name__)
 
 
+def _permission_note(allowed_types: Optional[list[str]]) -> str:
+    if allowed_types is None:
+        return ""
+    from modules.ai_assistant.retriever import SECTION_BY_SOURCE_TYPE
+
+    allowed_sections = sorted({SECTION_BY_SOURCE_TYPE[t] for t in allowed_types})
+    blocked_sections = sorted(set(SECTION_BY_SOURCE_TYPE.values()) - set(allowed_sections))
+    if not blocked_sections:
+        return ""
+    return (
+        f"\n\nThis user has access to these sections only: {', '.join(allowed_sections)}. "
+        f"They do NOT have access to: {', '.join(blocked_sections)}. If asked about data "
+        "from a section they can't access, say they don't have access to it — never guess."
+    )
+
+
 async def generate_response(
     db: AsyncSession,
     user_message: str,
     chat_history: Optional[list[dict]] = None,
+    allowed_types: Optional[list[str]] = None,
 ) -> dict:
     """Non-streaming RAG response."""
     url, chat_model, _ = await get_ai_config(db)
@@ -26,13 +43,13 @@ async def generate_response(
     if not available:
         return {"content": NO_OLLAMA_MESSAGE, "sources": []}
 
-    # Retrieve context
-    retrieved = await hybrid_retrieve(db, user_message)
+    # Retrieve context (permission-filtered at SQL level)
+    retrieved = await hybrid_retrieve(db, user_message, allowed_types=allowed_types)
     context = build_context(retrieved)
     source_refs = extract_source_references(retrieved)
 
     # Build messages
-    system_content = SYSTEM_PROMPT
+    system_content = SYSTEM_PROMPT + _permission_note(allowed_types)
     if context:
         system_content += "\n\n" + context
 
@@ -76,6 +93,7 @@ async def generate_response_stream(
     db: AsyncSession,
     user_message: str,
     chat_history: Optional[list[dict]] = None,
+    allowed_types: Optional[list[str]] = None,
 ) -> AsyncGenerator[str, None]:
     """Streaming RAG response via SSE."""
     url, chat_model, _ = await get_ai_config(db)
@@ -84,13 +102,13 @@ async def generate_response_stream(
         yield f"data: {json.dumps({'token': NO_OLLAMA_MESSAGE, 'done': True, 'sources': []})}\n\n"
         return
 
-    # Retrieve context
-    retrieved = await hybrid_retrieve(db, user_message)
+    # Retrieve context (permission-filtered at SQL level)
+    retrieved = await hybrid_retrieve(db, user_message, allowed_types=allowed_types)
     context = build_context(retrieved)
     source_refs = extract_source_references(retrieved)
 
     # Build messages
-    system_content = SYSTEM_PROMPT
+    system_content = SYSTEM_PROMPT + _permission_note(allowed_types)
     if context:
         system_content += "\n\n" + context
 

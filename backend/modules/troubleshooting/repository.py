@@ -47,6 +47,8 @@ async def create(db: AsyncSession, obj_in: ErrorLogCreate) -> ErrorLog:
         device_id=obj_in.device_id,
         couple_id=obj_in.couple_id,
         pair_id=obj_in.pair_id,
+        project_id=obj_in.project_id,
+        asset_id=obj_in.asset_id,
         error_type=obj_in.error_type,
         severity=obj_in.severity,
         description=obj_in.description,

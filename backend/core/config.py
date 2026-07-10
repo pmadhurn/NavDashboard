@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     APP_NAME: str = "NavDashboard"
     API_V1_PREFIX: str = "/api/v1"
 
+    # Google sign-in
+    GOOGLE_CLIENT_ID: str = ""
+
     # Ollama / AI Assistant
     OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
     OLLAMA_MODEL: str = "llama3"

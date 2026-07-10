@@ -33,6 +33,10 @@ from modules.backup.router import router as backup_router
 from modules.reports.router import router as reports_router
 from modules.ai_assistant.router import router as ai_router
 from modules.settings.router import router as settings_router
+from modules.downloads.router import router as downloads_router
+from modules.assets.router import router as assets_router
+from modules.projects.router import router as projects_router
+from modules.finance.router import router as finance_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -122,6 +126,10 @@ app.include_router(backup_router, prefix=settings.API_V1_PREFIX + "/backup", tag
 app.include_router(reports_router, prefix=settings.API_V1_PREFIX + "/reports", tags=["reports"])
 app.include_router(ai_router, prefix=settings.API_V1_PREFIX + "/ai", tags=["AI Assistant"])
 app.include_router(settings_router, prefix=settings.API_V1_PREFIX + "/settings", tags=["Settings"])
+app.include_router(downloads_router, prefix=settings.API_V1_PREFIX + "/downloads", tags=["downloads"])
+app.include_router(assets_router, prefix=settings.API_V1_PREFIX + "/assets", tags=["assets"])
+app.include_router(projects_router, prefix=settings.API_V1_PREFIX + "/projects", tags=["projects"])
+app.include_router(finance_router, prefix=settings.API_V1_PREFIX + "/finance", tags=["finance"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
