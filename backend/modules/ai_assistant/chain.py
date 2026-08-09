@@ -7,7 +7,12 @@ from typing import AsyncGenerator, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
-from modules.ai_assistant.retriever import hybrid_retrieve, build_context, extract_source_references
+from modules.ai_assistant.retriever import (
+    hybrid_retrieve,
+    build_context,
+    extract_source_references,
+    portfolio_snapshot,
+)
 from modules.ai_assistant.prompts import SYSTEM_PROMPT, NO_OLLAMA_MESSAGE, NO_CONTEXT_MESSAGE
 from modules.ai_assistant.embeddings import check_ollama_available
 from modules.ai_assistant.config import get_ai_config
@@ -47,6 +52,13 @@ async def generate_response(
     retrieved = await hybrid_retrieve(db, user_message, allowed_types=allowed_types)
     context = build_context(retrieved)
     source_refs = extract_source_references(retrieved)
+
+    # Always prepend live aggregates. Retrieval only name-matches, so without
+    # this a question like "how many devices are faulty" reaches the model with
+    # no numbers in context and gets answered from nothing.
+    snapshot = await portfolio_snapshot(db, allowed_types)
+    if snapshot:
+        context = snapshot + ("\n\n" + context if context else "")
 
     # Build messages
     system_content = SYSTEM_PROMPT + _permission_note(allowed_types)
@@ -107,6 +119,13 @@ async def generate_response_stream(
     retrieved = await hybrid_retrieve(db, user_message, allowed_types=allowed_types)
     context = build_context(retrieved)
     source_refs = extract_source_references(retrieved)
+
+    # Always prepend live aggregates. Retrieval only name-matches, so without
+    # this a question like "how many devices are faulty" reaches the model with
+    # no numbers in context and gets answered from nothing.
+    snapshot = await portfolio_snapshot(db, allowed_types)
+    if snapshot:
+        context = snapshot + ("\n\n" + context if context else "")
 
     # Build messages
     system_content = SYSTEM_PROMPT + _permission_note(allowed_types)

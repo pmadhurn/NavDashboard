@@ -111,7 +111,7 @@ export default function BackupPage() {
         <Col xs={24}>
           <GlassCard style={{ padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ color: '#F2F2F2', fontSize: 16, margin: 0 }}>
+              <h3 style={{ color: 'var(--text-primary)', fontSize: 16, margin: 0 }}>
                 <DatabaseOutlined style={{ marginRight: 8 }} /> Database Backup
               </h3>
               <GlassButton
@@ -129,14 +129,14 @@ export default function BackupPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #242424' }}>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
                       {['Filename', 'Size', 'Created', 'Actions'].map((h) => (
                         <th
                           key={h}
                           style={{
                             padding: '8px 12px',
                             textAlign: 'left',
-                            color: '#7A7A7A',
+                            color: 'var(--text-muted)',
                             fontSize: 12,
                             fontWeight: 500,
                           }}
@@ -151,7 +151,7 @@ export default function BackupPage() {
                       <tr>
                         <td
                           colSpan={4}
-                          style={{ padding: 20, textAlign: 'center', color: '#7A7A7A' }}
+                          style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}
                         >
                           No backups yet. Create your first backup above.
                         </td>
@@ -162,13 +162,13 @@ export default function BackupPage() {
                         key={backup.filename}
                         style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                       >
-                        <td style={{ padding: '8px 12px', color: '#F2F2F2', fontSize: 13 }}>
+                        <td style={{ padding: '8px 12px', color: 'var(--text-primary)', fontSize: 13 }}>
                           {backup.filename}
                         </td>
-                        <td style={{ padding: '8px 12px', color: '#B8B8B8', fontSize: 12 }}>
+                        <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                           {formatBytes(backup.size)}
                         </td>
-                        <td style={{ padding: '8px 12px', color: '#B8B8B8', fontSize: 12 }}>
+                        <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                           {new Date(backup.created_at).toLocaleString()}
                         </td>
                         <td style={{ padding: '8px 12px' }}>
@@ -181,7 +181,7 @@ export default function BackupPage() {
                             </GlassButton>
                             <GlassButton
                               onClick={() => setDeleteTarget(backup.filename)}
-                              style={{ padding: '2px 8px', fontSize: 11, color: '#9B3E3E' }}
+                              style={{ padding: '2px 8px', fontSize: 11, color: 'var(--status-faulty)' }}
                             >
                               <DeleteOutlined />
                             </GlassButton>
@@ -194,8 +194,8 @@ export default function BackupPage() {
               </div>
             )}
 
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #242424' }}>
-              <h4 style={{ color: '#F2F2F2', fontSize: 14, marginBottom: 8 }}>Restore from Backup</h4>
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+              <h4 style={{ color: 'var(--text-primary)', fontSize: 14, marginBottom: 8 }}>Restore from Backup</h4>
               <div
                 style={{
                   padding: '8px 12px',
@@ -205,7 +205,7 @@ export default function BackupPage() {
                   marginBottom: 12,
                 }}
               >
-                <span style={{ color: '#9B3E3E', fontSize: 12 }}>
+                <span style={{ color: 'var(--status-faulty)', fontSize: 12 }}>
                   ⚠️ This will overwrite existing data. Make sure you have a current backup.
                 </span>
               </div>
@@ -233,7 +233,7 @@ export default function BackupPage() {
                     variant="primary"
                     onClick={() => setConfirmRestore(true)}
                     loading={restoring}
-                    style={{ color: '#9B3E3E' }}
+                    style={{ color: 'var(--status-faulty)' }}
                   >
                     Restore
                   </GlassButton>

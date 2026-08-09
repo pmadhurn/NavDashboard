@@ -1,4 +1,3 @@
-import React from 'react'
 import { Tag, Button, Space, Tooltip } from 'antd'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -35,7 +34,7 @@ export default function DeviceTable({
       key: 'serial_number',
       render: (text: string, record: Device) => (
         <span
-          style={{ fontWeight: 600, color: '#F2F2F2', cursor: 'pointer' }}
+          style={{ fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}
           onClick={(e) => {
             e.stopPropagation()
             navigate(`/devices/${record.id}`)
@@ -69,7 +68,7 @@ export default function DeviceTable({
       key: 'couple_id',
       width: 140,
       render: (val: string | null) => (
-        <span style={{ color: val ? '#F2F2F2' : '#666' }}>
+        <span style={{ color: val ? 'var(--text-primary)' : '#666' }}>
           {val ? val.slice(0, 8) + '...' : 'Unassigned'}
         </span>
       ),
@@ -80,7 +79,7 @@ export default function DeviceTable({
       key: 'updated_at',
       width: 180,
       render: (val: string | null) => (
-        <span style={{ color: '#B8B8B8' }}>
+        <span style={{ color: 'var(--text-secondary)' }}>
           {val ? formatDateTime(val) : '—'}
         </span>
       ),
@@ -100,7 +99,7 @@ export default function DeviceTable({
                 e.stopPropagation()
                 onEdit(record)
               }}
-              style={{ color: '#B8B8B8' }}
+              style={{ color: 'var(--text-secondary)' }}
             />
           </Tooltip>
           <Tooltip title="Delete">
@@ -112,7 +111,7 @@ export default function DeviceTable({
                 e.stopPropagation()
                 onDelete(record)
               }}
-              style={{ color: '#9B3E3E' }}
+              style={{ color: 'var(--status-faulty)' }}
             />
           </Tooltip>
         </Space>

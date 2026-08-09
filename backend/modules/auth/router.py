@@ -16,6 +16,9 @@ from modules.auth.schemas import (
     PermissionsUpdate,
     GoogleLoginRequest,
     GoogleAuthResponse,
+    ClerkAuthResponse,
+    ClerkConfigResponse,
+    ClerkLoginRequest,
 )
 from modules.auth import service
 
@@ -25,6 +28,29 @@ router = APIRouter()
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     return await service.authenticate(db, body.email, body.password)
+
+
+@router.get("/clerk/config", response_model=ClerkConfigResponse)
+async def clerk_config():
+    """Lets the frontend decide whether to render the Clerk button.
+
+    Public on purpose: a publishable key is designed to ship to browsers.
+    """
+    from modules.auth import clerk
+    from core.config import settings as _s
+
+    return ClerkConfigResponse(
+        enabled=clerk.is_configured(),
+        publishable_key=getattr(_s, "CLERK_PUBLISHABLE_KEY", "") or None,
+    )
+
+
+@router.post("/clerk", response_model=ClerkAuthResponse)
+async def clerk_login(body: ClerkLoginRequest, db: AsyncSession = Depends(get_db)):
+    """Exchange a Clerk session for an app token. Roles stay in this app."""
+    from modules.auth import clerk
+
+    return await clerk.clerk_authenticate(db, body.token)
 
 
 @router.post("/google", response_model=GoogleAuthResponse)

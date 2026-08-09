@@ -9,7 +9,6 @@ interface DiffHighlighterProps {
 const DiffHighlighter: React.FC<DiffHighlighterProps> = ({
   value,
   match,
-  side,
 }) => {
   const bgColor = match
     ? 'rgba(79, 122, 99, 0.15)'
@@ -19,7 +18,7 @@ const DiffHighlighter: React.FC<DiffHighlighterProps> = ({
     return (
       <span
         style={{
-          color: '#7A7A7A',
+          color: 'var(--text-muted)',
           fontStyle: 'italic',
           fontSize: 13,
         }}
@@ -35,7 +34,7 @@ const DiffHighlighter: React.FC<DiffHighlighterProps> = ({
       <pre
         style={{
           background: bgColor,
-          color: '#F2F2F2',
+          color: 'var(--text-primary)',
           padding: '6px 10px',
           borderRadius: 4,
           fontSize: 12,
@@ -57,7 +56,7 @@ const DiffHighlighter: React.FC<DiffHighlighterProps> = ({
       <span
         style={{
           background: bgColor,
-          color: '#F2F2F2',
+          color: 'var(--text-primary)',
           padding: '4px 10px',
           borderRadius: 4,
           fontSize: 13,
@@ -73,7 +72,7 @@ const DiffHighlighter: React.FC<DiffHighlighterProps> = ({
     <span
       style={{
         background: bgColor,
-        color: '#F2F2F2',
+        color: 'var(--text-primary)',
         padding: '4px 10px',
         borderRadius: 4,
         fontSize: 13,

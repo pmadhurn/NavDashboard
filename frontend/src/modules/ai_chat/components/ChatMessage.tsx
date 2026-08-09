@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { CaretDownOutlined, CaretRightOutlined, BulbOutlined } from '@ant-design/icons';
 import SourceReference from './SourceReference';
 import type { SourceRef } from '../hooks/useAIChat';
@@ -15,44 +17,32 @@ interface ChatMessageProps {
   showThink?: boolean;
 }
 
-function simpleMarkdownToHtml(text: string): string {
-  let html = text;
+/* Assistant replies are markdown. This used to be a hand-rolled chain of
+   string replacements that had no table rules at all — a GFM table fell
+   through to the `\n` → `<br/>` step and showed up as bare pipe-delimited
+   lines — emitted orphan `<li>` elements with no `<ul>` around them, and
+   injected the model's raw output through dangerouslySetInnerHTML without
+   escaping it. react-markdown + remark-gfm handles tables and lists properly
+   and builds a React tree instead of HTML, so embedded markup in a reply is
+   text rather than something the browser executes. Styling lives in
+   global.css under `.ai-md` so it follows the light/dark tokens.
 
-  // Code blocks (triple backtick)
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_match, _lang, code) => {
-    return `<pre style="background:#1A1A1A;border:1px solid #2E2E2E;border-radius:8px;padding:12px;overflow-x:auto;font-family:monospace;font-size:13px;margin:8px 0;color:#E0E0E0"><code>${code
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')}</code></pre>`;
-  });
-
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code style="background:#1A1A1A;border:1px solid #2E2E2E;border-radius:4px;padding:2px 6px;font-family:monospace;font-size:13px;color:#E0E0E0">\$1</code>');
-
-  // Headers
-  html = html.replace(/^### (.+)$/gm, '<h3 style="color:#F2F2F2;font-size:16px;margin:12px 0 6px 0">\$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2 style="color:#F2F2F2;font-size:18px;margin:12px 0 6px 0">\$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1 style="color:#F2F2F2;font-size:20px;margin:12px 0 6px 0">\$1</h1>');
-
-  // Bold
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#F2F2F2">\$1</strong>');
-
-  // Italic
-  html = html.replace(/\*([^*]+)\*/g, '<em>\$1</em>');
-
-  // Unordered lists
-  html = html.replace(/^- (.+)$/gm, '<li style="margin-left:16px;margin-bottom:4px">\$1</li>');
-
-  // Ordered lists
-  html = html.replace(/^\d+\. (.+)$/gm, '<li style="margin-left:16px;margin-bottom:4px;list-style-type:decimal">\$1</li>');
-
-  // Paragraphs (double newline)
-  html = html.replace(/\n\n/g, '<br/><br/>');
-
-  // Single newlines (not after block elements)
-  html = html.replace(/\n/g, '<br/>');
-
-  return html;
-}
+   Deliberately no rehype-raw: it would re-open the injection hole. */
+const MARKDOWN_COMPONENTS = {
+  /* Own scroll container, so a wide table scrolls inside the bubble instead
+     of stretching it. */
+  table: ({ children, ...props }: { children?: React.ReactNode }) => (
+    <div className="ai-md-table-wrap">
+      <table {...props}>{children}</table>
+    </div>
+  ),
+  /* Replies routinely cite dashboard URLs; open those away from the chat. */
+  a: ({ children, ...props }: { children?: React.ReactNode }) => (
+    <a {...props} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ),
+};
 
 function formatRelativeTime(dateStr?: string): string {
   if (!dateStr) return '';
@@ -88,29 +78,35 @@ export default function ChatMessage({ message, isStreaming, showThink }: ChatMes
       <div
         style={{
           maxWidth: isUser ? '70%' : '80%',
-          background: isUser
-            ? 'rgba(255,255,255,0.06)'
-            : 'rgba(255,255,255,0.03)',
+          /* Tokens, not rgba(255,255,255,…) tints: those assume a dark
+             backdrop and turned both bubbles into near-invisible white-on-
+             white in light mode. */
+          background: isUser ? 'var(--chat-user-bubble)' : 'var(--chat-ai-bubble)',
           backdropFilter: 'blur(20px)',
-          border: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.06)'}`,
+          /* A white bubble on a near-white page needs a real edge. */
+          border: '1px solid var(--border)',
+          /* Flex items default to min-width:auto, which lets a wide table
+             push the bubble past maxWidth instead of scrolling inside it. */
+          minWidth: 0,
           borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
           padding: '12px 16px',
         }}
       >
         {isUser ? (
-          <div style={{ color: '#F2F2F2', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+          <div style={{ color: 'var(--text-primary)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
             {message.content}
           </div>
         ) : (
-          <div
-            style={{ color: '#E0E0E0', fontSize: 14, lineHeight: 1.6 }}
-            dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(message.content) }}
-          />
+          <div className="ai-md">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
         )}
 
         {/* Thinking content - collapsible */
         hasThink && (
-          <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+          <div style={{ marginTop: 10, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
             <button
               onClick={() => setThinkExpanded(!thinkExpanded)}
               style={{
@@ -119,7 +115,7 @@ export default function ChatMessage({ message, isStreaming, showThink }: ChatMes
                 gap: 6,
                 background: 'none',
                 border: 'none',
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 fontSize: 12,
                 cursor: 'pointer',
                 padding: 0,
@@ -127,17 +123,17 @@ export default function ChatMessage({ message, isStreaming, showThink }: ChatMes
               }}
             >
               {thinkExpanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
-              <BulbOutlined style={{ color: '#7A7A7A' }} />
-              <span style={{ color: '#7A7A7A' }}>Thinking</span>
+              <BulbOutlined style={{ color: 'var(--text-muted)' }} />
+              <span style={{ color: 'var(--text-muted)' }}>Thinking</span>
             </button>
             {thinkExpanded && (
               <div
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.04)',
+                  background: 'var(--sidebar-hover)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                   padding: '10px 12px',
-                  color: '#9A9A9A',
+                  color: 'var(--text-muted)',
                   fontSize: 13,
                   lineHeight: 1.6,
                   whiteSpace: 'pre-wrap',
@@ -152,9 +148,9 @@ export default function ChatMessage({ message, isStreaming, showThink }: ChatMes
 
         {isStreaming && (
           <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-            <span style={{ animation: 'pulse 1.4s ease-in-out infinite', width: 6, height: 6, borderRadius: '50%', background: '#C9C9C9' }} />
-            <span style={{ animation: 'pulse 1.4s ease-in-out 0.2s infinite', width: 6, height: 6, borderRadius: '50%', background: '#C9C9C9' }} />
-            <span style={{ animation: 'pulse 1.4s ease-in-out 0.4s infinite', width: 6, height: 6, borderRadius: '50%', background: '#C9C9C9' }} />
+            <span style={{ animation: 'pulse 1.4s ease-in-out infinite', width: 6, height: 6, borderRadius: '50%', background: 'var(--input-focus)' }} />
+            <span style={{ animation: 'pulse 1.4s ease-in-out 0.2s infinite', width: 6, height: 6, borderRadius: '50%', background: 'var(--input-focus)' }} />
+            <span style={{ animation: 'pulse 1.4s ease-in-out 0.4s infinite', width: 6, height: 6, borderRadius: '50%', background: 'var(--input-focus)' }} />
           </div>
         )}
 
@@ -167,7 +163,7 @@ export default function ChatMessage({ message, isStreaming, showThink }: ChatMes
         )}
 
         {message.created_at && (
-          <div style={{ color: '#7A7A7A', fontSize: 11, marginTop: 6 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 6 }}>
             {formatRelativeTime(message.created_at)}
           </div>
         )}

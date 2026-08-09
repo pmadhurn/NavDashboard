@@ -23,7 +23,7 @@ router = APIRouter()
 @router.get("/", response_model=PaginatedResponse[CoupleResponse])
 async def list_couples(
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    size: int = Query(20, ge=1, le=500),
     status: Optional[str] = Query(None),
     has_rf: Optional[bool] = Query(None),
     pair_id: Optional[UUID] = Query(None),
@@ -106,7 +106,7 @@ async def change_location(
 async def get_location_history(
     id: UUID,
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    size: int = Query(20, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):

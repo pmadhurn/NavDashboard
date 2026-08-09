@@ -30,10 +30,10 @@ const selectStyles = `
   .dl-select .ant-select-selector {
     background: rgba(255,255,255,0.03) !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
-    color: #F2F2F2 !important;
+    color: var(--text-primary) !important;
   }
-  .dl-select .ant-select-selection-placeholder { color: #5A5A5A !important; }
-  .dl-select .ant-select-selection-item { color: #F2F2F2 !important; }
+  .dl-select .ant-select-selection-placeholder { color: var(--chart4) !important; }
+  .dl-select .ant-select-selection-item { color: var(--text-primary) !important; }
 `;
 
 export default function UploadDownloadModal({ open, onClose, addVersionToItemId }: Props) {
@@ -121,7 +121,7 @@ export default function UploadDownloadModal({ open, onClose, addVersionToItemId 
   const labelStyle: React.CSSProperties = {
     display: 'block',
     fontSize: 12,
-    color: '#7A7A7A',
+    color: 'var(--text-muted)',
     marginBottom: 6,
   };
 
@@ -182,13 +182,13 @@ export default function UploadDownloadModal({ open, onClose, addVersionToItemId 
           {file ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
               <FileOutlined style={{ color: '#8BC34A', fontSize: 18 }} />
-              <span style={{ color: '#F2F2F2', fontSize: 13 }}>{file.name}</span>
-              <span style={{ color: '#7A7A7A', fontSize: 12 }}>{formatFileSize(file.size)}</span>
+              <span style={{ color: 'var(--text-primary)', fontSize: 13 }}>{file.name}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatFileSize(file.size)}</span>
             </div>
           ) : (
             <div>
-              <InboxOutlined style={{ fontSize: 28, color: '#5A5A5A' }} />
-              <div style={{ color: '#B8B8B8', fontSize: 13, marginTop: 8 }}>
+              <InboxOutlined style={{ fontSize: 28, color: 'var(--chart4)' }} />
+              <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 8 }}>
                 Drop a file here or click to browse
               </div>
             </div>
@@ -204,7 +204,7 @@ export default function UploadDownloadModal({ open, onClose, addVersionToItemId 
               background: 'rgba(111,122,140,0.1)',
               border: '1px solid rgba(111,122,140,0.25)',
               fontSize: 12,
-              color: '#B8B8B8',
+              color: 'var(--text-secondary)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -287,7 +287,7 @@ export default function UploadDownloadModal({ open, onClose, addVersionToItemId 
                 }}
                 notFoundContent={
                   newCategory ? (
-                    <div style={{ padding: 8, fontSize: 12, color: '#B8B8B8' }}>
+                    <div style={{ padding: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
                       Press upload to create group "{newCategory}"
                     </div>
                   ) : null
@@ -305,15 +305,15 @@ export default function UploadDownloadModal({ open, onClose, addVersionToItemId 
               }}
             >
               <div>
-                <div style={{ color: '#E6E6E6', fontSize: 13 }}>Visible to everyone</div>
-                <div style={{ color: '#7A7A7A', fontSize: 11 }}>
+                <div style={{ color: 'var(--primary)', fontSize: 13 }}>Visible to everyone</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                   Turn off to pick specific people
                 </div>
               </div>
               <Switch
                 checked={!restricted}
                 onChange={(checked) => setRestricted(!checked)}
-                style={{ background: !restricted ? '#5F8F6B' : '#4A4A4A' }}
+                style={{ background: !restricted ? 'var(--status-working)' : '#4A4A4A' }}
               />
             </div>
 
@@ -333,7 +333,7 @@ export default function UploadDownloadModal({ open, onClose, addVersionToItemId 
             {/* Advanced */}
             <div
               onClick={() => setShowAdvanced(!showAdvanced)}
-              style={{ fontSize: 12, color: '#7A7A7A', cursor: 'pointer', userSelect: 'none' }}
+              style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}
             >
               {showAdvanced ? '▾' : '▸'} Advanced options
             </div>
@@ -347,15 +347,15 @@ export default function UploadDownloadModal({ open, onClose, addVersionToItemId 
                   }}
                 >
                   <div>
-                    <div style={{ color: '#E6E6E6', fontSize: 13 }}>This is a software</div>
-                    <div style={{ color: '#7A7A7A', fontSize: 11 }}>
+                    <div style={{ color: 'var(--primary)', fontSize: 13 }}>This is a software</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                       Enables version history (v1.0, v2.0, …)
                     </div>
                   </div>
                   <Switch
                     checked={isSoftware}
                     onChange={setIsSoftware}
-                    style={{ background: isSoftware ? '#5F8F6B' : '#4A4A4A' }}
+                    style={{ background: isSoftware ? 'var(--status-working)' : '#4A4A4A' }}
                   />
                 </div>
                 {isSoftware && (

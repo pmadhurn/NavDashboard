@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Select, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
@@ -65,7 +65,7 @@ export default function DocumentsPage() {
       <GlassCard style={{ padding: 16, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <label style={{ color: '#7A7A7A', fontSize: 11, display: 'block', marginBottom: 4 }}>
+            <label style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block', marginBottom: 4 }}>
               Entity Type
             </label>
             <Select
@@ -79,7 +79,7 @@ export default function DocumentsPage() {
             />
           </div>
           <div>
-            <label style={{ color: '#7A7A7A', fontSize: 11, display: 'block', marginBottom: 4 }}>
+            <label style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block', marginBottom: 4 }}>
               File Type
             </label>
             <Select
@@ -117,7 +117,7 @@ export default function DocumentsPage() {
               <GlassButton disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                 Previous
               </GlassButton>
-              <span style={{ color: '#B8B8B8', lineHeight: '32px', fontSize: 13 }}>
+              <span style={{ color: 'var(--text-secondary)', lineHeight: '32px', fontSize: 13 }}>
                 Page {data.page} of {data.pages}
               </span>
               <GlassButton disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>

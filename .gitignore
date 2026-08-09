@@ -11,7 +11,16 @@ dist/
 .vite/
 
 # Environment
+# There was a `!.env.example` negation here with nothing ever ignoring `.env`
+# itself, so every .env was committable — which is how backend/.env got tracked
+# with a live SECRET_KEY, and how a Cloudflare tunnel token ended up in history.
+.env
+.env.*
 !.env.example
+backend/.env
+
+# Local-only compose overrides (hardcode host-specific ports)
+docker-compose.override.yml
 
 # Docker
 postgres_data/
@@ -32,3 +41,4 @@ database/backups/*.dump
 
 venv
 temperate
+frontend/.env

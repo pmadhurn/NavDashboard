@@ -29,7 +29,7 @@ export default function PageHeader({
       style={{
         marginBottom: 24,
         paddingBottom: 20,
-        borderBottom: '1px solid #242424',
+        borderBottom: '1px solid var(--border)',
       }}
     >
       {breadcrumbs && breadcrumbs.length > 0 && (
@@ -45,6 +45,10 @@ export default function PageHeader({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          // Title and actions sat on one nowrap row, so a long title plus two
+          // buttons pushed the page past the viewport at 390px.
+          flexWrap: 'wrap',
+          gap: 12,
         }}
       >
         <div>
@@ -52,12 +56,13 @@ export default function PageHeader({
             style={{
               fontSize: 24,
               fontWeight: 600,
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               margin: 0,
               lineHeight: 1.3,
               display: 'flex',
               alignItems: 'center',
               gap: 10,
+              flexWrap: 'wrap',
             }}
           >
             {icon && <span style={{ fontSize: 22 }}>{icon}</span>}
@@ -67,7 +72,7 @@ export default function PageHeader({
             <p
               style={{
                 fontSize: 14,
-                color: '#B8B8B8',
+                color: 'var(--text-secondary)',
                 margin: '4px 0 0 0',
               }}
             >

@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Checkbox, Radio, message, Space } from 'antd';
+import { useState } from 'react';
+import { Checkbox, Radio, message } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
-import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { useTableCounts, useExportXlsx, useExportCsv } from '../hooks/useBackup';
@@ -65,7 +64,7 @@ export default function ExportOptions() {
 
   return (
     <div>
-      <h3 style={{ color: '#F2F2F2', fontSize: 16, marginBottom: 12 }}>Data Export</h3>
+      <h3 style={{ color: 'var(--text-primary)', fontSize: 16, marginBottom: 12 }}>Data Export</h3>
 
       {countsLoading ? (
         <LoadingSpinner />
@@ -101,11 +100,11 @@ export default function ExportOptions() {
                 <Checkbox
                   checked={selectedTables.includes(table.key)}
                   onChange={() => toggleTable(table.key)}
-                  style={{ color: '#B8B8B8', fontSize: 12 }}
+                  style={{ color: 'var(--text-secondary)', fontSize: 12 }}
                 >
                   {table.label}
                 </Checkbox>
-                <span style={{ color: '#7A7A7A', fontSize: 11 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                   {counts?.[table.key] ?? 0}
                 </span>
               </div>
@@ -113,14 +112,14 @@ export default function ExportOptions() {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ color: '#7A7A7A', fontSize: 11, display: 'block', marginBottom: 6 }}>
+            <label style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block', marginBottom: 6 }}>
               Format
             </label>
             <Radio.Group value={format} onChange={(e) => setFormat(e.target.value)}>
-              <Radio value="xlsx" style={{ color: '#B8B8B8' }}>
+              <Radio value="xlsx" style={{ color: 'var(--text-secondary)' }}>
                 XLSX (Excel)
               </Radio>
-              <Radio value="csv" style={{ color: '#B8B8B8' }}>
+              <Radio value="csv" style={{ color: 'var(--text-secondary)' }}>
                 CSV (ZIP)
               </Radio>
             </Radio.Group>

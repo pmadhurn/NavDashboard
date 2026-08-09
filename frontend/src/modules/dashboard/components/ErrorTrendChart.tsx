@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   AreaChart,
   Area,
@@ -6,8 +5,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { colors } from '../../../styles/theme'
 import GlassCard from '../../../shared/components/GlassCard'
 import LoadingSpinner from '../../../shared/components/LoadingSpinner'
 import EmptyState from '../../../shared/components/EmptyState'
@@ -49,7 +50,7 @@ function GlassTooltip({ active, payload, label }: CustomTooltipProps) {
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 8,
         padding: '8px 12px',
-        color: '#F2F2F2',
+        color: 'var(--text-primary)',
         fontSize: 13,
       }}
     >
@@ -92,7 +93,7 @@ export default function ErrorTrendChart({
       <div style={{ marginBottom: 16 }}>
         <h3
           style={{
-            color: '#F2F2F2',
+            color: 'var(--text-primary)',
             fontSize: 16,
             fontWeight: 600,
             margin: 0,
@@ -123,30 +124,42 @@ export default function ErrorTrendChart({
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#262626"
+              stroke="var(--chart-grid)"
               vertical={false}
             />
             <XAxis
               dataKey="date"
               tickFormatter={formatXAxisDate}
-              tick={{ fill: '#B8B8B8', fontSize: 11 }}
-              axisLine={{ stroke: '#262626' }}
-              tickLine={{ stroke: '#7A7A7A' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+              axisLine={{ stroke: 'var(--chart-grid)' }}
+              tickLine={{ stroke: 'var(--text-muted)' }}
               interval="preserveStartEnd"
             />
             <YAxis
-              tick={{ fill: '#B8B8B8', fontSize: 13 }}
-              axisLine={{ stroke: '#262626' }}
-              tickLine={{ stroke: '#7A7A7A' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 13 }}
+              axisLine={{ stroke: 'var(--chart-grid)' }}
+              tickLine={{ stroke: 'var(--text-muted)' }}
               allowDecimals={false}
             />
             <Tooltip content={<GlassTooltip />} />
+            {/* Four stacked series were previously identifiable only by
+                hovering. A legend is required whenever identity would
+                otherwise be carried by colour alone. */}
+            <Legend
+              verticalAlign="bottom"
+              height={28}
+              iconType="circle"
+              iconSize={8}
+              formatter={(value) => (
+                <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{value}</span>
+              )}
+            />
             <Area
               type="monotone"
               dataKey="severity_critical"
               stackId="1"
-              stroke="#6E2C2C"
-              fill="#6E2C2C"
+              stroke={colors.severity.critical}
+              fill={colors.severity.critical}
               fillOpacity={0.3}
               name="Critical"
             />
@@ -154,27 +167,27 @@ export default function ErrorTrendChart({
               type="monotone"
               dataKey="severity_high"
               stackId="1"
-              stroke="#9B3E3E"
-              fill="#9B3E3E"
-              fillOpacity={0.2}
+              stroke={colors.severity.high}
+              fill={colors.severity.high}
+              fillOpacity={0.25}
               name="High"
             />
             <Area
               type="monotone"
               dataKey="severity_medium"
               stackId="1"
-              stroke="#B68A3C"
-              fill="#B68A3C"
-              fillOpacity={0.15}
+              stroke={colors.severity.medium}
+              fill={colors.severity.medium}
+              fillOpacity={0.2}
               name="Medium"
             />
             <Area
               type="monotone"
               dataKey="severity_low"
               stackId="1"
-              stroke="#6E6E6E"
-              fill="#6E6E6E"
-              fillOpacity={0.1}
+              stroke={colors.severity.low}
+              fill={colors.severity.low}
+              fillOpacity={0.15}
               name="Low"
             />
           </AreaChart>

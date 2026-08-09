@@ -1,4 +1,3 @@
-import React from 'react'
 import { Button, Space, Tooltip } from 'antd'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -34,7 +33,7 @@ export default function CoupleTable({
       key: 'name',
       render: (text: string, record: Couple) => (
         <span
-          style={{ fontWeight: 600, color: '#F2F2F2', cursor: 'pointer' }}
+          style={{ fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}
           onClick={(e) => {
             e.stopPropagation()
             navigate(`/couples/${record.id}`)
@@ -59,7 +58,7 @@ export default function CoupleTable({
       key: 'has_rf',
       width: 80,
       render: (val: boolean) => (
-        <span style={{ color: val ? '#5F8F6B' : '#7A7A7A' }}>
+        <span style={{ color: val ? 'var(--status-working)' : 'var(--text-muted)' }}>
           {val ? '✅' : '—'}
         </span>
       ),
@@ -69,7 +68,7 @@ export default function CoupleTable({
       key: 'devices',
       width: 80,
       render: (_: unknown, record: Couple) => (
-        <span style={{ color: '#B8B8B8' }}>{record.devices.length}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{record.devices.length}</span>
       ),
     },
     {
@@ -77,7 +76,7 @@ export default function CoupleTable({
       key: 'person',
       width: 160,
       render: (_: unknown, record: Couple) => (
-        <span style={{ color: record.handling_person_name ? '#F2F2F2' : '#666' }}>
+        <span style={{ color: record.handling_person_name ? 'var(--text-primary)' : '#666' }}>
           {record.handling_person_name || '—'}
         </span>
       ),
@@ -87,7 +86,7 @@ export default function CoupleTable({
       key: 'location',
       width: 200,
       render: (_: unknown, record: Couple) => (
-        <span style={{ color: '#B8B8B8', fontSize: 12 }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
           {record.location
             ? formatCoordinates(record.location.latitude, record.location.longitude)
             : '—'}
@@ -100,7 +99,7 @@ export default function CoupleTable({
       key: 'updated_at',
       width: 160,
       render: (val: string | null) => (
-        <span style={{ color: '#B8B8B8' }}>{val ? formatDateTime(val) : '—'}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{val ? formatDateTime(val) : '—'}</span>
       ),
     },
     {
@@ -118,7 +117,7 @@ export default function CoupleTable({
                 e.stopPropagation()
                 onEdit(record)
               }}
-              style={{ color: '#B8B8B8' }}
+              style={{ color: 'var(--text-secondary)' }}
             />
           </Tooltip>
           <Tooltip title="Delete">
@@ -130,7 +129,7 @@ export default function CoupleTable({
                 e.stopPropagation()
                 onDelete(record)
               }}
-              style={{ color: '#9B3E3E' }}
+              style={{ color: 'var(--status-faulty)' }}
             />
           </Tooltip>
         </Space>

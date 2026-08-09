@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Tag, Tooltip } from 'antd';
 import {
   CheckCircleOutlined,
@@ -11,6 +11,7 @@ import GlassButton from '@/shared/components/GlassButton';
 import EmptyState from '@/shared/components/EmptyState';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { formatDateTime, formatRelativeTime, truncateText } from '@/shared/utils/formatters';
+import { colors } from '@/styles/theme';
 import type { ErrorLog, TroubleshootEntryData } from '../hooks/useTroubleshooting';
 
 interface ErrorTimelineProps {
@@ -22,10 +23,10 @@ interface ErrorTimelineProps {
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
-  LOW: '#6E6E6E',
-  MEDIUM: '#B68A3C',
-  HIGH: '#9B3E3E',
-  CRITICAL: '#6E2C2C',
+  LOW: colors.severity.low,
+  MEDIUM: colors.severity.medium,
+  HIGH: colors.severity.high,
+  CRITICAL: colors.severity.critical,
 };
 
 function getEntityLabel(error: ErrorLog): string {
@@ -59,7 +60,7 @@ function StepItem({ step }: { step: TroubleshootEntryData }) {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 11,
-          color: '#8C8C8C',
+          color: 'var(--role-admin)',
           flexShrink: 0,
           marginTop: 2,
         }}
@@ -67,11 +68,11 @@ function StepItem({ step }: { step: TroubleshootEntryData }) {
         {step.step_number}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ color: '#D9D9D9', fontSize: 13, fontWeight: 500 }}>
+        <div style={{ color: 'var(--chart1)', fontSize: 13, fontWeight: 500 }}>
           {step.step_description}
         </div>
         {step.action_taken && (
-          <div style={{ color: '#8C8C8C', fontSize: 12, marginTop: 2 }}>
+          <div style={{ color: 'var(--role-admin)', fontSize: 12, marginTop: 2 }}>
             Action: {step.action_taken}
           </div>
         )}
@@ -103,7 +104,7 @@ function TimelineEntry({
   isLast: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const severityColor = SEVERITY_COLORS[error.severity] || '#6E6E6E';
+  const severityColor = SEVERITY_COLORS[error.severity] || 'var(--severity-low)';
 
   return (
     <div style={{ display: 'flex', gap: 16, position: 'relative' }}>
@@ -136,7 +137,7 @@ function TimelineEntry({
             style={{
               width: 2,
               flex: 1,
-              background: '#2C2C2C',
+              background: 'var(--audit-line)',
               minHeight: 40,
             }}
           />
@@ -175,7 +176,8 @@ function TimelineEntry({
                 style={{
                   background: `${severityColor}33`,
                   border: `1px solid ${severityColor}`,
-                  color: severityColor === '#6E6E6E' ? '#D9D9D9' : severityColor,
+                  color:
+                    severityColor === colors.severity.low ? 'var(--chart1)' : severityColor,
                   borderRadius: 12,
                   fontSize: 11,
                   padding: '0 8px',
@@ -202,7 +204,7 @@ function TimelineEntry({
                   style={{
                     background: 'rgba(182,138,60,0.15)',
                     border: '1px solid rgba(182,138,60,0.3)',
-                    color: '#B68A3C',
+                    color: 'var(--status-not-working)',
                     borderRadius: 12,
                     fontSize: 11,
                   }}
@@ -250,7 +252,7 @@ function TimelineEntry({
                 borderTop: '1px solid rgba(255,255,255,0.08)',
               }}
             >
-              <div style={{ color: '#8C8C8C', fontSize: 12, marginBottom: 8, fontWeight: 500 }}>
+              <div style={{ color: 'var(--role-admin)', fontSize: 12, marginBottom: 8, fontWeight: 500 }}>
                 Troubleshoot Steps ({error.steps.length})
               </div>
               {error.steps.map((step) => (

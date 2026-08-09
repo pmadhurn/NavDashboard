@@ -4,6 +4,7 @@ import GlassModal from '@/shared/components/GlassModal';
 import GlassInput from '@/shared/components/GlassInput';
 import GlassButton from '@/shared/components/GlassButton';
 import { api } from '@/shared/api/client';
+import { colors } from '@/styles/theme';
 import { PaginatedResponse } from '@/shared/types/common';
 import {
   useCreateError,
@@ -32,10 +33,10 @@ interface PersonnelOption {
 }
 
 const SEVERITY_OPTIONS = [
-  { label: 'Low', value: 'LOW', color: '#6E6E6E' },
-  { label: 'Medium', value: 'MEDIUM', color: '#B68A3C' },
-  { label: 'High', value: 'HIGH', color: '#9B3E3E' },
-  { label: 'Critical', value: 'CRITICAL', color: '#6E2C2C' },
+  { label: 'Low', value: 'LOW', color: colors.severity.low },
+  { label: 'Medium', value: 'MEDIUM', color: colors.severity.medium },
+  { label: 'High', value: 'HIGH', color: colors.severity.high },
+  { label: 'Critical', value: 'CRITICAL', color: colors.severity.critical },
 ];
 
 export default function TroubleshootForm({
@@ -245,7 +246,7 @@ export default function TroubleshootForm({
   };
 
   const labelStyle: React.CSSProperties = {
-    color: '#8C8C8C',
+    color: 'var(--role-admin)',
     fontSize: 12,
     marginBottom: 4,
     display: 'block',
@@ -282,15 +283,15 @@ export default function TroubleshootForm({
             <Radio.Group
               value={entityType}
               onChange={(e) => setEntityType(e.target.value)}
-              style={{ color: '#D9D9D9' }}
+              style={{ color: 'var(--chart1)' }}
             >
-              <Radio value="device" style={{ color: '#D9D9D9' }}>
+              <Radio value="device" style={{ color: 'var(--chart1)' }}>
                 Device
               </Radio>
-              <Radio value="couple" style={{ color: '#D9D9D9' }}>
+              <Radio value="couple" style={{ color: 'var(--chart1)' }}>
                 Couple
               </Radio>
-              <Radio value="pair" style={{ color: '#D9D9D9' }}>
+              <Radio value="pair" style={{ color: 'var(--chart1)' }}>
                 Pair
               </Radio>
             </Radio.Group>
@@ -410,14 +411,14 @@ export default function TroubleshootForm({
                   borderRadius: 6,
                   marginBottom: 4,
                   fontSize: 12,
-                  color: '#D9D9D9',
+                  color: 'var(--chart1)',
                 }}
               >
                 <span>
                   <strong>{k}:</strong> {v}
                 </span>
                 <span
-                  style={{ color: '#9B3E3E', cursor: 'pointer' }}
+                  style={{ color: 'var(--status-faulty)', cursor: 'pointer' }}
                   onClick={() => removeCustomField(k)}
                 >
                   ×
@@ -510,14 +511,14 @@ export default function TroubleshootForm({
                   borderRadius: 6,
                   marginBottom: 4,
                   fontSize: 12,
-                  color: '#D9D9D9',
+                  color: 'var(--chart1)',
                 }}
               >
                 <span>
                   <strong>{k}:</strong> {v}
                 </span>
                 <span
-                  style={{ color: '#9B3E3E', cursor: 'pointer' }}
+                  style={{ color: 'var(--status-faulty)', cursor: 'pointer' }}
                   onClick={() => removeCustomField(k)}
                 >
                   ×

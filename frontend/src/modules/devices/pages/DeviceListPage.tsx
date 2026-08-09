@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Select, message } from 'antd'
 import { PlusOutlined, DatabaseOutlined } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
@@ -101,7 +101,7 @@ export default function DeviceListPage() {
               </GlassButton>
             )}
             <GlassButton
-              type="primary"
+              variant="primary"
               icon={<PlusOutlined />}
               onClick={handleAddClick}
             >
@@ -183,7 +183,7 @@ export default function DeviceListPage() {
         message={`Are you sure you want to delete device "${deleteTarget?.serial_number}"? This action cannot be undone.`}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
-        confirmLoading={deleteDevice.isPending}
+        loading={deleteDevice.isPending}
       />
     </div>
   )

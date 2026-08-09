@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -31,8 +31,8 @@ const PICKER_ICON = L.divIcon({
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #E6E6E6;
-    border: 3px solid #F2F2F2;
+    background: var(--primary);
+    border: 3px solid var(--text-primary);
     box-shadow: 0 0 12px rgba(230,230,230,0.5), 0 0 24px rgba(230,230,230,0.2);
     cursor: grab;
   "></div>`,

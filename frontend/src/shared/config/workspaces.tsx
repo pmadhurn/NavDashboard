@@ -69,7 +69,7 @@ export const WORKSPACES: Workspace[] = [
   {
     key: 'field',
     label: 'Field Operations',
-    accent: '#B68A3C',
+    accent: 'var(--status-not-working)',
     icon: <ThunderboltOutlined />,
     items: [
       { key: '/projects', icon: <ProjectOutlined />, label: 'Projects', section: 'projects' },
@@ -82,7 +82,7 @@ export const WORKSPACES: Workspace[] = [
   {
     key: 'finance',
     label: 'Finance',
-    accent: '#5F8F6B',
+    accent: 'var(--status-working)',
     icon: <BankOutlined />,
     items: [
       { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', section: 'finance' },
@@ -109,7 +109,7 @@ export const WORKSPACES: Workspace[] = [
   {
     key: 'admin',
     label: 'Admin',
-    accent: '#6F7A8C',
+    accent: 'var(--role-technician)',
     icon: <SafetyOutlined />,
     items: [
       { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel', section: 'personnel' },

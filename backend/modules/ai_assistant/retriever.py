@@ -192,6 +192,71 @@ async def structured_search(
         except Exception as e:
             logger.warning("Structured search expenses error: %s", e)
 
+    # Personnel
+    if permitted("personnel"):
+        try:
+            from modules.personnel.models import Person
+
+            stmt = select(Person).where(
+                Person.deleted_at.is_(None),
+                Person.full_name.ilike(pattern),
+            ).limit(5)
+            res = await db.execute(stmt)
+            for p in res.scalars().all():
+                results.append({
+                    "content": f"Person {p.full_name}, role: {p.role}"
+                               + (f", email: {p.email}" if p.email else ""),
+                    "source_type": "personnel",
+                    "source_id": str(p.id),
+                    "similarity": 0.5,
+                    "metadata": {"name": p.full_name},
+                })
+        except Exception as e:
+            logger.warning("Structured search personnel error: %s", e)
+
+    # Locations
+    if permitted("location"):
+        try:
+            from modules.locations.models import Location
+
+            stmt = select(Location).where(
+                Location.address_note.ilike(pattern),
+            ).limit(5)
+            res = await db.execute(stmt)
+            for loc in res.scalars().all():
+                results.append({
+                    "content": f"Location {loc.address_note or 'unnamed'} "
+                               f"at {loc.latitude:.4f}, {loc.longitude:.4f}",
+                    "source_type": "location",
+                    "source_id": str(loc.id),
+                    "similarity": 0.5,
+                    "metadata": {"note": loc.address_note},
+                })
+        except Exception as e:
+            logger.warning("Structured search locations error: %s", e)
+
+    # Documents (metadata only — file contents live in MinIO)
+    if permitted("document"):
+        try:
+            from modules.documents.models import Document
+
+            stmt = select(Document).where(
+                Document.deleted_at.is_(None),
+                Document.filename.ilike(pattern),
+            ).limit(5)
+            res = await db.execute(stmt)
+            for d in res.scalars().all():
+                results.append({
+                    "content": f"Document {d.filename} attached to "
+                               f"{d.entity_type} {d.entity_id}",
+                    "source_type": "document",
+                    "source_id": str(d.id),
+                    "similarity": 0.5,
+                    "metadata": {"filename": d.filename},
+                })
+        except Exception as e:
+            logger.warning("Structured search documents error: %s", e)
+
     # Devices
     if permitted("device"):
         try:
@@ -270,6 +335,136 @@ async def structured_search(
         logger.warning("Structured search errors error: %s", e)
 
     return results
+
+
+async def portfolio_snapshot(
+    db: AsyncSession, allowed_types: Optional[list[str]] = None
+) -> str:
+    """A live aggregate summary of every module the user may see.
+
+    Why this exists: retrieval is name-matching. `structured_search` looks for
+    the query string inside serial numbers, project names and expense titles,
+    so a question like "how many devices are faulty?" or "what did we spend
+    this month?" matches nothing and the model answers from thin air — which is
+    exactly what it was doing (claiming 1 faulty device when there were 2).
+
+    These counts are cheap, bounded, and always in context, so aggregate
+    questions get real numbers instead of a guess.
+    """
+
+    def permitted(source_type: str) -> bool:
+        return allowed_types is None or source_type in allowed_types
+
+    lines: list[str] = []
+
+    # Every query runs inside its own SAVEPOINT. Postgres aborts the whole
+    # transaction on any error, so without this a single schema mismatch takes
+    # down the entire chat request with InFailedSQLTransactionError rather than
+    # just omitting one line of the summary. (It did exactly that: error_logs
+    # has a boolean `resolved`, not a `status` column.)
+    async def _run(sql: str):
+        try:
+            async with db.begin_nested():
+                return await db.execute(sa_text(sql))
+        except Exception as e:
+            logger.warning("Snapshot query failed (%s...): %s", sql[:60], e)
+            return None
+
+    async def scalar(sql: str) -> int | float:
+        res = await _run(sql)
+        return (res.scalar() or 0) if res is not None else 0
+
+    async def grouped(sql: str) -> str:
+        res = await _run(sql)
+        if res is None:
+            return "unavailable"
+        return ", ".join(f"{k}: {v}" for k, v in res.fetchall()) or "none"
+
+    if permitted("device"):
+        total = await scalar("SELECT COUNT(*) FROM devices WHERE deleted_at IS NULL")
+        breakdown = await grouped(
+            "SELECT status, COUNT(*) FROM devices WHERE deleted_at IS NULL "
+            "GROUP BY status ORDER BY status"
+        )
+        lines.append(f"Devices: {total} total ({breakdown}).")
+
+        for label, table in (("Couples", "couples"), ("Pairs", "pairs")):
+            bd = await grouped(
+                f"SELECT status, COUNT(*) FROM {table} WHERE deleted_at IS NULL "  # noqa: S608
+                "GROUP BY status ORDER BY status"
+            )
+            n = await scalar(f"SELECT COUNT(*) FROM {table} WHERE deleted_at IS NULL")  # noqa: S608
+            lines.append(f"{label}: {n} total ({bd}).")
+
+    if permitted("error_log"):
+        open_errors = await scalar(
+            "SELECT COUNT(*) FROM error_logs WHERE deleted_at IS NULL "
+            "AND resolved IS NOT TRUE"
+        )
+        bd = await grouped(
+            "SELECT severity, COUNT(*) FROM error_logs WHERE deleted_at IS NULL "
+            "AND resolved IS NOT TRUE GROUP BY severity"
+        )
+        resolved_n = await scalar(
+            "SELECT COUNT(*) FROM error_logs WHERE deleted_at IS NULL AND resolved IS TRUE"
+        )
+        lines.append(f"Error logs: {open_errors} open ({bd}), {resolved_n} resolved.")
+
+    if permitted("project"):
+        bd = await grouped(
+            "SELECT status, COUNT(*) FROM projects WHERE deleted_at IS NULL GROUP BY status"
+        )
+        n = await scalar("SELECT COUNT(*) FROM projects WHERE deleted_at IS NULL")
+        lines.append(f"Projects: {n} total ({bd}).")
+
+    if permitted("expense"):
+        total_spend = await scalar(
+            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE deleted_at IS NULL"
+        )
+        month_spend = await scalar(
+            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE deleted_at IS NULL "
+            "AND expense_date >= date_trunc('month', CURRENT_DATE)"
+        )
+        n = await scalar("SELECT COUNT(*) FROM expenses WHERE deleted_at IS NULL")
+        by_cat = await grouped(
+            "SELECT COALESCE(category, 'uncategorised'), "
+            "to_char(COALESCE(SUM(amount),0), 'FM999999990.00') FROM expenses "
+            "WHERE deleted_at IS NULL GROUP BY 1 ORDER BY SUM(amount) DESC LIMIT 5"
+        )
+        lines.append(
+            f"Expenses: {n} records, {float(total_spend):,.2f} total, "
+            f"{float(month_spend):,.2f} this month. Top categories — {by_cat or 'none'}."
+        )
+        allocated = await scalar(
+            "SELECT COALESCE(SUM(amount), 0) FROM fund_allocations WHERE deleted_at IS NULL"
+        )
+        claims = await scalar(
+            "SELECT COUNT(*) FROM expense_claims WHERE deleted_at IS NULL"
+        )
+        lines.append(
+            f"Funds allocated: {float(allocated):,.2f}. Expense claims: {claims}."
+        )
+
+    if permitted("asset"):
+        bd = await grouped(
+            "SELECT status, COUNT(*) FROM assets WHERE deleted_at IS NULL GROUP BY status"
+        )
+        n = await scalar("SELECT COUNT(*) FROM assets WHERE deleted_at IS NULL")
+        lines.append(f"Assets: {n} total ({bd}).")
+
+    if permitted("personnel"):
+        n = await scalar("SELECT COUNT(*) FROM personnel WHERE deleted_at IS NULL")
+        lines.append(f"Personnel: {n} people on record.")
+
+    if permitted("document"):
+        n = await scalar("SELECT COUNT(*) FROM documents WHERE deleted_at IS NULL")
+        lines.append(f"Documents: {n} stored.")
+
+    if not lines:
+        return ""
+    return "Live totals (authoritative — prefer these over any figure you infer):\n" + "\n".join(
+        f"- {line}" for line in lines
+    )
 
 
 async def hybrid_retrieve(

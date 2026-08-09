@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Select, Switch, message } from 'antd'
 import GlassModal from '@/shared/components/GlassModal'
 import GlassInput from '@/shared/components/GlassInput'
@@ -20,7 +20,6 @@ interface PersonOption {
 }
 
 function usePersonnel() {
-  const { data } = useCouples({ size: 1 })
   // Fetch personnel from API
   const [options, setOptions] = useState<PersonOption[]>([])
   useEffect(() => {

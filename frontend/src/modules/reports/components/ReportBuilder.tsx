@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { DatePicker, Radio, Select, message } from 'antd';
+import { useState } from 'react';
+import { DatePicker, Radio, message } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import GlassModal from '@/shared/components/GlassModal';
 import GlassButton from '@/shared/components/GlassButton';
@@ -53,19 +53,19 @@ export default function ReportBuilder({ open, template, onClose }: ReportBuilder
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <FileTextOutlined style={{ color: '#5F8F6B', fontSize: 22 }} />
+            <FileTextOutlined style={{ color: 'var(--status-working)', fontSize: 22 }} />
             <div>
-              <div style={{ color: '#F2F2F2', fontSize: 15, fontWeight: 600 }}>
+              <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 600 }}>
                 {template.name}
               </div>
-              <div style={{ color: '#7A7A7A', fontSize: 12 }}>{template.description}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{template.description}</div>
             </div>
           </div>
         </div>
 
         {hasDateParams && (
           <div>
-            <label style={{ color: '#B8B8B8', fontSize: 12, display: 'block', marginBottom: 6 }}>
+            <label style={{ color: 'var(--text-secondary)', fontSize: 12, display: 'block', marginBottom: 6 }}>
               Date Range (optional)
             </label>
             <RangePicker
@@ -82,14 +82,14 @@ export default function ReportBuilder({ open, template, onClose }: ReportBuilder
         )}
 
         <div>
-          <label style={{ color: '#B8B8B8', fontSize: 12, display: 'block', marginBottom: 6 }}>
+          <label style={{ color: 'var(--text-secondary)', fontSize: 12, display: 'block', marginBottom: 6 }}>
             Format
           </label>
           <Radio.Group value={format} onChange={(e) => setFormat(e.target.value)}>
-            <Radio value="pdf" style={{ color: '#B8B8B8' }}>
+            <Radio value="pdf" style={{ color: 'var(--text-secondary)' }}>
               PDF
             </Radio>
-            <Radio value="xlsx" style={{ color: '#B8B8B8' }}>
+            <Radio value="xlsx" style={{ color: 'var(--text-secondary)' }}>
               Excel (XLSX)
             </Radio>
           </Radio.Group>

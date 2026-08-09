@@ -28,12 +28,12 @@ import type { UserItem } from '../hooks/useSettings';
 import PermissionMatrixModal from './PermissionMatrixModal';
 
 const roleBadgeStyles: Record<string, { bg: string; color: string }> = {
-  ADMIN: { bg: 'rgba(140, 140, 140, 0.2)', color: '#8C8C8C' },
-  TECHNICIAN: { bg: 'rgba(111, 122, 140, 0.2)', color: '#6F7A8C' },
-  VIEWER: { bg: 'rgba(110, 110, 110, 0.2)', color: '#6E6E6E' },
+  ADMIN: { bg: 'rgba(140, 140, 140, 0.2)', color: 'var(--role-admin)' },
+  TECHNICIAN: { bg: 'rgba(111, 122, 140, 0.2)', color: 'var(--role-technician)' },
+  VIEWER: { bg: 'rgba(110, 110, 110, 0.2)', color: 'var(--severity-low)' },
 };
 
-const defaultRoleBadgeStyle = { bg: 'rgba(110, 110, 110, 0.2)', color: '#6E6E6E' };
+const defaultRoleBadgeStyle = { bg: 'rgba(110, 110, 110, 0.2)', color: 'var(--severity-low)' };
 
 function RoleBadge({ role }: { role: string }) {
   const style = roleBadgeStyles[role] ?? defaultRoleBadgeStyle;
@@ -153,7 +153,7 @@ export default function UserManagement() {
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#E6E6E6',
+              color: 'var(--primary)',
               marginBottom: 12,
             }}
           >
@@ -176,10 +176,10 @@ export default function UserManagement() {
                 }}
               >
                 <div>
-                  <div style={{ color: '#F2F2F2', fontSize: 13 }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13 }}>
                     {pending.full_name}
                   </div>
-                  <div style={{ color: '#7A7A7A', fontSize: 12 }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {pending.email}
                     {pending.auth_provider === 'GOOGLE' && ' · via Google'}
                   </div>
@@ -217,7 +217,7 @@ export default function UserManagement() {
           marginBottom: 20,
         }}
       >
-        <div style={{ fontSize: 14, color: '#7A7A7A' }}>
+        <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
           {users?.length ?? 0} user{(users?.length ?? 0) !== 1 ? 's' : ''} total
         </div>
         <GlassButton icon={<PlusOutlined />} onClick={handleOpenCreate}>
@@ -251,10 +251,10 @@ export default function UserManagement() {
                           textAlign: 'left',
                           padding: '10px 12px',
                           fontSize: 11,
-                          color: '#7A7A7A',
+                          color: 'var(--text-muted)',
                           textTransform: 'uppercase',
                           letterSpacing: 0.5,
-                          borderBottom: '1px solid #242424',
+                          borderBottom: '1px solid var(--border)',
                           fontWeight: 600,
                         }}
                       >
@@ -272,13 +272,13 @@ export default function UserManagement() {
                       borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                     }}
                   >
-                    <td style={{ padding: '10px 12px', color: '#F2F2F2', fontSize: 13 }}>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-primary)', fontSize: 13 }}>
                       {user.full_name}
                     </td>
-                    <td style={{ padding: '10px 12px', color: '#B8B8B8', fontSize: 13 }}>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
                       {user.email}
                     </td>
-                    <td style={{ padding: '10px 12px', color: '#B8B8B8', fontSize: 13 }}>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
                       {user.username}
                     </td>
                     <td style={{ padding: '10px 12px' }}>
@@ -290,14 +290,14 @@ export default function UserManagement() {
                         checked={user.is_active}
                         onChange={() => handleToggleActive(user)}
                         style={{
-                          background: user.is_active ? '#5F8F6B' : '#4A4A4A',
+                          background: user.is_active ? 'var(--status-working)' : '#4A4A4A',
                         }}
                       />
                     </td>
                     <td
                       style={{
                         padding: '10px 12px',
-                        color: '#7A7A7A',
+                        color: 'var(--text-muted)',
                         fontSize: 12,
                       }}
                     >
@@ -306,7 +306,7 @@ export default function UserManagement() {
                     <td
                       style={{
                         padding: '10px 12px',
-                        color: '#7A7A7A',
+                        color: 'var(--text-muted)',
                         fontSize: 12,
                       }}
                     >
@@ -382,7 +382,7 @@ export default function UserManagement() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <label
-              style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}
+              style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}
             >
               Full Name
             </label>
@@ -400,7 +400,7 @@ export default function UserManagement() {
                   style={{
                     display: 'block',
                     fontSize: 12,
-                    color: '#7A7A7A',
+                    color: 'var(--text-muted)',
                     marginBottom: 6,
                   }}
                 >
@@ -418,7 +418,7 @@ export default function UserManagement() {
                   style={{
                     display: 'block',
                     fontSize: 12,
-                    color: '#7A7A7A',
+                    color: 'var(--text-muted)',
                     marginBottom: 6,
                   }}
                 >
@@ -435,7 +435,7 @@ export default function UserManagement() {
                   style={{
                     display: 'block',
                     fontSize: 12,
-                    color: '#7A7A7A',
+                    color: 'var(--text-muted)',
                     marginBottom: 6,
                   }}
                 >
@@ -453,7 +453,7 @@ export default function UserManagement() {
 
           <div>
             <label
-              style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}
+              style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}
             >
               Role
             </label>
@@ -475,7 +475,7 @@ export default function UserManagement() {
                       form.role === r
                         ? 'rgba(255, 255, 255, 0.08)'
                         : 'rgba(255, 255, 255, 0.02)',
-                    color: form.role === r ? '#F2F2F2' : '#7A7A7A',
+                    color: form.role === r ? 'var(--text-primary)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     fontSize: 12,
                     fontWeight: 500,

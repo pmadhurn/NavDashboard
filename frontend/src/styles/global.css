@@ -18,8 +18,8 @@ html, body, #root {
 }
 
 body {
-  background: #0A0A0A;
-  color: #F2F2F2;
+  background: var(--bg-main);
+  color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -36,18 +36,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2A2A2A;
+  background: var(--input-border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3A3A3A;
+  background: var(--btn-disabled);
 }
 
 /* Selection */
 ::selection {
   background: rgba(230, 230, 230, 0.2);
-  color: #F2F2F2;
+  color: var(--text-primary);
 }
 
 /* ═══════════════════════════════════════════════════ */
@@ -72,20 +72,20 @@ body {
 .ant-input-affix-wrapper-sm,
 .ant-input-lg,
 .ant-input-sm {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid #2A2A2A !important;
-  color: #F2F2F2 !important;
+  background: var(--overlay-subtle) !important;
+  border: 1px solid var(--input-border) !important;
+  color: var(--text-primary) !important;
   border-radius: 8px !important;
 }
 
 .ant-input::placeholder,
 .ant-input-affix-wrapper .ant-input::placeholder {
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
 }
 
 .ant-input:hover,
 .ant-input-affix-wrapper:hover {
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--overlay-strong) !important;
 }
 
 .ant-input:focus,
@@ -93,9 +93,9 @@ body {
 .ant-input-affix-wrapper:focus,
 .ant-input-affix-wrapper-focused,
 .ant-input-affix-wrapper:focus-within {
-  border-color: #C9C9C9 !important;
+  border-color: var(--input-focus) !important;
   box-shadow: 0 0 0 2px rgba(201, 201, 201, 0.1) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: var(--overlay-subtle) !important;
 }
 
 /* Inner input inside affix wrapper (password, prefix inputs) */
@@ -103,36 +103,36 @@ body {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 
 /* Password eye icon */
 .ant-input-password-icon,
 .ant-input-suffix {
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
 }
 
 .ant-input-password-icon:hover {
-  color: #B8B8B8 !important;
+  color: var(--text-secondary) !important;
 }
 
 /* Prefix icon */
 .ant-input-prefix {
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
   margin-inline-end: 8px !important;
 }
 
 /* ─── Button overrides ─── */
 .ant-btn-primary {
-  background: #E6E6E6 !important;
-  color: #0A0A0A !important;
-  border: 1px solid #E6E6E6 !important;
+  background: var(--primary) !important;
+  color: var(--bg-main) !important;
+  border: 1px solid var(--primary) !important;
   font-weight: 500 !important;
 }
 
 .ant-btn-primary:hover {
-  background: #FFFFFF !important;
-  border-color: #FFFFFF !important;
+  background: var(--text-primary) !important;
+  border-color: var(--text-primary) !important;
 }
 
 /* ─── Table overrides ─── */
@@ -141,26 +141,26 @@ body {
 }
 
 .ant-table-thead > tr > th {
-  background: #151515 !important;
-  color: #B8B8B8 !important;
-  border-bottom: 1px solid #242424 !important;
+  background: var(--table-header) !important;
+  color: var(--text-secondary) !important;
+  border-bottom: 1px solid var(--border) !important;
   font-weight: 600;
 }
 
 .ant-table-tbody > tr > td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid var(--overlay-subtle) !important;
 }
 
 .ant-table-tbody > tr:nth-child(even) > td {
-  background: #111111;
+  background: var(--table-alt-row);
 }
 
 .ant-table-tbody > tr:hover > td {
-  background: #1C1C1C !important;
+  background: var(--table-hover) !important;
 }
 
 .ant-table-tbody > tr.ant-table-row-selected > td {
-  background: #242424 !important;
+  background: var(--border) !important;
 }
 
 .ant-table-placeholder {
@@ -168,7 +168,7 @@ body {
 }
 
 .ant-table-cell {
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 
 /* ─── Modal overrides ─── */
@@ -178,33 +178,33 @@ body {
 }
 
 .ant-modal-content {
-  background: rgba(20, 20, 20, 0.95) !important;
+  background: var(--bg-card) !important;
   backdrop-filter: blur(30px) !important;
   -webkit-backdrop-filter: blur(30px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--overlay-medium) !important;
   border-radius: 20px !important;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5) !important;
 }
 
 .ant-modal-header {
   background: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-bottom: 1px solid var(--overlay-subtle) !important;
 }
 
 .ant-modal-title {
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 
 .ant-modal-close-x {
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
 }
 
 .ant-modal-close:hover .ant-modal-close-x {
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 
 .ant-modal-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-top: 1px solid var(--overlay-subtle) !important;
 }
 
 /* ─── Menu overrides (sidebar) ─── */
@@ -213,86 +213,86 @@ body {
 }
 
 .ant-menu-dark .ant-menu-item {
-  color: #B8B8B8 !important;
+  color: var(--text-secondary) !important;
   margin-inline: 8px !important;
   border-radius: 8px !important;
 }
 
 .ant-menu-dark .ant-menu-item:hover {
-  background: #1A1A1A !important;
-  color: #F2F2F2 !important;
+  background: var(--sidebar-hover) !important;
+  color: var(--text-primary) !important;
 }
 
 .ant-menu-dark .ant-menu-item-selected {
-  background: #1E1E1E !important;
-  color: #F2F2F2 !important;
-  border-left: 3px solid #E6E6E6;
+  background: var(--sidebar-active) !important;
+  color: var(--text-primary) !important;
+  border-left: 3px solid var(--primary);
 }
 
 .ant-menu-dark .ant-menu-item .ant-menu-item-icon {
-  color: #C8C8C8 !important;
+  color: var(--sidebar-icon) !important;
 }
 
 /* ─── Dropdown overrides ─── */
 .ant-dropdown-menu {
-  background: rgba(31, 31, 31, 0.95) !important;
+  background: var(--dropdown-bg) !important;
   backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--overlay-medium) !important;
   border-radius: 12px !important;
 }
 
 .ant-dropdown-menu-item {
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 
 .ant-dropdown-menu-item:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: var(--overlay-subtle) !important;
 }
 
 /* ─── Pagination ─── */
 .ant-pagination-item {
   background: transparent !important;
-  border-color: #242424 !important;
+  border-color: var(--border) !important;
 }
 
 .ant-pagination-item a {
-  color: #B8B8B8 !important;
+  color: var(--text-secondary) !important;
 }
 
 .ant-pagination-item-active {
   background: rgba(230, 230, 230, 0.1) !important;
-  border-color: #E6E6E6 !important;
+  border-color: var(--primary) !important;
 }
 
 .ant-pagination-item-active a {
-  color: #E6E6E6 !important;
+  color: var(--primary) !important;
 }
 
 /* ─── Misc ─── */
 .ant-spin-text {
-  color: #B8B8B8 !important;
+  color: var(--text-secondary) !important;
 }
 
 .ant-empty-description {
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
 }
 
 .ant-breadcrumb-separator {
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
 }
 
 .ant-tooltip-inner {
-  background: rgba(31, 31, 31, 0.95) !important;
+  background: var(--dropdown-bg) !important;
   backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--overlay-subtle) !important;
 }
 
 .ant-message-notice-content {
-  background: rgba(31, 31, 31, 0.95) !important;
+  background: var(--dropdown-bg) !important;
   backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--overlay-medium) !important;
   border-radius: 12px !important;
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 
 /* ═══════════════════════════════════════════════════ */
@@ -301,27 +301,27 @@ body {
 
 /* Glass popup overrides */
 .leaflet-popup-content-wrapper {
-  background: rgba(20, 20, 20, 0.9) !important;
+  background: var(--bg-card) !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--overlay-medium) !important;
   border-radius: 12px !important;
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
 }
 
 .leaflet-popup-content {
   margin: 12px 14px !important;
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .leaflet-popup-tip {
-  background: rgba(20, 20, 20, 0.9) !important;
+  background: var(--bg-card) !important;
 }
 
 .leaflet-popup-close-button {
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
   font-size: 18px !important;
   width: 24px !important;
   height: 24px !important;
@@ -329,14 +329,14 @@ body {
 }
 
 .leaflet-popup-close-button:hover {
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
   background: transparent !important;
 }
 
 /* Dark map controls — zoom */
 .leaflet-control-zoom a {
   background: rgba(20, 20, 20, 0.8) !important;
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -344,24 +344,24 @@ body {
 
 .leaflet-control-zoom a:hover {
   background: rgba(30, 30, 30, 0.9) !important;
-  color: #FFFFFF !important;
+  color: var(--text-primary) !important;
 }
 
 .leaflet-control-zoom {
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--overlay-medium) !important;
   border-radius: 8px !important;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
 }
 
 .leaflet-control-zoom-in {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid var(--overlay-medium) !important;
 }
 
 /* Attribution */
 .leaflet-control-attribution {
   background: rgba(20, 20, 20, 0.6) !important;
-  color: #7A7A7A !important;
+  color: var(--text-muted) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-size: 10px !important;
@@ -372,55 +372,55 @@ body {
 }
 
 .leaflet-control-attribution a:hover {
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 
 /* Tooltip glass overrides */
 .leaflet-tooltip {
-  background: rgba(20, 20, 20, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--overlay-medium) !important;
   border-radius: 6px !important;
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
   padding: 4px 8px !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .leaflet-tooltip-top::before {
-  border-top-color: rgba(20, 20, 20, 0.9) !important;
+  border-top-color: var(--bg-card) !important;
 }
 
 .leaflet-tooltip-bottom::before {
-  border-bottom-color: rgba(20, 20, 20, 0.9) !important;
+  border-bottom-color: var(--bg-card) !important;
 }
 
 .leaflet-tooltip-left::before {
-  border-left-color: rgba(20, 20, 20, 0.9) !important;
+  border-left-color: var(--bg-card) !important;
 }
 
 .leaflet-tooltip-right::before {
-  border-right-color: rgba(20, 20, 20, 0.9) !important;
+  border-right-color: var(--bg-card) !important;
 }
 
 /* Select dropdown dark override for map filters */
 .dark-select-dropdown {
   background: rgba(25, 25, 25, 0.95) !important;
   backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--overlay-medium) !important;
   border-radius: 8px !important;
 }
 
 .dark-select-dropdown .ant-select-item {
-  color: #B8B8B8 !important;
+  color: var(--text-secondary) !important;
 }
 
 .dark-select-dropdown .ant-select-item-option-active {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: var(--overlay-subtle) !important;
 }
 
 .dark-select-dropdown .ant-select-item-option-selected {
   background: rgba(255, 255, 255, 0.1) !important;
-  color: #F2F2F2 !important;
+  color: var(--text-primary) !important;
 }
 /* ─── NavOS motion & polish ────────────────────────────────
    Subtle microinteractions that make the app feel alive without
@@ -461,7 +461,7 @@ body {
 
 /* Skeleton shimmer for loading placeholders */
 .navos-skeleton {
-  background: linear-gradient(90deg, #141414 25%, #1e1e1e 37%, #141414 63%);
+  background: linear-gradient(90deg, var(--bg-card) 25%, #1e1e1e 37%, var(--bg-card) 63%);
   background-size: 800px 100%;
   animation: navos-shimmer 1.4s infinite linear;
   border-radius: 8px;
@@ -525,3 +525,357 @@ body {
 .color-picker-popup .leaflet-popup-close-button {
   display: none !important;
 }
+
+/* ═══════════════════════════════════════════════════ */
+/* STATUS BADGE PULSE                                  */
+/* ═══════════════════════════════════════════════════ */
+/* Lives here rather than in StatusBadge so a table of
+   N rows emits one keyframe rule, not N <style> tags. */
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* THEME TOKENS                                        */
+/* ═══════════════════════════════════════════════════ */
+/* Generated from styles/theme.ts — darkPalette and lightPalette are the
+   source of truth. Inline styles reference these through `colors.*`, which
+   returns var() strings, so switching [data-theme] retints the whole app
+   without React re-rendering anything.
+
+   Dark is the default and lives on :root, so a document with no data-theme
+   attribute (first paint, before the store hydrates) is already dark and
+   does not flash white. */
+
+:root {
+  --primary: #E6E6E6;
+  --secondary: #9FA3A8;
+  --bg-main: #0A0A0A;
+  --bg-card: #141414;
+  --bg-sidebar: #0F0F0F;
+  --text-primary: #F2F2F2;
+  --text-secondary: #B8B8B8;
+  --text-muted: #7A7A7A;
+  --border: #242424;
+  --status-working: #5F8F6B;
+  --status-not-working: #B68A3C;
+  --status-faulty: #9B3E3E;
+  --sidebar-bg: #0F0F0F;
+  --sidebar-active: #1E1E1E;
+  --sidebar-hover: #1A1A1A;
+  --sidebar-icon: #C8C8C8;
+  --btn-primary-bg: #E6E6E6;
+  --btn-primary-text: #0A0A0A;
+  --btn-secondary: #2A2A2A;
+  --btn-danger: #8A3A3A;
+  --btn-disabled: #3A3A3A;
+  --table-header: #151515;
+  --table-alt-row: #111111;
+  --table-hover: #1C1C1C;
+  --table-selected: #242424;
+  --input-border: #2A2A2A;
+  --input-focus: #C9C9C9;
+  --input-error: #A14242;
+  --form-success: #5F8F6B;
+  --dropdown-bg: #1F1F1F;
+  --tag-iu: #6B7F8C;
+  --tag-ou: #8C6B7C;
+  --tag-hc: #6B8C7A;
+  --tag-rf: #8C836B;
+  --severity-low: #6E6E6E;
+  --severity-medium: #B68A3C;
+  --severity-high: #9B3E3E;
+  --severity-critical: #D97068;
+  --role-admin: #8C8C8C;
+  --role-technician: #6F7A8C;
+  --role-viewer: #6E6E6E;
+  --dash-card-secondary: #1A1A1A;
+  --dash-accent-edge: #2E2E2E;
+  --chart1: #D6D6D6;
+  --chart2: #A8A8A8;
+  --chart3: #7A7A7A;
+  --chart4: #5A5A5A;
+  --chart-grid: #262626;
+  --audit-line: #2C2C2C;
+  --audit-create: #5F8F6B;
+  --audit-update: #7A7A7A;
+  --audit-delete: #9B3E3E;
+  --diff-match: #4F7A63;
+  --diff-difference: #8A5C3C;
+  --chat-user-bubble: #2A2A2A;
+  --chat-ai-bubble: #141414;
+  --chat-bg: #0B0B0B;
+  --chat-typing: #8C8C8C;
+  --notif-info: #6E7E8A;
+  --notif-success: #5F8F6B;
+  --notif-warning: #B68A3C;
+  --notif-error: #9B3E3E;
+  --overlay-subtle: rgba(255, 255, 255, 0.04);
+  --overlay-medium: rgba(255, 255, 255, 0.08);
+  --overlay-strong: rgba(255, 255, 255, 0.15);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --header-bg: rgba(10, 10, 10, 0.8);
+  --glass-sidebar-bg: rgba(15, 15, 15, 0.85);
+  --glass-rail-bg: rgba(9, 9, 9, 0.92);
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --primary: #1F1F1F;
+  --secondary: #5A6067;
+  --bg-main: #F5F6F7;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --text-primary: #14171A;
+  --text-secondary: #41474D;
+  --text-muted: #6B7280;
+  --border: #E1E4E8;
+  --status-working: #2F6B45;
+  --status-not-working: #8A6212;
+  --status-faulty: #B3261E;
+  --sidebar-bg: #FFFFFF;
+  --sidebar-active: #ECEFF2;
+  --sidebar-hover: #F2F4F6;
+  --sidebar-icon: #41474D;
+  --btn-primary-bg: #1F1F1F;
+  --btn-primary-text: #FFFFFF;
+  --btn-secondary: #E8EAED;
+  --btn-danger: #B3261E;
+  --btn-disabled: #C7CBD1;
+  --table-header: #F0F2F4;
+  --table-alt-row: #FAFBFC;
+  --table-hover: #EEF1F4;
+  --table-selected: #E3E8ED;
+  --input-border: #D2D6DB;
+  --input-focus: #1F1F1F;
+  --input-error: #B3261E;
+  --form-success: #2F6B45;
+  --dropdown-bg: #FFFFFF;
+  --tag-iu: #3E5666;
+  --tag-ou: #6B3E56;
+  --tag-hc: #2F5E46;
+  --tag-rf: #6B5E2F;
+  --severity-low: #6B7280;
+  --severity-medium: #8A6212;
+  --severity-high: #B3261E;
+  --severity-critical: #8C1D18;
+  --role-admin: #5A6067;
+  --role-technician: #3E5666;
+  --role-viewer: #6B7280;
+  --dash-card-secondary: #F7F8F9;
+  --dash-accent-edge: #D8DCE0;
+  --chart1: #3A3A3A;
+  --chart2: #6B6B6B;
+  --chart3: #9A9A9A;
+  --chart4: #C0C0C0;
+  --chart-grid: #E4E7EA;
+  --audit-line: #DDE1E5;
+  --audit-create: #2F6B45;
+  --audit-update: #6B7280;
+  --audit-delete: #B3261E;
+  --diff-match: #2F6B4F;
+  --diff-difference: #8A5C1E;
+  --chat-user-bubble: #E8EAED;
+  --chat-ai-bubble: #FFFFFF;
+  --chat-bg: #F5F6F7;
+  --chat-typing: #6B7280;
+  --notif-info: #3E5666;
+  --notif-success: #2F6B45;
+  --notif-warning: #8A6212;
+  --notif-error: #B3261E;
+  --overlay-subtle: rgba(0, 0, 0, 0.04);
+  --overlay-medium: rgba(0, 0, 0, 0.08);
+  --overlay-strong: rgba(0, 0, 0, 0.15);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --header-bg: rgba(245, 246, 247, 0.85);
+  --glass-sidebar-bg: rgba(255, 255, 255, 0.88);
+  --glass-rail-bg: rgba(248, 249, 250, 0.94);
+  color-scheme: light;
+}
+
+html, body {
+  background: var(--bg-main);
+  color: var(--text-primary);
+}
+
+/* Theme changes are instant by default, which reads as a jarring flash on a
+   full-page repaint. A short tint transition on the large surfaces smooths it
+   without making interactive feedback feel laggy. */
+@media (prefers-reduced-motion: no-preference) {
+  html, body {
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════ */
+/* NARROW-VIEWPORT GUARDS                              */
+/* ═══════════════════════════════════════════════════ */
+/* Found by a route sweep at 390px: these three forced the whole page to
+   scroll sideways instead of scrolling inside their own container. */
+
+/* antd Tabs lay their nav out on one nowrap flex row. With three tabs the
+   list was 456px wide and dragged the document with it. */
+.ant-tabs-nav-wrap {
+  overflow-x: auto !important;
+  scrollbar-width: none;
+}
+.ant-tabs-nav-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+/* Belt-and-braces for tables that render before the isMobile hook settles
+   and so miss DataTable's scroll={{ x: 'max-content' }}. */
+.ant-table-content,
+.ant-table-body {
+  overflow-x: auto;
+}
+
+/* Nothing should ever make the document itself scroll sideways. */
+html,
+body {
+  overflow-x: hidden;
+}
+
+
+/* ═══════════════════════════════════════════════════ */
+/* AI CHAT MARKDOWN                                    */
+/* ═══════════════════════════════════════════════════ */
+/* Assistant replies are rendered by react-markdown + remark-gfm (see
+   modules/ai_chat/components/ChatMessage.tsx). The renderer emits plain
+   semantic tags, so all of the styling lives here rather than as inline
+   styles on the component — which is also what makes it theme-aware. The
+   previous hand-rolled string replacer hardcoded #E0E0E0 / #2E2E2E and had
+   no table rules at all, so tables arrived as bare pipe-delimited lines. */
+
+.ai-md {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  /* Long serial numbers and URLs must not push the bubble past its max-width. */
+  overflow-wrap: anywhere;
+}
+
+.ai-md > :first-child { margin-top: 0; }
+.ai-md > :last-child { margin-bottom: 0; }
+
+.ai-md p { margin: 0 0 8px 0; }
+
+.ai-md h1, .ai-md h2, .ai-md h3, .ai-md h4 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 12px 0 6px 0;
+  line-height: 1.3;
+}
+.ai-md h1 { font-size: 20px; }
+.ai-md h2 { font-size: 18px; }
+.ai-md h3 { font-size: 16px; }
+.ai-md h4 { font-size: 14px; }
+
+.ai-md strong { color: var(--text-primary); font-weight: 600; }
+
+/* Real <ul>/<ol> wrappers. The old renderer emitted orphan <li> elements with
+   <br/> between them, which browsers render with no marker and no indent. */
+.ai-md ul, .ai-md ol { margin: 6px 0 8px 0; padding-left: 22px; }
+.ai-md li { margin-bottom: 4px; }
+.ai-md li > p { margin: 0; }
+.ai-md li::marker { color: var(--text-muted); }
+
+.ai-md a { color: var(--input-focus); text-decoration: underline; }
+
+.ai-md code {
+  background: var(--sidebar-hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.ai-md pre {
+  background: var(--sidebar-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+/* Inside a block the chrome belongs to the <pre>, not to each token. */
+.ai-md pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+}
+
+.ai-md blockquote {
+  margin: 8px 0;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid var(--border);
+  color: var(--text-muted);
+}
+
+.ai-md hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+/* Tables. The wrapper is what scrolls — a wide table must never widen the
+   chat bubble or, worse, the document (see the overflow-x guards above). */
+.ai-md-table-wrap {
+  overflow-x: auto;
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.ai-md table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.ai-md th, .ai-md td {
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Headers stay on one line — they are short labels, and wrapping them makes
+   the header row taller than the data. Cells must wrap, though: troubleshooting
+   answers put a whole description in one column, and nowrap there turns the
+   table into something you can only read by dragging sideways. The min-width
+   stops a serial-number column from being shredded into one character per
+   line when a neighbouring cell is long. */
+.ai-md th {
+  background: var(--table-header);
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ai-md td {
+  white-space: normal;
+  min-width: 90px;
+}
+
+.ai-md tbody tr:nth-child(even) { background: var(--table-alt-row); }
+.ai-md tbody tr:last-child td { border-bottom: none; }

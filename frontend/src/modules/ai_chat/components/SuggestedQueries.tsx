@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   RobotOutlined,
   ApiOutlined,
@@ -15,27 +14,27 @@ interface SuggestedQueriesProps {
 
 const suggestions = [
   {
-    icon: <ApiOutlined style={{ fontSize: 22, color: '#C9C9C9' }} />,
+    icon: <ApiOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,
     query: 'What is the current status of all pairs?',
   },
   {
-    icon: <WarningOutlined style={{ fontSize: 22, color: '#C9C9C9' }} />,
+    icon: <WarningOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,
     query: 'Show me all faulty devices',
   },
   {
-    icon: <ToolOutlined style={{ fontSize: 22, color: '#C9C9C9' }} />,
+    icon: <ToolOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,
     query: 'How to troubleshoot OU connection issues?',
   },
   {
-    icon: <EnvironmentOutlined style={{ fontSize: 22, color: '#C9C9C9' }} />,
+    icon: <EnvironmentOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,
     query: 'List all devices at each location',
   },
   {
-    icon: <AlertOutlined style={{ fontSize: 22, color: '#C9C9C9' }} />,
+    icon: <AlertOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,
     query: 'What errors were reported recently?',
   },
   {
-    icon: <HeartOutlined style={{ fontSize: 22, color: '#C9C9C9' }} />,
+    icon: <HeartOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,
     query: 'Summarize the system health',
   },
 ];
@@ -52,7 +51,7 @@ export default function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
       }}
     >
       <RobotOutlined style={{ fontSize: 36, color: '#6A6A6A', marginBottom: 8 }} />
-      <h1 style={{ color: '#E6E6E6', fontSize: 18, fontWeight: 600, margin: 0 }}>
+      <h1 style={{ color: 'var(--primary)', fontSize: 18, fontWeight: 600, margin: 0 }}>
         NavDashboard AI Assistant
       </h1>
       <p style={{ color: '#6A6A6A', fontSize: 12, marginTop: 4, marginBottom: 16 }}>
@@ -77,9 +76,9 @@ export default function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
               alignItems: 'center',
               gap: 10,
               padding: '10px 14px',
-              background: 'rgba(255,255,255,0.02)',
+              background: 'var(--overlay-subtle)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              border: '1px solid var(--border)',
               borderRadius: 10,
               cursor: 'pointer',
               textAlign: 'left',
@@ -90,13 +89,13 @@ export default function SuggestedQueries({ onSelect }: SuggestedQueriesProps) {
               outline: 'none',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.background = 'var(--overlay-medium)';
+              e.currentTarget.style.borderColor = 'var(--border)';
               e.currentTarget.style.color = '#D0D0D0';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+              e.currentTarget.style.background = 'var(--overlay-subtle)';
+              e.currentTarget.style.borderColor = 'var(--border)';
               e.currentTarget.style.color = '#A0A0A0';
             }}
           >

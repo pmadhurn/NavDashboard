@@ -30,10 +30,10 @@ function ItemRow({ item, onOpen }: { item: DeployedItem; onOpen: (i: DeployedIte
         background: 'rgba(255,255,255,0.02)',
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#E6E6E6', fontSize: 13 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--primary)', fontSize: 13 }}>
         <span style={{ color: '#6F8CB6' }}>{TYPE_ICON[item.type] ?? <AppstoreOutlined />}</span>
         {item.label}
-        <span style={{ color: '#5A5A5A', fontSize: 11, textTransform: 'uppercase' }}>{item.type}</span>
+        <span style={{ color: 'var(--chart4)', fontSize: 11, textTransform: 'uppercase' }}>{item.type}</span>
       </span>
       {item.status && <StatusBadge status={item.status} size="sm" />}
     </div>
@@ -88,7 +88,7 @@ export default function DeployedPage() {
                 <div
                   onClick={() => group.project_id && navigate(`/projects/${group.project_id}`)}
                   style={{
-                    color: '#F2F2F2',
+                    color: 'var(--text-primary)',
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: group.project_id ? 'pointer' : 'default',
@@ -96,7 +96,7 @@ export default function DeployedPage() {
                 >
                   {group.project_name}
                 </div>
-                <span style={{ color: '#7A7A7A', fontSize: 12 }}>{group.items.length} items</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{group.items.length} items</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {group.items.map((item) => (

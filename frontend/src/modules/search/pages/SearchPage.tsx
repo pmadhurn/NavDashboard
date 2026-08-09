@@ -58,14 +58,14 @@ const SearchPage: React.FC = () => {
             ref={inputRef}
             size="large"
             placeholder="Search across devices, couples, pairs, personnel, and errors..."
-            prefix={<SearchOutlined style={{ color: '#7A7A7A' }} />}
+            prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{
               flex: 1,
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.06)',
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               borderRadius: 8,
             }}
           />
@@ -73,13 +73,13 @@ const SearchPage: React.FC = () => {
             onClick={() => setFiltersVisible(!filtersVisible)}
             icon={<FilterOutlined />}
             style={{
-              borderColor: filtersVisible ? '#5F8F6B' : undefined,
+              borderColor: filtersVisible ? 'var(--status-working)' : undefined,
             }}
           >
             Filters
             {activeFilterCount > 0 && (
               <Tag
-                color="#5F8F6B"
+                color="var(--status-working)"
                 style={{ marginLeft: 6, borderRadius: 10, fontSize: 11, padding: '0 6px' }}
               >
                 {activeFilterCount}
@@ -96,7 +96,7 @@ const SearchPage: React.FC = () => {
 
       {!debouncedQuery && (
         <EmptyState
-          icon={<SearchOutlined style={{ fontSize: 48, color: '#7A7A7A' }} />}
+          icon={<SearchOutlined style={{ fontSize: 48, color: 'var(--text-muted)' }} />}
           title="Search across all entities"
           description="Search across all devices, couples, pairs, personnel, and more"
         />
@@ -108,8 +108,8 @@ const SearchPage: React.FC = () => {
         <div>
           <div style={{ marginBottom: 16 }}>
             <Space>
-              <span style={{ color: '#B8B8B8', fontSize: 14 }}>
-                Found <strong style={{ color: '#F2F2F2' }}>{data.total}</strong> results
+              <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                Found <strong style={{ color: 'var(--text-primary)' }}>{data.total}</strong> results
               </span>
               {Object.entries(data.entity_counts).map(([type, count]) => (
                 <Tag
@@ -117,7 +117,7 @@ const SearchPage: React.FC = () => {
                   style={{
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#B8B8B8',
+                    color: 'var(--text-secondary)',
                     borderRadius: 12,
                   }}
                 >
@@ -136,7 +136,7 @@ const SearchPage: React.FC = () => {
 
       {debouncedQuery && !isLoading && data && data.total === 0 && (
         <EmptyState
-          icon={<SearchOutlined style={{ fontSize: 48, color: '#7A7A7A' }} />}
+          icon={<SearchOutlined style={{ fontSize: 48, color: 'var(--text-muted)' }} />}
           title={`No results found for "${debouncedQuery}"`}
           description="Try a different search term or adjust filters"
         />

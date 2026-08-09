@@ -16,10 +16,10 @@ import { ReportTemplate, useReportTemplates } from '../hooks/useReports';
 
 const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
   device_inventory: <ApiOutlined style={{ fontSize: 28, color: '#6E7E8A' }} />,
-  error_summary: <BarChartOutlined style={{ fontSize: 28, color: '#9B3E3E' }} />,
-  location_history: <EnvironmentOutlined style={{ fontSize: 28, color: '#5F8F6B' }} />,
-  pair_status: <FileTextOutlined style={{ fontSize: 28, color: '#B68A3C' }} />,
-  full_system: <GlobalOutlined style={{ fontSize: 28, color: '#F2F2F2' }} />,
+  error_summary: <BarChartOutlined style={{ fontSize: 28, color: 'var(--status-faulty)' }} />,
+  location_history: <EnvironmentOutlined style={{ fontSize: 28, color: 'var(--status-working)' }} />,
+  pair_status: <FileTextOutlined style={{ fontSize: 28, color: 'var(--status-not-working)' }} />,
+  full_system: <GlobalOutlined style={{ fontSize: 28, color: 'var(--text-primary)' }} />,
 };
 
 export default function ReportsPage() {
@@ -69,13 +69,13 @@ export default function ReportsPage() {
                     }}
                   >
                     {TEMPLATE_ICONS[template.id] || (
-                      <FileTextOutlined style={{ fontSize: 28, color: '#7A7A7A' }} />
+                      <FileTextOutlined style={{ fontSize: 28, color: 'var(--text-muted)' }} />
                     )}
                   </div>
                   <div>
                     <div
                       style={{
-                        color: '#F2F2F2',
+                        color: 'var(--text-primary)',
                         fontWeight: 600,
                         fontSize: 15,
                         marginBottom: 4,
@@ -83,7 +83,7 @@ export default function ReportsPage() {
                     >
                       {template.name}
                     </div>
-                    <div style={{ color: '#7A7A7A', fontSize: 12, lineHeight: '1.5' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 12, lineHeight: '1.5' }}>
                       {template.description}
                     </div>
                   </div>
@@ -91,7 +91,7 @@ export default function ReportsPage() {
 
                 {template.parameters.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <span style={{ color: '#7A7A7A', fontSize: 11 }}>Parameters: </span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Parameters: </span>
                     {template.parameters.map((p) => (
                       <span
                         key={p}
@@ -100,7 +100,7 @@ export default function ReportsPage() {
                           padding: '2px 6px',
                           background: 'rgba(255,255,255,0.05)',
                           borderRadius: 4,
-                          color: '#B8B8B8',
+                          color: 'var(--text-secondary)',
                           fontSize: 10,
                           marginRight: 4,
                         }}

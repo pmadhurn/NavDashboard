@@ -1,4 +1,3 @@
-import React from 'react';
 import { Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 
@@ -20,7 +19,7 @@ export default function LoadingSpinner({
   fullPage = false,
 }: LoadingSpinnerProps) {
   const indicator = (
-    <LoadingOutlined style={{ fontSize: sizeMap[size], color: '#E6E6E6' }} spin />
+    <LoadingOutlined style={{ fontSize: sizeMap[size], color: 'var(--primary)' }} spin />
   );
 
   const content = (
@@ -36,7 +35,7 @@ export default function LoadingSpinner({
     >
       <Spin indicator={indicator} />
       {text && (
-        <span style={{ color: '#B8B8B8', fontSize: 14 }}>{text}</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{text}</span>
       )}
     </div>
   );

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   PieChart,
   Pie,
@@ -25,8 +24,8 @@ interface CustomTooltipProps {
 }
 
 function GlassTooltip({ active, payload }: CustomTooltipProps) {
-  if (!active || !payload?.length) return null
-  const item = payload[0]
+  const item = payload?.[0]
+  if (!active || !item) return null
   return (
     <div
       style={{
@@ -35,7 +34,7 @@ function GlassTooltip({ active, payload }: CustomTooltipProps) {
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 8,
         padding: '8px 12px',
-        color: '#F2F2F2',
+        color: 'var(--text-primary)',
         fontSize: 13,
       }}
     >
@@ -67,7 +66,7 @@ function CenterLabel({ viewBox, total }: CenterLabelProps) {
         y={cy - 8}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ fontSize: 28, fontWeight: 700, fill: '#F2F2F2' }}
+        style={{ fontSize: 28, fontWeight: 700, fill: 'var(--text-primary)' }}
       >
         {total}
       </text>
@@ -76,7 +75,7 @@ function CenterLabel({ viewBox, total }: CenterLabelProps) {
         y={cy + 18}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ fontSize: 12, fill: '#7A7A7A' }}
+        style={{ fontSize: 12, fill: 'var(--text-muted)' }}
       >
         Total
       </text>
@@ -92,7 +91,7 @@ export default function PairStatusPie({ data, loading }: PairStatusPieProps) {
       <div style={{ marginBottom: 16 }}>
         <h3
           style={{
-            color: '#F2F2F2',
+            color: 'var(--text-primary)',
             fontSize: 16,
             fontWeight: 600,
             margin: 0,
@@ -120,7 +119,7 @@ export default function PairStatusPie({ data, loading }: PairStatusPieProps) {
             alignItems: 'center',
             justifyContent: 'center',
             height: 250,
-            color: '#7A7A7A',
+            color: 'var(--text-muted)',
             fontSize: 14,
           }}
         >
@@ -138,7 +137,7 @@ export default function PairStatusPie({ data, loading }: PairStatusPieProps) {
                 cy="50%"
                 innerRadius={60}
                 outerRadius={90}
-                stroke="#0A0A0A"
+                stroke="var(--bg-main)"
                 strokeWidth={2}
               >
                 {data.map((entry, index) => (
@@ -179,7 +178,7 @@ export default function PairStatusPie({ data, loading }: PairStatusPieProps) {
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ color: '#B8B8B8' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>
                   {STATUS_LABELS[item.status] || item.status}: {item.count}
                 </span>
               </div>

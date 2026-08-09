@@ -22,10 +22,10 @@ import {
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <GlassCard padding="sm">
-      <div style={{ color: '#7A7A7A', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
         {label}
       </div>
-      <div style={{ color: accent ?? '#F2F2F2', fontSize: 20, fontWeight: 700, marginTop: 4 }}>
+      <div style={{ color: accent ?? 'var(--text-primary)', fontSize: 20, fontWeight: 700, marginTop: 4 }}>
         {value}
       </div>
     </GlassCard>
@@ -93,19 +93,19 @@ export default function MyFinancePage() {
         <Stat
           label={negative ? 'Owed to you' : 'Balance in hand'}
           value={formatMoney(Math.abs(summary.balance))}
-          accent={negative ? '#B68A3C' : '#5F8F6B'}
+          accent={negative ? 'var(--status-not-working)' : 'var(--status-working)'}
         />
-        <Stat label="Pending with finance" value={formatMoney(summary.pending_total)} accent="#B68A3C" />
-        <Stat label="Paid out" value={formatMoney(summary.paid_total)} accent="#5F8F6B" />
+        <Stat label="Pending with finance" value={formatMoney(summary.pending_total)} accent="var(--status-not-working)" />
+        <Stat label="Paid out" value={formatMoney(summary.paid_total)} accent="var(--status-working)" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
         <GlassCard padding="md">
-          <div style={{ color: '#E6E6E6', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+          <div style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
             Advances from office
           </div>
           {!advances || advances.length === 0 ? (
-            <div style={{ color: '#7A7A7A', fontSize: 13 }}>No advances recorded yet.</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>No advances recorded yet.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {advances.map((a) => (
@@ -113,13 +113,13 @@ export default function MyFinancePage() {
                   key={a.id}
                   style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}
                 >
-                  <span style={{ color: '#B8B8B8' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>
                     {a.source_note || 'Advance'}
-                    <span style={{ color: '#5A5A5A', fontSize: 11, marginLeft: 6 }}>
+                    <span style={{ color: 'var(--chart4)', fontSize: 11, marginLeft: 6 }}>
                       {formatDateTime(a.received_date)}
                     </span>
                   </span>
-                  <span style={{ color: '#5F8F6B', fontWeight: 600 }}>{formatMoney(a.amount)}</span>
+                  <span style={{ color: 'var(--status-working)', fontWeight: 600 }}>{formatMoney(a.amount)}</span>
                 </div>
               ))}
             </div>
@@ -127,7 +127,7 @@ export default function MyFinancePage() {
         </GlassCard>
 
         <GlassCard padding="md">
-          <div style={{ color: '#E6E6E6', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+          <div style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
             My claims
           </div>
           {!claims || claims.length === 0 ? (
@@ -136,13 +136,13 @@ export default function MyFinancePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {claims.map((c) => (
                 <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                  <span style={{ color: '#B8B8B8' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>
                     {c.title}
-                    <span style={{ color: '#5A5A5A', fontSize: 11, marginLeft: 6 }}>
+                    <span style={{ color: 'var(--chart4)', fontSize: 11, marginLeft: 6 }}>
                       {c.expense_count} items
                     </span>
                   </span>
-                  <span style={{ color: c.status === 'PAID' ? '#5F8F6B' : '#B68A3C', fontSize: 12 }}>
+                  <span style={{ color: c.status === 'PAID' ? 'var(--status-working)' : 'var(--status-not-working)', fontSize: 12 }}>
                     {c.status} · {formatMoney(c.total)}
                   </span>
                 </div>
@@ -170,19 +170,19 @@ export default function MyFinancePage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Who received it? (defaults to you)
             </label>
             <PersonPicker value={personId} onChange={setPersonId} placeholder="Myself" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Amount (₹)
             </label>
             <GlassInput type="number" value={amount} onChange={setAmount} placeholder="50000" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Note (optional)
             </label>
             <GlassInput value={note} onChange={setNote} placeholder="e.g. Site trip float" />

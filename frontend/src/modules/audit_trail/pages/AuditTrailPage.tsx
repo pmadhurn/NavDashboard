@@ -73,10 +73,10 @@ const AuditTrailPage: React.FC = () => {
       key: 'action',
       width: 120,
       render: (val: string) => {
-        let color = '#7A7A7A';
-        if (val === 'CREATE' || val === 'SEED_CREATE') color = '#5F8F6B';
-        if (val === 'DELETE') color = '#9B3E3E';
-        if (val === 'REVERT') color = '#B68A3C';
+        let color = 'var(--text-muted)';
+        if (val === 'CREATE' || val === 'SEED_CREATE') color = 'var(--status-working)';
+        if (val === 'DELETE') color = 'var(--status-faulty)';
+        if (val === 'REVERT') color = 'var(--status-not-working)';
         return (
           <span
             style={{
@@ -103,7 +103,7 @@ const AuditTrailPage: React.FC = () => {
       key: 'entity_id',
       width: 280,
       render: (val: string) => (
-        <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#B8B8B8' }}>
+        <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>
           {val}
         </span>
       ),
@@ -120,7 +120,7 @@ const AuditTrailPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description',
       render: (val: string | null) => (
-        <span style={{ color: '#B8B8B8' }}>{val || '—'}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{val || '—'}</span>
       ),
     },
     ...(isAdmin
@@ -167,10 +167,10 @@ const AuditTrailPage: React.FC = () => {
         <Col xs={12} sm={6}>
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>
                 Total Entries
               </div>
-              <div style={{ color: '#F2F2F2', fontSize: 28, fontWeight: 700 }}>
+              <div style={{ color: 'var(--text-primary)', fontSize: 28, fontWeight: 700 }}>
                 {statsLoading ? '...' : stats?.total_entries ?? 0}
               </div>
             </div>
@@ -179,11 +179,11 @@ const AuditTrailPage: React.FC = () => {
         <Col xs={12} sm={6}>
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>
                 <PlusCircleOutlined style={{ marginRight: 4 }} />
                 Creates
               </div>
-              <div style={{ color: '#5F8F6B', fontSize: 28, fontWeight: 700 }}>
+              <div style={{ color: 'var(--status-working)', fontSize: 28, fontWeight: 700 }}>
                 {statsLoading ? '...' : createCount + seedCreateCount}
               </div>
             </div>
@@ -192,11 +192,11 @@ const AuditTrailPage: React.FC = () => {
         <Col xs={12} sm={6}>
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>
                 <EditOutlined style={{ marginRight: 4 }} />
                 Updates
               </div>
-              <div style={{ color: '#7A7A7A', fontSize: 28, fontWeight: 700 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 28, fontWeight: 700 }}>
                 {statsLoading ? '...' : updateCount + statusChangeCount}
               </div>
             </div>
@@ -205,11 +205,11 @@ const AuditTrailPage: React.FC = () => {
         <Col xs={12} sm={6}>
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>
                 <DeleteOutlined style={{ marginRight: 4 }} />
                 Deletes
               </div>
-              <div style={{ color: '#9B3E3E', fontSize: 28, fontWeight: 700 }}>
+              <div style={{ color: 'var(--status-faulty)', fontSize: 28, fontWeight: 700 }}>
                 {statsLoading ? '...' : deleteCount}
               </div>
             </div>

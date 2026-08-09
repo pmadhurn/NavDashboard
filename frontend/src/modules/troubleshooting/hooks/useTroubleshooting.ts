@@ -85,7 +85,7 @@ export function useErrors(filters?: Partial<ErrorFilterState>, page = 1, size = 
   const params: Record<string, string | number | boolean> = { page, size };
 
   if (filters) {
-    if (filters.severity && filters.severity.length === 1) {
+    if (filters.severity && filters.severity.length === 1 && filters.severity[0]) {
       params.severity = filters.severity[0];
     }
     if (filters.resolved !== null && filters.resolved !== undefined) {

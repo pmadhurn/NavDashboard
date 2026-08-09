@@ -1,4 +1,3 @@
-import React from 'react'
 import GlassCard from '../../../shared/components/GlassCard'
 import LoadingSpinner from '../../../shared/components/LoadingSpinner'
 import type { StatusDistribution } from '../hooks/useDashboard'
@@ -15,9 +14,9 @@ const ENTITY_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLORS = {
-  working: '#5F8F6B',
-  not_working: '#B68A3C',
-  faulty: '#9B3E3E',
+  working: 'var(--status-working)',
+  not_working: 'var(--status-not-working)',
+  faulty: 'var(--status-faulty)',
 }
 
 function StatusBar({ item }: { item: StatusDistribution }) {
@@ -38,10 +37,10 @@ function StatusBar({ item }: { item: StatusDistribution }) {
           marginBottom: 8,
         }}
       >
-        <span style={{ color: '#F2F2F2', fontSize: 14, fontWeight: 600 }}>
+        <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>
           {label}
         </span>
-        <span style={{ color: '#7A7A7A', fontSize: 13 }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
           {total} total
         </span>
       </div>
@@ -52,7 +51,7 @@ function StatusBar({ item }: { item: StatusDistribution }) {
           height: 24,
           borderRadius: 8,
           overflow: 'hidden',
-          background: '#1A1A1A',
+          background: 'var(--sidebar-hover)',
         }}
       >
         {total === 0 ? (
@@ -137,7 +136,7 @@ export default function StatusOverview({
       <div style={{ marginBottom: 16 }}>
         <h3
           style={{
-            color: '#F2F2F2',
+            color: 'var(--text-primary)',
             fontSize: 16,
             fontWeight: 600,
             margin: 0,
@@ -163,7 +162,7 @@ export default function StatusOverview({
           <StatusBar key={item.entity_type} item={item} />
         ))
       ) : (
-        <div style={{ color: '#7A7A7A', textAlign: 'center', padding: 32 }}>
+        <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 32 }}>
           No status data available
         </div>
       )}

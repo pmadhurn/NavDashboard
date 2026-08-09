@@ -57,6 +57,33 @@ export function useGoogleLogin() {
   })
 }
 
+export interface ClerkAuthResponse {
+  pending: boolean
+  message?: string | null
+  access_token?: string | null
+  token_type?: string | null
+}
+
+/**
+ * Trades a Clerk session JWT for this app's own token. A PENDING response is a
+ * success, not an error: the account exists but an admin has not approved it.
+ */
+export function useClerkLogin() {
+  const setAuth = useAuthStore(state => state.setAuth)
+
+  return useMutation({
+    mutationFn: (token: string) =>
+      api.post<ClerkAuthResponse>('/auth/clerk', { token }),
+    onSuccess: async (data) => {
+      if (!data.pending && data.access_token) {
+        localStorage.setItem('access_token', data.access_token)
+        const me = await api.get<never>('/auth/me')
+        setAuth(data.access_token, me)
+      }
+    },
+  })
+}
+
 export function useLogout() {
   const logout = useAuthStore(state => state.logout)
   return () => {

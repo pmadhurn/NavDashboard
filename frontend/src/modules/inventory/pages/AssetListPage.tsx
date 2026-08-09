@@ -48,7 +48,7 @@ function AssetsTab() {
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: Asset) => (
-        <span style={{ color: '#F2F2F2', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           {name}
           {record.device_id && (
             <span
@@ -72,7 +72,7 @@ function AssetsTab() {
       key: 'category',
       className: 'hide-on-mobile',
       render: (_: unknown, record: Asset) => (
-        <span style={{ color: '#B8B8B8' }}>{record.category?.name ?? '—'}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{record.category?.name ?? '—'}</span>
       ),
     },
     {
@@ -81,7 +81,7 @@ function AssetsTab() {
       key: 'quantity',
       className: 'hide-on-mobile',
       render: (qty: number, record: Asset) => (
-        <span style={{ color: '#B8B8B8' }}>{record.item_kind === 'BULK' ? qty : '—'}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{record.item_kind === 'BULK' ? qty : '—'}</span>
       ),
     },
     {
@@ -95,7 +95,7 @@ function AssetsTab() {
       key: 'custody',
       className: 'hide-on-mobile',
       render: (_: unknown, record: Asset) => (
-        <span style={{ color: '#B8B8B8', fontSize: 12 }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
           {record.current_person?.full_name ??
             (record.status === 'WITH_PROJECT' ? 'Project' : 'Office')}
         </span>
@@ -122,7 +122,7 @@ function AssetsTab() {
               setPage(1);
             }}
             placeholder="Search by name, code, or serial..."
-            prefix={<SearchOutlined style={{ color: '#7A7A7A' }} />}
+            prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
           />
         </div>
         <Select
@@ -184,10 +184,10 @@ function AssetsTab() {
         .dl-select .ant-select-selector {
           background: rgba(255,255,255,0.03) !important;
           border: 1px solid rgba(255,255,255,0.08) !important;
-          color: #F2F2F2 !important;
+          color: var(--text-primary) !important;
         }
-        .dl-select .ant-select-selection-placeholder { color: #5A5A5A !important; }
-        .dl-select .ant-select-selection-item { color: #F2F2F2 !important; }
+        .dl-select .ant-select-selection-placeholder { color: var(--chart4) !important; }
+        .dl-select .ant-select-selection-item { color: var(--text-primary) !important; }
       `}</style>
 
       <DataTable<Asset>
@@ -252,9 +252,9 @@ export default function AssetListPage() {
         ]}
       />
       <style>{`
-        .ant-tabs-tab { color: #7A7A7A !important; }
-        .ant-tabs-tab-active .ant-tabs-tab-btn { color: #E6E6E6 !important; }
-        .ant-tabs-ink-bar { background: #E6E6E6 !important; }
+        .ant-tabs-tab { color: var(--text-muted) !important; }
+        .ant-tabs-tab-active .ant-tabs-tab-btn { color: var(--primary) !important; }
+        .ant-tabs-ink-bar { background: var(--primary) !important; }
       `}</style>
     </div>
   );

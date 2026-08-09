@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   BarChart,
   Bar,
@@ -26,7 +25,8 @@ interface CustomTooltipProps {
 }
 
 function GlassTooltip({ active, payload, label }: CustomTooltipProps) {
-  if (!active || !payload?.length) return null
+  const point = payload?.[0]
+  if (!active || !point) return null
   return (
     <div
       style={{
@@ -35,12 +35,12 @@ function GlassTooltip({ active, payload, label }: CustomTooltipProps) {
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 8,
         padding: '8px 12px',
-        color: '#F2F2F2',
+        color: 'var(--text-primary)',
         fontSize: 13,
       }}
     >
       <p style={{ margin: 0 }}>
-        {label}: {payload[0].value}
+        {label}: {point.value}
       </p>
     </div>
   )
@@ -52,7 +52,7 @@ export default function DeviceChart({ data, loading }: DeviceChartProps) {
       <div style={{ marginBottom: 16 }}>
         <h3
           style={{
-            color: '#F2F2F2',
+            color: 'var(--text-primary)',
             fontSize: 16,
             fontWeight: 600,
             margin: 0,
@@ -83,19 +83,19 @@ export default function DeviceChart({ data, loading }: DeviceChartProps) {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#262626"
+              stroke="var(--chart-grid)"
               vertical={false}
             />
             <XAxis
               dataKey="device_type"
-              tick={{ fill: '#B8B8B8', fontSize: 13 }}
-              axisLine={{ stroke: '#262626' }}
-              tickLine={{ stroke: '#7A7A7A' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 13 }}
+              axisLine={{ stroke: 'var(--chart-grid)' }}
+              tickLine={{ stroke: 'var(--text-muted)' }}
             />
             <YAxis
-              tick={{ fill: '#B8B8B8', fontSize: 13 }}
-              axisLine={{ stroke: '#262626' }}
-              tickLine={{ stroke: '#7A7A7A' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 13 }}
+              axisLine={{ stroke: 'var(--chart-grid)' }}
+              tickLine={{ stroke: 'var(--text-muted)' }}
               allowDecimals={false}
             />
             <Tooltip

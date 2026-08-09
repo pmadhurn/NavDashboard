@@ -88,7 +88,7 @@ export default function ExportModal({ open, onClose, defaultScope, defaultScopeI
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 8 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
             Format
           </label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -105,14 +105,14 @@ export default function ExportModal({ open, onClose, defaultScope, defaultScopeI
                     padding: '10px 12px',
                     borderRadius: 10,
                     cursor: 'pointer',
-                    border: `1px solid ${active ? '#5F8F6B' : 'rgba(255,255,255,0.07)'}`,
+                    border: `1px solid ${active ? 'var(--status-working)' : 'rgba(255,255,255,0.07)'}`,
                     background: active ? 'rgba(95,143,107,0.1)' : 'rgba(255,255,255,0.02)',
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <span style={{ color: active ? '#5F8F6B' : '#7A7A7A', fontSize: 18 }}>{f.icon}</span>
+                  <span style={{ color: active ? 'var(--status-working)' : 'var(--text-muted)', fontSize: 18 }}>{f.icon}</span>
                   <div>
-                    <div style={{ color: '#F2F2F2', fontSize: 13 }}>{f.label}</div>
+                    <div style={{ color: 'var(--text-primary)', fontSize: 13 }}>{f.label}</div>
                     <div style={{ color: '#6A6A6A', fontSize: 11 }}>{f.hint}</div>
                   </div>
                 </div>
@@ -124,22 +124,22 @@ export default function ExportModal({ open, onClose, defaultScope, defaultScopeI
         {format === 'pdf' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ color: '#E6E6E6', fontSize: 13 }}>Include receipt images</div>
-              <div style={{ color: '#7A7A7A', fontSize: 11 }}>
+              <div style={{ color: 'var(--primary)', fontSize: 13 }}>Include receipt images</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                 Appends each bill photo after the report
               </div>
             </div>
             <Switch
               checked={includeImages}
               onChange={setIncludeImages}
-              style={{ background: includeImages ? '#5F8F6B' : '#4A4A4A' }}
+              style={{ background: includeImages ? 'var(--status-working)' : '#4A4A4A' }}
             />
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 140 }}>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Scope
             </label>
             <Select
@@ -159,7 +159,7 @@ export default function ExportModal({ open, onClose, defaultScope, defaultScopeI
           </div>
           {(scope === 'project' || scope === 'claim') && (
             <div style={{ flex: 1, minWidth: 160 }}>
-              <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Pick {scope}
               </label>
               <Select

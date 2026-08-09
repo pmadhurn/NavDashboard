@@ -20,11 +20,11 @@ interface SearchResultsProps {
 }
 
 const ENTITY_ICONS: Record<string, React.ReactNode> = {
-  device: <ApiOutlined style={{ fontSize: 20, color: '#5F8F6B' }} />,
-  couple: <LinkOutlined style={{ fontSize: 20, color: '#B68A3C' }} />,
-  pair: <SwapOutlined style={{ fontSize: 20, color: '#7A7A7A' }} />,
-  personnel: <UserOutlined style={{ fontSize: 20, color: '#5F8F6B' }} />,
-  error: <WarningOutlined style={{ fontSize: 20, color: '#9B3E3E' }} />,
+  device: <ApiOutlined style={{ fontSize: 20, color: 'var(--status-working)' }} />,
+  couple: <LinkOutlined style={{ fontSize: 20, color: 'var(--status-not-working)' }} />,
+  pair: <SwapOutlined style={{ fontSize: 20, color: 'var(--text-muted)' }} />,
+  personnel: <UserOutlined style={{ fontSize: 20, color: 'var(--status-working)' }} />,
+  error: <WarningOutlined style={{ fontSize: 20, color: 'var(--status-faulty)' }} />,
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -110,7 +110,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   if (results.length === 0) {
     return (
       <EmptyState
-        icon={<ApiOutlined style={{ fontSize: 48, color: '#7A7A7A' }} />}
+        icon={<ApiOutlined style={{ fontSize: 48, color: 'var(--text-muted)' }} />}
         title={`No results found for "${query}"`}
         description="Try a different search term or adjust your filters"
       />
@@ -159,14 +159,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 }}
               >
                 {ENTITY_ICONS[result.entity_type] || (
-                  <ApiOutlined style={{ fontSize: 20, color: '#7A7A7A' }} />
+                  <ApiOutlined style={{ fontSize: 20, color: 'var(--text-muted)' }} />
                 )}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    color: '#F2F2F2',
+                    color: 'var(--text-primary)',
                     fontSize: 15,
                     fontWeight: 600,
                     marginBottom: 4,
@@ -177,7 +177,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 {result.description && (
                   <div
                     style={{
-                      color: '#B8B8B8',
+                      color: 'var(--text-secondary)',
                       fontSize: 13,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -196,7 +196,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 <div style={{ marginTop: 4 }}>
                   <span
                     style={{
-                      color: '#7A7A7A',
+                      color: 'var(--text-muted)',
                       fontSize: 11,
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',

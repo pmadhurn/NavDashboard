@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Select, DatePicker } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
@@ -99,7 +99,7 @@ export default function LocationHistoryPage() {
           onChange={handleDateChange}
           style={{
             background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid #2A2A2A',
+            border: '1px solid var(--input-border)',
             borderRadius: 8,
           }}
         />
@@ -130,7 +130,7 @@ export default function LocationHistoryPage() {
             paddingRight: 8,
             /* Custom scrollbar */
             scrollbarWidth: 'thin',
-            scrollbarColor: '#2C2C2C transparent',
+            scrollbarColor: 'var(--audit-line) transparent',
           }}
         >
           <HistoryTimeline
@@ -162,17 +162,17 @@ export default function LocationHistoryPage() {
           }
         }
         .glass-dropdown .ant-select-item {
-          color: #B8B8B8 !important;
+          color: var(--text-secondary) !important;
         }
         .glass-dropdown .ant-select-item-option-active {
           background: rgba(255, 255, 255, 0.06) !important;
         }
         .glass-dropdown .ant-select-item-option-selected {
           background: rgba(255, 255, 255, 0.1) !important;
-          color: #F2F2F2 !important;
+          color: var(--text-primary) !important;
         }
         .glass-dropdown {
-          background: #1A1A1A !important;
+          background: var(--sidebar-hover) !important;
           border: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
       `}</style>

@@ -1,16 +1,17 @@
 import React from 'react';
 import { Button } from 'antd';
+import type { ButtonProps } from 'antd';
 
-interface GlassButtonProps {
+type ButtonPassThrough = Omit<
+  ButtonProps,
+  'variant' | 'size' | 'type' | 'color'
+>;
+
+interface GlassButtonProps extends ButtonPassThrough {
   children?: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  disabled?: boolean;
-  icon?: React.ReactNode;
-  onClick?: () => void;
   fullWidth?: boolean;
-  htmlType?: 'button' | 'submit';
 }
 
 const sizeMap = {
@@ -29,6 +30,8 @@ export default function GlassButton({
   onClick,
   fullWidth = false,
   htmlType = 'button',
+  style,
+  ...rest
 }: GlassButtonProps) {
   const getStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = {
@@ -43,9 +46,9 @@ export default function GlassButton({
     if (disabled) {
       return {
         ...base,
-        background: '#3A3A3A',
-        color: '#7A7A7A',
-        border: '1px solid #3A3A3A',
+        background: 'var(--btn-disabled)',
+        color: 'var(--text-muted)',
+        border: '1px solid var(--btn-disabled)',
         opacity: 0.6,
         cursor: 'not-allowed',
       };
@@ -55,29 +58,29 @@ export default function GlassButton({
       case 'primary':
         return {
           ...base,
-          background: '#E6E6E6',
-          color: '#0A0A0A',
-          border: '1px solid #E6E6E6',
+          background: 'var(--primary)',
+          color: 'var(--bg-main)',
+          border: '1px solid var(--primary)',
         };
       case 'secondary':
         return {
           ...base,
           background: 'rgba(42, 42, 42, 0.8)',
-          color: '#F2F2F2',
+          color: 'var(--text-primary)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
         };
       case 'danger':
         return {
           ...base,
           background: 'rgba(138, 58, 58, 0.8)',
-          color: '#F2F2F2',
+          color: 'var(--text-primary)',
           border: '1px solid rgba(138, 58, 58, 0.5)',
         };
       case 'ghost':
         return {
           ...base,
           background: 'transparent',
-          color: '#F2F2F2',
+          color: 'var(--text-primary)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
         };
       default:
@@ -87,13 +90,14 @@ export default function GlassButton({
 
   return (
     <Button
+      {...rest}
       size={sizeMap[size]}
       loading={loading}
       disabled={disabled}
       icon={icon}
       onClick={onClick}
       htmlType={htmlType}
-      style={getStyle()}
+      style={{ ...getStyle(), ...style }}
     >
       {children}
     </Button>

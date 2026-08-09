@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Select, Switch, message } from 'antd'
 import {
   PlusOutlined,
@@ -140,7 +140,7 @@ export default function CoupleListPage() {
             ]}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: '#B8B8B8', fontSize: 13 }}>Has RF</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Has RF</span>
             <Switch
               checked={hasRf === true}
               onChange={(checked) => {

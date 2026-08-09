@@ -1,4 +1,3 @@
-import React from 'react'
 import { Popup } from 'react-leaflet'
 import { WifiOutlined, EnvironmentOutlined, EyeOutlined, HistoryOutlined } from '@ant-design/icons'
 import type { MapDataPoint } from '@/shared/types/locations'
@@ -15,11 +14,11 @@ interface DevicePopupProps {
 function getMarkerColor(status: string): string {
   switch (status) {
     case 'WORKING':
-      return '#5F8F6B'
+      return 'var(--status-working)'
     case 'NOT_WORKING':
-      return '#B68A3C'
+      return 'var(--status-not-working)'
     case 'FAULTY':
-      return '#9B3E3E'
+      return 'var(--status-faulty)'
     default:
       return '#7C7C7C'
   }
@@ -60,7 +59,7 @@ export default function DevicePopup({
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               marginBottom: 6,
             }}
           >
@@ -101,7 +100,7 @@ export default function DevicePopup({
             gap: 6,
             marginBottom: 6,
             fontSize: 12,
-            color: point.has_rf ? '#A8C4B0' : '#7A7A7A',
+            color: point.has_rf ? '#A8C4B0' : 'var(--text-muted)',
           }}
         >
           <WifiOutlined style={{ fontSize: 13 }} />
@@ -116,7 +115,7 @@ export default function DevicePopup({
             gap: 6,
             marginBottom: 10,
             fontSize: 12,
-            color: '#9FA3A8',
+            color: 'var(--secondary)',
           }}
         >
           <EnvironmentOutlined style={{ fontSize: 13 }} />
@@ -138,7 +137,7 @@ export default function DevicePopup({
                 <div
                   style={{
                     fontSize: 11,
-                    color: '#7A7A7A',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                     marginBottom: 4,
@@ -151,12 +150,12 @@ export default function DevicePopup({
                     key={d.id}
                     style={{
                       fontSize: 12,
-                      color: '#B8B8B8',
+                      color: 'var(--text-secondary)',
                       padding: '2px 0',
                     }}
                   >
                     {d.serial_number}{' '}
-                    <span style={{ color: '#7A7A7A' }}>({d.device_type})</span>
+                    <span style={{ color: 'var(--text-muted)' }}>({d.device_type})</span>
                   </div>
                 ))}
               </div>
@@ -165,8 +164,8 @@ export default function DevicePopup({
             {/* Handling person */}
             {couple.handling_person_name && (
               <div style={{ marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: '#7A7A7A' }}>Handler: </span>
-                <span style={{ fontSize: 12, color: '#B8B8B8' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Handler: </span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                   {couple.handling_person_name}
                 </span>
               </div>
@@ -195,18 +194,18 @@ export default function DevicePopup({
               borderRadius: 6,
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.04)',
-              color: '#B8B8B8',
+              color: 'var(--text-secondary)',
               fontSize: 12,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-              e.currentTarget.style.color = '#F2F2F2'
+              e.currentTarget.style.color = 'var(--text-primary)'
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-              e.currentTarget.style.color = '#B8B8B8'
+              e.currentTarget.style.color = 'var(--text-secondary)'
             }}
           >
             <EyeOutlined style={{ fontSize: 12 }} />
@@ -224,18 +223,18 @@ export default function DevicePopup({
               borderRadius: 6,
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.04)',
-              color: '#B8B8B8',
+              color: 'var(--text-secondary)',
               fontSize: 12,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-              e.currentTarget.style.color = '#F2F2F2'
+              e.currentTarget.style.color = 'var(--text-primary)'
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-              e.currentTarget.style.color = '#B8B8B8'
+              e.currentTarget.style.color = 'var(--text-secondary)'
             }}
           >
             <HistoryOutlined style={{ fontSize: 12 }} />

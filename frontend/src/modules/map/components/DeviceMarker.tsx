@@ -6,11 +6,11 @@ import type { MapDataPoint } from '@/shared/types/locations'
 function getMarkerColor(status: string): string {
   switch (status) {
     case 'WORKING':
-      return '#5F8F6B'
+      return 'var(--status-working)'
     case 'NOT_WORKING':
-      return '#B68A3C'
+      return 'var(--status-not-working)'
     case 'FAULTY':
-      return '#9B3E3E'
+      return 'var(--status-faulty)'
     default:
       return '#7C7C7C'
   }
@@ -32,7 +32,7 @@ export default function DeviceMarker({
   const icon = useMemo(() => {
     const color = getMarkerColor(point.status)
     const size = isSelected ? 22 : 16
-    const borderColor = isSelected ? '#F2F2F2' : 'rgba(255,255,255,0.3)'
+    const borderColor = isSelected ? 'var(--text-primary)' : 'rgba(255,255,255,0.3)'
     const borderWidth = isSelected ? 3 : 2
     const glowSpread = isSelected ? 24 : 16
 

@@ -18,6 +18,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # Explicit: the Dockerfile's last stage is `production`, so without this
+      # the dev stack would silently build the static image instead.
+      target: dev
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -139,3 +142,12 @@ volumes:
 networks:
   navdashboard:
     driver: bridge
+    driver_opts:
+      # Pin the host-side interface name. By default Docker generates
+      # br-<hash-of-network-id>, which changes every time the network is
+      # recreated — and the host firewall allows container→host traffic per
+      # *interface name*, so a regenerated name silently breaks the backend's
+      # access to the host's Ollama on 11434 ([Errno 113] No route to host).
+      # With a fixed name, the matching firewall rule only has to be written
+      # once and survives `compose down`/`up`.
+      com.docker.network.bridge.name: br-navdash

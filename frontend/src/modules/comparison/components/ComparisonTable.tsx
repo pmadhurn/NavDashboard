@@ -26,7 +26,7 @@ const FieldRow: React.FC<{ field: ComparisonField }> = ({ field }) => (
         alignItems: 'center',
         justifyContent: 'center',
         minWidth: 140,
-        color: '#7A7A7A',
+        color: 'var(--text-muted)',
         fontSize: 12,
         fontWeight: 600,
         textAlign: 'center',
@@ -54,7 +54,7 @@ const FieldsSection: React.FC<{
           padding: '10px 14px',
           background: 'rgba(255,255,255,0.02)',
           borderBottom: '1px solid rgba(255,255,255,0.04)',
-          color: '#B8B8B8',
+          color: 'var(--text-secondary)',
           fontSize: 13,
           fontWeight: 600,
           textTransform: 'uppercase',
@@ -79,14 +79,14 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ result }) => {
           display: 'grid',
           gridTemplateColumns: '1fr auto 1fr',
           gap: 0,
-          background: '#151515',
+          background: 'var(--table-header)',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}
       >
         <div
           style={{
             padding: '14px',
-            color: '#F2F2F2',
+            color: 'var(--text-primary)',
             fontWeight: 700,
             fontSize: 14,
             textAlign: 'center',
@@ -97,7 +97,7 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ result }) => {
         <div
           style={{
             padding: '14px',
-            color: '#7A7A7A',
+            color: 'var(--text-muted)',
             fontWeight: 600,
             fontSize: 12,
             textAlign: 'center',
@@ -114,7 +114,7 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ result }) => {
         <div
           style={{
             padding: '14px',
-            color: '#F2F2F2',
+            color: 'var(--text-primary)',
             fontWeight: 700,
             fontSize: 14,
             textAlign: 'center',
@@ -142,7 +142,7 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ result }) => {
       <div
         style={{
           padding: '14px',
-          background: '#151515',
+          background: 'var(--table-header)',
           borderTop: '1px solid rgba(255,255,255,0.06)',
           display: 'flex',
           justifyContent: 'center',
@@ -160,10 +160,10 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ result }) => {
               background: '#4F7A63',
             }}
           />
-          <span style={{ color: '#F2F2F2', fontWeight: 600 }}>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
             {result.match_count}
           </span>
-          <span style={{ color: '#7A7A7A' }}>matches</span>
+          <span style={{ color: 'var(--text-muted)' }}>matches</span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span
@@ -175,10 +175,10 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ result }) => {
               background: '#8A5C3C',
             }}
           />
-          <span style={{ color: '#F2F2F2', fontWeight: 600 }}>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
             {result.diff_count}
           </span>
-          <span style={{ color: '#7A7A7A' }}>differences</span>
+          <span style={{ color: 'var(--text-muted)' }}>differences</span>
         </span>
       </div>
     </GlassCard>

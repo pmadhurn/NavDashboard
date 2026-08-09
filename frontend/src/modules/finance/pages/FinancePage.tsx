@@ -37,10 +37,10 @@ import ExportModal from '../components/ExportModal';
 const CATEGORIES = EXPENSE_CATEGORIES;
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: '#7A7A7A',
-  SUBMITTED: '#B68A3C',
-  PAID: '#5F8F6B',
-  REJECTED: '#9B3E3E',
+  DRAFT: 'var(--text-muted)',
+  SUBMITTED: 'var(--status-not-working)',
+  PAID: 'var(--status-working)',
+  REJECTED: 'var(--status-faulty)',
 };
 
 function SummaryCards() {
@@ -68,10 +68,10 @@ function SummaryCards() {
     >
       {cards.map((card) => (
         <GlassCard key={card.label} padding="sm">
-          <div style={{ color: '#7A7A7A', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
             {card.label}
           </div>
-          <div style={{ color: '#F2F2F2', fontSize: 17, fontWeight: 700, marginTop: 4 }}>
+          <div style={{ color: 'var(--text-primary)', fontSize: 17, fontWeight: 700, marginTop: 4 }}>
             {card.value}
           </div>
         </GlassCard>
@@ -157,7 +157,7 @@ export default function FinancePage() {
       dataIndex: 'expense_date',
       key: 'date',
       render: (value: string) => (
-        <span style={{ color: '#B8B8B8', fontSize: 12 }}>{dayjs(value).format('DD MMM YYYY')}</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{dayjs(value).format('DD MMM YYYY')}</span>
       ),
     },
     {
@@ -166,9 +166,9 @@ export default function FinancePage() {
       key: 'title',
       render: (value: string, record: Expense) => (
         <div>
-          <span style={{ color: '#F2F2F2' }}>{value}</span>
+          <span style={{ color: 'var(--text-primary)' }}>{value}</span>
           {record.members.length > 0 && (
-            <div style={{ color: '#5A5A5A', fontSize: 11 }}>
+            <div style={{ color: 'var(--chart4)', fontSize: 11 }}>
               {record.members.map((m) => m.person.full_name).join(', ')}
             </div>
           )}
@@ -180,7 +180,7 @@ export default function FinancePage() {
       dataIndex: 'category',
       key: 'category',
       className: 'hide-on-mobile',
-      render: (value: string | null) => <span style={{ color: '#B8B8B8' }}>{value ?? '—'}</span>,
+      render: (value: string | null) => <span style={{ color: 'var(--text-secondary)' }}>{value ?? '—'}</span>,
     },
     {
       title: 'Amount',
@@ -201,7 +201,7 @@ export default function FinancePage() {
           style={{
             fontSize: 10,
             fontWeight: 700,
-            color: STATUS_COLORS[value] ?? '#7A7A7A',
+            color: STATUS_COLORS[value] ?? 'var(--text-muted)',
             background: `${STATUS_COLORS[value] ?? '#7A7A7A'}22`,
             padding: '2px 8px',
             borderRadius: 8,
@@ -305,16 +305,16 @@ export default function FinancePage() {
         .dl-select .ant-select-selector {
           background: rgba(255,255,255,0.03) !important;
           border: 1px solid rgba(255,255,255,0.08) !important;
-          color: #F2F2F2 !important;
+          color: var(--text-primary) !important;
         }
-        .dl-select .ant-select-selection-placeholder { color: #5A5A5A !important; }
-        .dl-select .ant-select-selection-item { color: #F2F2F2 !important; }
+        .dl-select .ant-select-selection-placeholder { color: var(--chart4) !important; }
+        .dl-select .ant-select-selection-item { color: var(--text-primary) !important; }
         .fin-date .ant-picker {
           background: rgba(255,255,255,0.05) !important;
-          border: 1px solid #2A2A2A !important;
+          border: 1px solid var(--input-border) !important;
           width: 100%;
         }
-        .fin-date .ant-picker-input > input { color: #F2F2F2 !important; }
+        .fin-date .ant-picker-input > input { color: var(--text-primary) !important; }
       `}</style>
 
       <DataTable<Expense>
@@ -356,13 +356,13 @@ export default function FinancePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ flex: 2, minWidth: 160 }}>
-              <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                 What was it for?
               </label>
               <GlassInput value={title} onChange={setTitle} placeholder="e.g. Site visit taxi" />
             </div>
             <div style={{ flex: 1, minWidth: 110 }}>
-              <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Amount (₹)
               </label>
               <GlassInput type="number" value={amount} onChange={setAmount} placeholder="0" />
@@ -371,13 +371,13 @@ export default function FinancePage() {
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div className="fin-date" style={{ flex: 1, minWidth: 140 }}>
-              <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Date
               </label>
               <DatePicker value={date} onChange={setDate} format="DD MMM YYYY" />
             </div>
             <div style={{ flex: 1, minWidth: 140 }}>
-              <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Category
               </label>
               <Select
@@ -393,7 +393,7 @@ export default function FinancePage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Project (optional)
             </label>
             <Select
@@ -410,7 +410,7 @@ export default function FinancePage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Who was included? (optional)
             </label>
             <Select
@@ -426,7 +426,7 @@ export default function FinancePage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Bills & receipts (optional)
             </label>
             <div
@@ -436,7 +436,7 @@ export default function FinancePage() {
                 borderRadius: 10,
                 padding: '12px 14px',
                 cursor: 'pointer',
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 fontSize: 12,
                 display: 'flex',
                 alignItems: 'center',
@@ -458,7 +458,7 @@ export default function FinancePage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Notes (optional)
             </label>
             <GlassInput value={notes} onChange={setNotes} placeholder="Anything else" />

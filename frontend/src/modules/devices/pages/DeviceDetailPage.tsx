@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Tag, Table, Select, Input, message } from 'antd'
 import { EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons'
@@ -37,7 +37,7 @@ export default function DeviceDetailPage() {
   const [statusReason, setStatusReason] = useState('')
 
   if (isLoading) return <LoadingSpinner text="Loading device..." />
-  if (!device) return <div style={{ color: '#B8B8B8', padding: 40 }}>Device not found</div>
+  if (!device) return <div style={{ color: 'var(--text-secondary)', padding: 40 }}>Device not found</div>
 
   const confirmDelete = async () => {
     try {
@@ -78,7 +78,7 @@ export default function DeviceDetailPage() {
       dataIndex: 'changed_at',
       key: 'changed_at',
       render: (val: string) => (
-        <span style={{ color: '#B8B8B8' }}>{formatDateTime(val)}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{formatDateTime(val)}</span>
       ),
     },
     {
@@ -95,7 +95,7 @@ export default function DeviceDetailPage() {
       dataIndex: 'reason',
       key: 'reason',
       render: (val: string | null) => (
-        <span style={{ color: '#B8B8B8' }}>{val || '—'}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{val || '—'}</span>
       ),
     },
   ]
@@ -134,7 +134,7 @@ export default function DeviceDetailPage() {
             <GlassButton
               icon={<DeleteOutlined />}
               onClick={() => setDeleteOpen(true)}
-              style={{ borderColor: '#9B3E3E', color: '#9B3E3E' }}
+              style={{ borderColor: 'var(--status-faulty)', color: 'var(--status-faulty)' }}
             >
               Delete
             </GlassButton>
@@ -144,7 +144,7 @@ export default function DeviceDetailPage() {
 
       <GlassCard style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 28, fontWeight: 700, color: '#F2F2F2' }}>
+          <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)' }}>
             {device.serial_number}
           </span>
           <StatusBadge status={device.status} />
@@ -167,7 +167,7 @@ export default function DeviceDetailPage() {
               <div style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>
                 {item.label}
               </div>
-              <div style={{ color: '#F2F2F2', fontSize: 14 }}>{item.value}</div>
+              <div style={{ color: 'var(--text-primary)', fontSize: 14 }}>{item.value}</div>
             </div>
           ))}
         </div>
@@ -187,7 +187,7 @@ export default function DeviceDetailPage() {
                 <div style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>
                   {key}
                 </div>
-                <div style={{ color: '#F2F2F2', fontSize: 14 }}>
+                <div style={{ color: 'var(--text-primary)', fontSize: 14 }}>
                   {String(value)}
                 </div>
               </div>
@@ -215,7 +215,7 @@ export default function DeviceDetailPage() {
         message={`Are you sure you want to delete "${device.serial_number}"?`}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteOpen(false)}
-        confirmLoading={deleteDevice.isPending}
+        loading={deleteDevice.isPending}
       />
 
       <GlassModal
@@ -226,7 +226,7 @@ export default function DeviceDetailPage() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <GlassButton onClick={() => setStatusModalOpen(false)}>Cancel</GlassButton>
             <GlassButton
-              type="primary"
+              variant="primary"
               onClick={handleStatusChange}
               loading={changeStatus.isPending}
             >
@@ -237,7 +237,7 @@ export default function DeviceDetailPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <div style={{ color: '#B8B8B8', fontSize: 14, marginBottom: 8 }}>New Status</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 8 }}>New Status</div>
             <Select
               value={newStatus}
               onChange={(val) => setNewStatus(val)}
@@ -250,7 +250,7 @@ export default function DeviceDetailPage() {
             />
           </div>
           <div>
-            <div style={{ color: '#B8B8B8', fontSize: 14, marginBottom: 8 }}>Reason (optional)</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 8 }}>Reason (optional)</div>
             <Input.TextArea
               value={statusReason}
               onChange={(e) => setStatusReason(e.target.value)}
@@ -259,7 +259,7 @@ export default function DeviceDetailPage() {
               style={{
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                color: '#F2F2F2',
+                color: 'var(--text-primary)',
                 borderRadius: 8,
               }}
             />

@@ -51,6 +51,10 @@ class IngestStatusResponse(BaseModel):
     last_sync: datetime | None = None
     ollama_available: bool
     ollama_models: list[str] = []
+    # Which of ollama_models the assistant actually uses. Without these the UI
+    # could only guess, and it guessed ollama_models[0] — the embedding model.
+    chat_model: str = ""
+    embedding_model: str = ""
     embedding_model_available: bool
     chat_model_available: bool
 

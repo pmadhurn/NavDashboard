@@ -56,7 +56,7 @@ const WIDGETS: Widget[] = [
     value: (s) => String(s.active_errors),
     hint: () => 'troubleshooting',
     icon: <ToolOutlined />,
-    accent: '#9B3E3E',
+    accent: 'var(--status-faulty)',
     to: '/troubleshooting',
     section: 'troubleshooting',
     showWhenZero: true,
@@ -67,7 +67,7 @@ const WIDGETS: Widget[] = [
     value: (s) => String(s.projects_active),
     hint: () => 'in progress',
     icon: <ProjectOutlined />,
-    accent: '#B68A3C',
+    accent: 'var(--status-not-working)',
     to: '/projects',
     section: 'projects',
     showWhenZero: true,
@@ -99,7 +99,7 @@ const WIDGETS: Widget[] = [
     value: (s) => `₹${s.my_expenses_month_total.toLocaleString('en-IN')}`,
     hint: (s) => `${s.my_expenses_month_count} expenses`,
     icon: <DollarOutlined />,
-    accent: '#5F8F6B',
+    accent: 'var(--status-working)',
     to: '/finance',
     section: 'finance',
     showWhenZero: true,
@@ -110,7 +110,7 @@ const WIDGETS: Widget[] = [
     value: (s) => String(s.pending_user_approvals),
     hint: () => 'awaiting review',
     icon: <UserAddOutlined />,
-    accent: '#6F7A8C',
+    accent: 'var(--role-technician)',
     to: '/settings',
     section: 'admin',
   },
@@ -119,14 +119,16 @@ const WIDGETS: Widget[] = [
 function KpiCard({ w, summary }: { w: Widget; summary: HomeSummary }) {
   const navigate = useNavigate()
   return (
-    <div onClick={() => navigate(w.to)} style={{ cursor: 'pointer' }}>
-      <GlassCard padding="md">
+    // height: 100% so a label that wraps to two lines doesn't leave its
+    // neighbours short — every tile in the row matches the tallest.
+    <div onClick={() => navigate(w.to)} style={{ cursor: 'pointer', height: '100%' }}>
+      <GlassCard padding="md" fullHeight>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ color: '#7A7A7A', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.6 }}>
               {w.label}
             </div>
-            <div style={{ color: '#F2F2F2', fontSize: 26, fontWeight: 700, marginTop: 6 }}>
+            <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 700, marginTop: 6 }}>
               {w.value(summary)}
             </div>
             <div style={{ color: '#6A6A6A', fontSize: 12, marginTop: 2 }}>{w.hint(summary)}</div>
@@ -185,8 +187,8 @@ export default function DashboardPage() {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ color: '#F2F2F2', fontSize: 24, fontWeight: 700, margin: 0 }}>{greeting}</h1>
-        <p style={{ color: '#7A7A7A', fontSize: 13, marginTop: 4 }}>
+        <h1 style={{ color: 'var(--text-primary)', fontSize: 24, fontWeight: 700, margin: 0 }}>{greeting}</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
           Here's what's happening across NavOS today.
         </p>
       </div>
@@ -196,9 +198,13 @@ export default function DashboardPage() {
         <div
           style={{
             display: 'grid',
+            // auto-fit (not auto-fill) so a filtered-down set of widgets
+            // stretches instead of leaving empty tracks; 200px rather than
+            // 220px so the full set of five fits on one desktop row instead
+            // of orphaning the fifth card on a row of its own.
             gridTemplateColumns: isMobile
-              ? 'repeat(auto-fill, minmax(150px, 1fr))'
-              : 'repeat(auto-fill, minmax(220px, 1fr))',
+              ? 'repeat(auto-fit, minmax(150px, 1fr))'
+              : 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: 14,
             marginBottom: 28,
           }}
@@ -214,7 +220,7 @@ export default function DashboardPage() {
         <>
           <div
             style={{
-              color: '#7A7A7A',
+              color: 'var(--text-muted)',
               fontSize: 12,
               textTransform: 'uppercase',
               letterSpacing: 0.8,

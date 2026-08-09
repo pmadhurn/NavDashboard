@@ -87,13 +87,13 @@ export default function AssetReportsPanel({ reportType }: Props) {
         }}
       >
         <div style={{ flex: 1, minWidth: 160 }}>
-          <div style={{ color: '#F2F2F2', fontSize: 13, fontWeight: 600 }}>
+          <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>
             {report.title}
             {report.quantity > 1 && (
               <span style={{ color: '#8BC34A', marginLeft: 8 }}>×{report.quantity}</span>
             )}
           </div>
-          <div style={{ color: '#7A7A7A', fontSize: 12 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
             {report.asset && `${report.asset.asset_code} · `}
             {report.details || (isDamaged ? 'Damaged item' : 'Requested item')}
           </div>
@@ -131,7 +131,7 @@ export default function AssetReportsPanel({ reportType }: Props) {
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ fontSize: 13, color: '#7A7A7A' }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {openReports.length} open
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -162,7 +162,7 @@ export default function AssetReportsPanel({ reportType }: Props) {
           {openReports.map(renderReport)}
           {resolvedReports.length > 0 && (
             <>
-              <div style={{ fontSize: 12, color: '#5A5A5A', marginTop: 8 }}>Resolved</div>
+              <div style={{ fontSize: 12, color: 'var(--chart4)', marginTop: 8 }}>Resolved</div>
               {resolvedReports.slice(0, 10).map(renderReport)}
             </>
           )}
@@ -191,7 +191,7 @@ export default function AssetReportsPanel({ reportType }: Props) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               {isDamaged ? 'What is damaged?' : 'What is needed?'}
             </label>
             <GlassInput
@@ -202,7 +202,7 @@ export default function AssetReportsPanel({ reportType }: Props) {
           </div>
           {isDamaged && (
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Link to asset (optional)
               </label>
               <Select
@@ -223,13 +223,13 @@ export default function AssetReportsPanel({ reportType }: Props) {
             </div>
           )}
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Quantity
             </label>
             <GlassInput type="number" value={quantity} onChange={setQuantity} placeholder="1" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Details (optional)
             </label>
             <GlassInput value={details} onChange={setDetails} placeholder="Anything else" />

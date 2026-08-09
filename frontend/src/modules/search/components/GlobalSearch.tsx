@@ -13,11 +13,11 @@ import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useSearchSuggestions, SearchSuggestion } from '../hooks/useSearch';
 
 const ENTITY_ICONS: Record<string, React.ReactNode> = {
-  device: <ApiOutlined style={{ color: '#5F8F6B' }} />,
-  couple: <LinkOutlined style={{ color: '#B68A3C' }} />,
-  pair: <SwapOutlined style={{ color: '#7A7A7A' }} />,
-  personnel: <UserOutlined style={{ color: '#5F8F6B' }} />,
-  error: <WarningOutlined style={{ color: '#9B3E3E' }} />,
+  device: <ApiOutlined style={{ color: 'var(--status-working)' }} />,
+  couple: <LinkOutlined style={{ color: 'var(--status-not-working)' }} />,
+  pair: <SwapOutlined style={{ color: 'var(--text-muted)' }} />,
+  personnel: <UserOutlined style={{ color: 'var(--status-working)' }} />,
+  error: <WarningOutlined style={{ color: 'var(--status-faulty)' }} />,
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -84,7 +84,7 @@ const GlobalSearch: React.FC = () => {
       <Input
         size="middle"
         placeholder="Search..."
-        prefix={<SearchOutlined style={{ color: '#7A7A7A' }} />}
+        prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -101,7 +101,7 @@ const GlobalSearch: React.FC = () => {
         style={{
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.06)',
-          color: '#F2F2F2',
+          color: 'var(--text-primary)',
           borderRadius: 8,
         }}
       />
@@ -149,13 +149,13 @@ const GlobalSearch: React.FC = () => {
             >
               <span style={{ fontSize: 16 }}>
                 {ENTITY_ICONS[suggestion.entity_type] || (
-                  <SearchOutlined style={{ color: '#7A7A7A' }} />
+                  <SearchOutlined style={{ color: 'var(--text-muted)' }} />
                 )}
               </span>
               <span
                 style={{
                   flex: 1,
-                  color: '#F2F2F2',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -166,7 +166,7 @@ const GlobalSearch: React.FC = () => {
               </span>
               <span
                 style={{
-                  color: '#7A7A7A',
+                  color: 'var(--text-muted)',
                   fontSize: 11,
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',

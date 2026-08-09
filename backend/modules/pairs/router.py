@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/", response_model=PaginatedResponse[PairResponse])
 async def list_pairs(
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    size: int = Query(20, ge=1, le=500),
     status: str | None = Query(None),
     name__contains: str | None = Query(None),
     db: AsyncSession = Depends(get_db),

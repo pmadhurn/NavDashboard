@@ -123,19 +123,19 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       <GlassCard>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={24} md={8}>
-            <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 6 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>
               Entity Types
             </div>
             <Checkbox.Group
               options={ENTITY_TYPES}
               value={entityTypes}
               onChange={(vals) => setEntityTypes(vals as string[])}
-              style={{ color: '#B8B8B8' }}
+              style={{ color: 'var(--text-secondary)' }}
             />
           </Col>
 
           <Col xs={24} sm={12} md={4}>
-            <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 6 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>
               Status
             </div>
             <Select
@@ -150,7 +150,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
           {showDeviceType && (
             <Col xs={24} sm={12} md={4}>
-              <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 6 }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>
                 Device Type
               </div>
               <Select
@@ -166,7 +166,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
           {showSeverity && (
             <Col xs={24} sm={12} md={4}>
-              <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 6 }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>
                 Severity
               </div>
               <Select
@@ -181,7 +181,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           )}
 
           <Col xs={24} sm={12} md={6}>
-            <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 6 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>
               Date Range
             </div>
             <RangePicker
@@ -212,7 +212,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   style={{
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#B8B8B8',
+                    color: 'var(--text-secondary)',
                     borderRadius: 6,
                   }}
                 >

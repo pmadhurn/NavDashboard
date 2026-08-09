@@ -61,7 +61,7 @@ export default function AssetFormModal({ open, onClose }: Props) {
   const labelStyle: React.CSSProperties = {
     display: 'block',
     fontSize: 12,
-    color: '#7A7A7A',
+    color: 'var(--text-muted)',
     marginBottom: 6,
   };
 
@@ -115,7 +115,7 @@ export default function AssetFormModal({ open, onClose }: Props) {
             }}
             notFoundContent={
               newCategory ? (
-                <div style={{ padding: 8, fontSize: 12, color: '#B8B8B8' }}>
+                <div style={{ padding: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
                   New category "{newCategory}" will be created
                 </div>
               ) : null
@@ -125,15 +125,15 @@ export default function AssetFormModal({ open, onClose }: Props) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ color: '#E6E6E6', fontSize: 13 }}>Bulk item</div>
-            <div style={{ color: '#7A7A7A', fontSize: 11 }}>
+            <div style={{ color: 'var(--primary)', fontSize: 13 }}>Bulk item</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
               Counted by quantity (cables, connectors) instead of one-by-one
             </div>
           </div>
           <Switch
             checked={isBulk}
             onChange={setIsBulk}
-            style={{ background: isBulk ? '#5F8F6B' : '#4A4A4A' }}
+            style={{ background: isBulk ? 'var(--status-working)' : '#4A4A4A' }}
           />
         </div>
 
@@ -155,7 +155,7 @@ export default function AssetFormModal({ open, onClose }: Props) {
 
         <div
           onClick={() => setShowMore(!showMore)}
-          style={{ fontSize: 12, color: '#7A7A7A', cursor: 'pointer', userSelect: 'none' }}
+          style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}
         >
           {showMore ? '▾' : '▸'} More details
         </div>

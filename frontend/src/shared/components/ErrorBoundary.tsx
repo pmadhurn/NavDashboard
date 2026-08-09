@@ -50,14 +50,14 @@ export default class ErrorBoundary extends React.Component<
             padding: 24,
           }}
         >
-          <GlassCard padding="lg" accentColor="#9B3E3E" style={{ maxWidth: 500, width: '100%' }}>
+          <GlassCard padding="lg" accentColor="var(--status-faulty)" style={{ maxWidth: 500, width: '100%' }}>
             <div style={{ textAlign: 'center' }}>
               <WarningOutlined
-                style={{ fontSize: 48, color: '#9B3E3E', marginBottom: 16 }}
+                style={{ fontSize: 48, color: 'var(--status-faulty)', marginBottom: 16 }}
               />
               <h2
                 style={{
-                  color: '#F2F2F2',
+                  color: 'var(--text-primary)',
                   fontSize: 20,
                   fontWeight: 600,
                   marginBottom: 8,
@@ -65,7 +65,7 @@ export default class ErrorBoundary extends React.Component<
               >
                 Something went wrong
               </h2>
-              <p style={{ color: '#B8B8B8', fontSize: 14, marginBottom: 20 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>
                 An unexpected error occurred. Please try again.
               </p>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
@@ -84,7 +84,7 @@ export default class ErrorBoundary extends React.Component<
                     borderRadius: 8,
                     padding: 12,
                     fontSize: 12,
-                    color: '#9B3E3E',
+                    color: 'var(--status-faulty)',
                     fontFamily: 'monospace',
                     wordBreak: 'break-word',
                     maxHeight: 200,
@@ -94,7 +94,7 @@ export default class ErrorBoundary extends React.Component<
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>
                     {this.state.error.message}
                   </div>
-                  <div style={{ color: '#7A7A7A' }}>
+                  <div style={{ color: 'var(--text-muted)' }}>
                     {this.state.error.stack}
                   </div>
                 </div>

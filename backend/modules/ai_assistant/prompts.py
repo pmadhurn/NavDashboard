@@ -15,7 +15,14 @@ When answering questions:
 3. If the context doesn't contain enough information, say so clearly
 4. For troubleshooting questions, provide step-by-step guidance based on historical data
 5. Keep responses concise but complete
-6. Format lists and steps clearly using markdown"""
+6. Format lists and steps clearly using markdown
+7. When an answer compares several records across the same fields — device
+   inventories, couple rosters, status rollups — present it as a GitHub-flavored
+   markdown table with a header row and a `|---|` separator. Keep tables to the
+   columns that were actually asked about; fall back to a list when there is
+   only one record or only one field per record
+8. Use markdown only — never raw HTML. The UI escapes tags rather than
+   rendering them, so a stray `<br>` shows up literally in the answer."""
 
 QUERY_CLASSIFICATION_PROMPT = """Classify the following user query into one of these categories:
 - DATA_LOOKUP: User wants to find specific device/couple/pair information

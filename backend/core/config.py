@@ -28,8 +28,22 @@ class Settings(BaseSettings):
     APP_NAME: str = "NavDashboard"
     API_V1_PREFIX: str = "/api/v1"
 
+    # Comma-separated list of allowed browser origins. `*` is fine for local
+    # development, but it is NOT valid alongside credentialed requests — see
+    # cors_origins below. Set this to the real origin in production, e.g.
+    # CORS_ORIGINS=https://navdashboard.com,https://www.navdashboard.com
+    CORS_ORIGINS: str = "*"
+
     # Google sign-in
     GOOGLE_CLIENT_ID: str = ""
+
+    # Clerk — identity only. Blank disables /auth/clerk entirely.
+    # CLERK_ISSUER looks like https://<slug>.clerk.accounts.dev
+    CLERK_ISSUER: str = ""
+    CLERK_JWKS_URL: str = ""
+    CLERK_PUBLISHABLE_KEY: str = ""
+    # Optional. Only needed when the session token has no email claim.
+    CLERK_SECRET_KEY: str = ""
 
     # Ollama / AI Assistant
     OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
@@ -52,6 +66,19 @@ class Settings(BaseSettings):
             f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
             f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def cors_allow_credentials(self) -> bool:
+        """Browsers reject `Access-Control-Allow-Origin: *` together with
+        credentials, so the wildcard and credentials can never both apply.
+        Auth currently rides in an Authorization header rather than a cookie,
+        which is why the old hardcoded `["*"] + allow_credentials=True` worked
+        at all — it would break the moment anything cookie-based was added."""
+        return "*" not in self.cors_origins
 
 
 settings = Settings()

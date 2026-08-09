@@ -10,7 +10,12 @@ T = TypeVar("T", bound=BaseModel)
 
 class PaginationParams(BaseModel):
     page: int = Field(default=1, ge=1)
-    size: int = Field(default=20, ge=1, le=100)
+    # 500, not 100: several pickers (PersonPicker, the couple/pair selectors on
+    # the project and location-history pages) legitimately fetch a whole list
+    # in one call with size=200. Against the old cap those 422'd, and once the
+    # route-level cap alone was raised they 500'd here instead — this model is
+    # the real limit, so it has to move with them.
+    size: int = Field(default=20, ge=1, le=500)
 
 
 class PaginatedResponse(BaseModel, Generic[T]):

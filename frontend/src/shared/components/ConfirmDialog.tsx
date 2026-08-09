@@ -1,4 +1,3 @@
-import React from 'react';
 import GlassModal from './GlassModal';
 import GlassButton from './GlassButton';
 
@@ -46,7 +45,7 @@ export default function ConfirmDialog({
         </div>
       }
     >
-      <p style={{ color: '#B8B8B8', fontSize: 14, margin: 0 }}>{message}</p>
+      <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: 0 }}>{message}</p>
     </GlassModal>
   );
 }

@@ -36,9 +36,9 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
   };
 
-  const borderColor = disabled ? '#1A1A1A' : isFocused ? '#4A4A4A' : '#2A2A2A';
-  const sendButtonBg = disabled || !value.trim() ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)';
-  const sendButtonColor = disabled || !value.trim() ? '#4A4A4A' : '#C9C9C9';
+  const borderColor = disabled ? 'var(--sidebar-hover)' : isFocused ? 'var(--input-focus)' : 'var(--input-border)';
+  const sendButtonBg = disabled || !value.trim() ? 'var(--overlay-subtle)' : 'var(--overlay-medium)';
+  const sendButtonColor = disabled || !value.trim() ? 'var(--text-muted)' : 'var(--input-focus)';
 
   return (
     <div
@@ -47,8 +47,10 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         alignItems: 'flex-end',
         gap: 12,
         padding: '14px 16px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        background: 'rgba(255,255,255,0.01)',
+        borderTop: '1px solid var(--border)',
+        /* The bar itself stays flush with the message list; only the textarea
+           inside it gets a tint, or the two merge into one slab. */
+        background: 'transparent',
       }}
     >
       <textarea
@@ -64,11 +66,11 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         style={{
           flex: 1,
           resize: 'none',
-          background: 'rgba(255,255,255,0.03)',
+          background: 'var(--overlay-subtle)',
           border: `1px solid ${borderColor}`,
           borderRadius: 12,
           padding: '10px 14px',
-          color: '#F2F2F2',
+          color: 'var(--text-primary)',
           fontSize: 14,
           lineHeight: 1.5,
           outline: 'none',
@@ -98,12 +100,12 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         }}
         onMouseEnter={(e) => {
           if (!disabled && value.trim()) {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+            e.currentTarget.style.background = 'var(--overlay-strong)';
           }
         }}
         onMouseLeave={(e) => {
           if (!disabled && value.trim()) {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+            e.currentTarget.style.background = 'var(--overlay-medium)';
           }
         }}
       >

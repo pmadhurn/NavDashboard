@@ -64,7 +64,7 @@ function ItemCard({
         <ItemIcon item={item} />
         <div style={{ flex: 1, minWidth: 160 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ color: '#F2F2F2', fontSize: 14, fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>
               {item.title}
             </span>
             {latest?.version_label && (
@@ -94,7 +94,7 @@ function ItemCard({
               </span>
             )}
           </div>
-          <div style={{ color: '#7A7A7A', fontSize: 12, marginTop: 2 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>
             {item.description || latest?.original_filename}
             {latest && ` · ${formatFileSize(latest.file_size)}`}
             {latest && latest.download_count > 0 && ` · ${latest.download_count} downloads`}
@@ -155,8 +155,8 @@ function ItemCard({
                 flexWrap: 'wrap',
               }}
             >
-              <div style={{ color: '#B8B8B8' }}>
-                <span style={{ color: '#E6E6E6', fontWeight: 600 }}>
+              <div style={{ color: 'var(--text-secondary)' }}>
+                <span style={{ color: 'var(--primary)', fontWeight: 600 }}>
                   {version.version_label || version.original_filename}
                 </span>
                 {' · '}
@@ -230,7 +230,7 @@ export default function DownloadsPage() {
           value={search}
           onChange={setSearch}
           placeholder="Search downloads..."
-          prefix={<SearchOutlined style={{ color: '#7A7A7A' }} />}
+          prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
         />
       </div>
 
@@ -254,7 +254,7 @@ export default function DownloadsPage() {
                 style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#7A7A7A',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: 0.8,
                   marginBottom: 10,

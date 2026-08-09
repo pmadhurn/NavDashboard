@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 interface GlassCardProps {
   children: React.ReactNode;
+  title?: React.ReactNode;
   className?: string;
   hoverable?: boolean;
   padding?: 'sm' | 'md' | 'lg';
@@ -19,6 +20,7 @@ const paddingMap = {
 
 export default function GlassCard({
   children,
+  title,
   className = '',
   hoverable = false,
   padding = 'md',
@@ -58,6 +60,20 @@ export default function GlassCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {title && (
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            color: 'var(--text-secondary)',
+            marginBottom: 16,
+          }}
+        >
+          {title}
+        </div>
+      )}
       {children}
     </div>
   );

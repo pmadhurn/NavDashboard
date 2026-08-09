@@ -96,7 +96,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
       <GlassCard>
         <Row gutter={[16, 12]} align="middle">
           <Col xs={24} sm={8} md={6}>
-            <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 4 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4 }}>
               Action
             </div>
             <Select
@@ -109,7 +109,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
             />
           </Col>
           <Col xs={24} sm={8} md={6}>
-            <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 4 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4 }}>
               Entity Type
             </div>
             <Select
@@ -122,7 +122,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
             />
           </Col>
           <Col xs={24} sm={8} md={8}>
-            <div style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 4 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4 }}>
               Date Range
             </div>
             <RangePicker style={{ width: '100%' }} onChange={handleDateRangeChange} />
@@ -134,7 +134,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
             {activeFilters.length > 0 && (
               <span
                 style={{
-                  color: '#5F8F6B',
+                  color: 'var(--status-working)',
                   cursor: 'pointer',
                   fontSize: 13,
                 }}
@@ -157,7 +157,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
                   style={{
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#B8B8B8',
+                    color: 'var(--text-secondary)',
                     borderRadius: 6,
                   }}
                 >

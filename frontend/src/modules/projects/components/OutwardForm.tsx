@@ -160,7 +160,7 @@ export default function OutwardForm({ projectId, open, onClose }: Props) {
                   options={assetOptions}
                   notFoundContent={
                     line.name ? (
-                      <div style={{ padding: 8, fontSize: 12, color: '#B8B8B8' }}>
+                      <div style={{ padding: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
                         "{line.name}" will be created as a new item
                       </div>
                     ) : null
@@ -170,7 +170,7 @@ export default function OutwardForm({ projectId, open, onClose }: Props) {
                   <div
                     style={{
                       fontSize: 11,
-                      color: conflict.conflict === 'INSUFFICIENT' ? '#B68A3C' : '#6F8CB6',
+                      color: conflict.conflict === 'INSUFFICIENT' ? 'var(--status-not-working)' : '#6F8CB6',
                       marginTop: 3,
                       display: 'flex',
                       alignItems: 'center',
@@ -218,13 +218,13 @@ export default function OutwardForm({ projectId, open, onClose }: Props) {
 
         <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 160 }}>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 4 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
               Taken by (optional)
             </label>
             <GlassInput value={receivedBy} onChange={setReceivedBy} placeholder="Name" />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 4 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
               Notes (optional)
             </label>
             <GlassInput value={notes} onChange={setNotes} placeholder="Purpose, condition…" />

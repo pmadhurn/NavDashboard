@@ -140,11 +140,11 @@ function TimelineTab({ projectId }: { projectId: string }) {
                 <div style={{ width: 1, flex: 1, background: 'rgba(255,255,255,0.08)' }} />
               </div>
               <div style={{ paddingBottom: 20, minWidth: 0 }}>
-                <div style={{ color: '#E6E6E6', fontSize: 13 }}>{entry.title}</div>
+                <div style={{ color: 'var(--primary)', fontSize: 13 }}>{entry.title}</div>
                 {entry.body && (
-                  <div style={{ color: '#B8B8B8', fontSize: 12, marginTop: 2 }}>{entry.body}</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>{entry.body}</div>
                 )}
-                <div style={{ color: '#5A5A5A', fontSize: 11, marginTop: 4 }}>
+                <div style={{ color: 'var(--chart4)', fontSize: 11, marginTop: 4 }}>
                   {formatDateTime(entry.entry_date)}
                 </div>
               </div>
@@ -186,7 +186,7 @@ function EquipmentTab({ projectId }: { projectId: string }) {
 
   const statusColors: Record<string, string> = {
     WITH_CLIENT: '#8C8468',
-    RETURNED: '#5F8F6B',
+    RETURNED: 'var(--status-working)',
     DAMAGED: '#8C5F5F',
     LOST: '#8C5F5F',
   };
@@ -218,9 +218,9 @@ function EquipmentTab({ projectId }: { projectId: string }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {movements.map((movement) => (
             <GlassCard key={movement.id} padding="sm">
-              <div style={{ color: '#E6E6E6', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+              <div style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
                 {movement.direction === 'OUTWARD' ? '↗ Sent out' : '↙ Received back'}
-                <span style={{ color: '#5A5A5A', fontWeight: 400, marginLeft: 8, fontSize: 11 }}>
+                <span style={{ color: 'var(--chart4)', fontWeight: 400, marginLeft: 8, fontSize: 11 }}>
                   {formatDateTime(movement.movement_date)}
                   {movement.received_by_name && ` · taken by ${movement.received_by_name}`}
                 </span>
@@ -238,7 +238,7 @@ function EquipmentTab({ projectId }: { projectId: string }) {
                       flexWrap: 'wrap',
                     }}
                   >
-                    <span style={{ color: '#B8B8B8' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>
                       <span style={{ color: '#8BC34A', fontFamily: 'monospace' }}>
                         {item.asset.asset_code}
                       </span>{' '}
@@ -307,7 +307,7 @@ function EquipmentTab({ projectId }: { projectId: string }) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Pick assets
             </label>
             <Select
@@ -327,13 +327,13 @@ function EquipmentTab({ projectId }: { projectId: string }) {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Who is taking it? (optional)
             </label>
             <GlassInput value={receivedBy} onChange={setReceivedBy} placeholder="Name" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Notes (optional)
             </label>
             <GlassInput value={notes} onChange={setNotes} placeholder="Condition, purpose..." />
@@ -393,8 +393,8 @@ function TeamTab({ projectId }: { projectId: string }) {
             <GlassCard key={member.id} padding="sm">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div>
-                  <div style={{ color: '#F2F2F2', fontSize: 13 }}>{member.person.full_name}</div>
-                  <div style={{ color: '#7A7A7A', fontSize: 12 }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13 }}>{member.person.full_name}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {member.role_in_project || member.person.role || 'Team member'} · joined{' '}
                     {formatRelativeTime(member.joined_at)}
                   </div>
@@ -436,7 +436,7 @@ function TeamTab({ projectId }: { projectId: string }) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Existing person
             </label>
             <Select
@@ -453,14 +453,14 @@ function TeamTab({ projectId }: { projectId: string }) {
           </div>
           {!personId && (
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Or add someone new
               </label>
               <GlassInput value={newName} onChange={setNewName} placeholder="Full name" />
             </div>
           )}
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Role in project (optional)
             </label>
             <GlassInput value={role} onChange={setRole} placeholder="e.g. Site engineer" />
@@ -551,8 +551,8 @@ function DeployedTab({ projectId }: { projectId: string }) {
             <GlassCard key={d.id} padding="sm">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <div onClick={() => openEntity(d)} style={{ cursor: 'pointer' }}>
-                  <span style={{ color: '#F2F2F2', fontSize: 13 }}>{d.label || d.entity_id}</span>
-                  <span style={{ color: '#5A5A5A', fontSize: 11, marginLeft: 8, textTransform: 'uppercase' }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: 13 }}>{d.label || d.entity_id}</span>
+                  <span style={{ color: 'var(--chart4)', fontSize: 11, marginLeft: 8, textTransform: 'uppercase' }}>
                     {d.entity_type}
                   </span>
                 </div>
@@ -589,7 +589,7 @@ function DeployedTab({ projectId }: { projectId: string }) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>Type</label>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Type</label>
             <Select
               className="dl-select"
               style={{ width: '100%' }}
@@ -607,7 +607,7 @@ function DeployedTab({ projectId }: { projectId: string }) {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Pick {entityType}
             </label>
             <Select
@@ -679,10 +679,10 @@ function PhasesTab({ projectId }: { projectId: string }) {
             <GlassCard key={ph.id} padding="sm">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div>
-                  <div style={{ color: '#F2F2F2', fontSize: 13, fontWeight: 600 }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>
                     {ph.phase_type.replace(/_/g, ' ')}
                   </div>
-                  {ph.note && <div style={{ color: '#7A7A7A', fontSize: 12 }}>{ph.note}</div>}
+                  {ph.note && <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{ph.note}</div>}
                 </div>
                 <StatusBadge status={ph.status} size="sm" />
               </div>
@@ -709,7 +709,7 @@ function PhasesTab({ projectId }: { projectId: string }) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>Phase</label>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Phase</label>
             <Select
               className="dl-select"
               style={{ width: '100%' }}
@@ -719,7 +719,7 @@ function PhasesTab({ projectId }: { projectId: string }) {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Note (optional)
             </label>
             <GlassInput value={note} onChange={setNote} placeholder="e.g. LOS analysis by Piyush" />
@@ -770,7 +770,7 @@ function CloseProjectModal({
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
             Mark departing members (set their leave date)
           </label>
           <Select
@@ -783,7 +783,7 @@ function CloseProjectModal({
             options={active.map((m) => ({ value: m.id, label: m.person.full_name }))}
           />
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#B8B8B8' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
           <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
           Force close even if equipment is still out
         </label>
@@ -858,9 +858,9 @@ export default function ProjectDetailPage() {
         ]}
       />
       <style>{`
-        .ant-tabs-tab { color: #7A7A7A !important; }
-        .ant-tabs-tab-active .ant-tabs-tab-btn { color: #E6E6E6 !important; }
-        .ant-tabs-ink-bar { background: #E6E6E6 !important; }
+        .ant-tabs-tab { color: var(--text-muted) !important; }
+        .ant-tabs-tab-active .ant-tabs-tab-btn { color: var(--primary) !important; }
+        .ant-tabs-ink-bar { background: var(--primary) !important; }
       `}</style>
     </div>
   );

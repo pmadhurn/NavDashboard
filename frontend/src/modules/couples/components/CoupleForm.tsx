@@ -170,7 +170,9 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
   const removeCustomField = (idx: number) => setCustomFields(customFields.filter((_, i) => i !== idx))
   const updateCustomField = (idx: number, field: 'key' | 'value', val: string) => {
     const updated = [...customFields]
-    updated[idx] = { ...updated[idx], [field]: val }
+    const current = updated[idx]
+    if (!current) return
+    updated[idx] = { ...current, [field]: val }
     setCustomFields(updated)
   }
 
@@ -179,7 +181,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
   const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F2F2F2',
+    color: 'var(--text-primary)',
     borderRadius: 8,
   }
 
@@ -201,7 +203,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item
           name="name"
-          label={<span style={{ color: '#B8B8B8' }}>Name</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Name</span>}
           rules={[{ required: true, message: 'Name is required' }]}
         >
           <GlassInput placeholder="e.g. Couple A1" />
@@ -209,14 +211,14 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
 
         <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
           <div>
-            <span style={{ color: '#B8B8B8', fontSize: 14 }}>Has RF</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Has RF</span>
             <div style={{ marginTop: 8 }}>
               <Switch checked={hasRf} onChange={setHasRf} />
             </div>
           </div>
           <Form.Item
             name="status"
-            label={<span style={{ color: '#B8B8B8' }}>Status</span>}
+            label={<span style={{ color: 'var(--text-secondary)' }}>Status</span>}
             style={{ flex: 1 }}
           >
             <Select
@@ -231,7 +233,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
 
         <Form.Item
           name="handling_person_id"
-          label={<span style={{ color: '#B8B8B8' }}>Handling Person</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Handling Person</span>}
         >
           <Select
             placeholder="Select person"
@@ -246,7 +248,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
         </Form.Item>
 
         <div style={{ marginBottom: 16 }}>
-          <span style={{ color: '#B8B8B8', fontSize: 14, display: 'block', marginBottom: 8 }}>Location</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 14, display: 'block', marginBottom: 8 }}>Location</span>
           <LocationPicker
             value={locationValue}
             onChange={setLocationValue}
@@ -259,7 +261,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
 
         {!isEdit && (
           <div style={{ marginBottom: 16 }}>
-            <span style={{ color: '#B8B8B8', fontSize: 14, display: 'block', marginBottom: 8 }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14, display: 'block', marginBottom: 8 }}>
               Assign Devices
             </span>
             <Select
@@ -279,7 +281,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
 
         {!isEdit && (
           <div style={{ marginBottom: 16 }}>
-            <span style={{ color: '#B8B8B8', fontSize: 14, display: 'block', marginBottom: 8 }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14, display: 'block', marginBottom: 8 }}>
               Fitting Materials
             </span>
             <MaterialSelector value={materials} onChange={setMaterials} />
@@ -288,20 +290,20 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
 
         <Form.Item
           name="configuration"
-          label={<span style={{ color: '#B8B8B8' }}>Configuration (JSON)</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Configuration (JSON)</span>}
         >
           <Input.TextArea rows={3} placeholder='{"key": "value"}' style={inputStyle} />
         </Form.Item>
 
         <Form.Item
           name="notes"
-          label={<span style={{ color: '#B8B8B8' }}>Notes</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Notes</span>}
         >
           <Input.TextArea rows={3} placeholder="Optional notes..." style={inputStyle} />
         </Form.Item>
 
         <div style={{ marginBottom: 8 }}>
-          <span style={{ color: '#B8B8B8', fontSize: 14 }}>Custom Fields</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Custom Fields</span>
         </div>
         {customFields.map((cf, idx) => (
           <Space key={idx} style={{ display: 'flex', marginBottom: 8 }} align="start">
@@ -321,7 +323,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
               type="text"
               icon={<MinusCircleOutlined />}
               onClick={() => removeCustomField(idx)}
-              style={{ color: '#9B3E3E' }}
+              style={{ color: 'var(--status-faulty)' }}
             />
           </Space>
         ))}
@@ -329,7 +331,7 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
           type="dashed"
           onClick={addCustomField}
           icon={<PlusOutlined />}
-          style={{ width: '100%', borderColor: 'rgba(255,255,255,0.1)', color: '#B8B8B8', borderRadius: 8 }}
+          style={{ width: '100%', borderColor: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)', borderRadius: 8 }}
         >
           Add Field
         </Button>

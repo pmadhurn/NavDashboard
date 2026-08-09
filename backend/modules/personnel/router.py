@@ -27,7 +27,7 @@ router = APIRouter()
 @router.get("/", response_model=PaginatedResponse[PersonResponse])
 async def list_personnel(
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=100),
+    size: int = Query(50, ge=1, le=500),
     full_name__contains: Optional[str] = Query(None),
     role: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { Polyline, CircleMarker, Tooltip } from 'react-leaflet'
 import type { LocationHistory } from '@/shared/types/locations'
 import { formatDateTime } from '@/shared/utils/formatters'

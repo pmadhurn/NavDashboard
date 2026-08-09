@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { Polyline, Tooltip, Popup } from 'react-leaflet'
 import type { MapDataPoint } from '@/shared/types/locations'
 import type { Pair } from '@/shared/types/pairs'

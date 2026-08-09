@@ -37,6 +37,7 @@ from modules.downloads.router import router as downloads_router
 from modules.assets.router import router as assets_router
 from modules.projects.router import router as projects_router
 from modules.finance.router import router as finance_router
+from modules.seeding.router import router as seeding_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -76,8 +77,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=settings.cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -130,6 +131,7 @@ app.include_router(downloads_router, prefix=settings.API_V1_PREFIX + "/downloads
 app.include_router(assets_router, prefix=settings.API_V1_PREFIX + "/assets", tags=["assets"])
 app.include_router(projects_router, prefix=settings.API_V1_PREFIX + "/projects", tags=["projects"])
 app.include_router(finance_router, prefix=settings.API_V1_PREFIX + "/finance", tags=["finance"])
+app.include_router(seeding_router, prefix=settings.API_V1_PREFIX + "/seeding", tags=["seeding"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])

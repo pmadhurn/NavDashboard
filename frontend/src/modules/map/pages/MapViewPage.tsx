@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUiStore } from '@/shared/stores/uiStore'
 import MainMap from '../components/MainMap'
@@ -69,9 +69,9 @@ export default function MapViewPage() {
   )
 
   const statusLegend = [
-    { label: 'Working', color: '#5F8F6B' },
-    { label: 'Not Working', color: '#B68A3C' },
-    { label: 'Faulty', color: '#9B3E3E' },
+    { label: 'Working', color: 'var(--status-working)' },
+    { label: 'Not Working', color: 'var(--status-not-working)' },
+    { label: 'Faulty', color: 'var(--status-faulty)' },
   ]
 
   return (
@@ -99,7 +99,7 @@ export default function MapViewPage() {
             backdropFilter: 'blur(10px)',
             padding: '12px 24px',
             borderRadius: 10,
-            color: '#B8B8B8',
+            color: 'var(--text-secondary)',
             fontSize: 13,
           }}
         >
@@ -160,7 +160,7 @@ export default function MapViewPage() {
           <div
             style={{
               fontSize: 10,
-              color: '#7A7A7A',
+              color: 'var(--text-muted)',
               textTransform: 'uppercase',
               letterSpacing: 0.5,
               marginBottom: 6,
@@ -188,7 +188,7 @@ export default function MapViewPage() {
                   flexShrink: 0,
                 }}
               />
-              <span style={{ fontSize: 11, color: '#B8B8B8' }}>{item.label}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.label}</span>
             </div>
           ))}
         </div>

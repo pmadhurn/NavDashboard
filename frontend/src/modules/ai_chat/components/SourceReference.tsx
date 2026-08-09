@@ -56,25 +56,25 @@ export default function SourceReference({ source }: SourceReferenceProps) {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 6,
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'var(--overlay-subtle)',
+        border: '1px solid var(--border)',
         borderRadius: 20,
         padding: '4px 10px',
-        color: '#9A9A9A',
+        color: 'var(--text-muted)',
         fontSize: 12,
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         outline: 'none',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-        e.currentTarget.style.color = '#C9C9C9';
+        e.currentTarget.style.background = 'var(--overlay-medium)';
+        e.currentTarget.style.borderColor = 'var(--overlay-strong)';
+        e.currentTarget.style.color = 'var(--input-focus)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-        e.currentTarget.style.color = '#9A9A9A';
+        e.currentTarget.style.background = 'var(--overlay-subtle)';
+        e.currentTarget.style.borderColor = 'var(--border)';
+        e.currentTarget.style.color = 'var(--text-muted)';
       }}
     >
       {iconMap[source.entity_type] || <FileOutlined />}

@@ -246,6 +246,8 @@ async def get_ingest_status(db: AsyncSession) -> IngestStatusResponse:
         last_sync=last_sync,
         ollama_available=available,
         ollama_models=models,
+        chat_model=chat_model,
+        embedding_model=embed_model,
         embedding_model_available=any(embed_model in m for m in models),
         chat_model_available=any(chat_model in m for m in models),
     )

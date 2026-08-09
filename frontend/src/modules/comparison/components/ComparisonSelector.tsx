@@ -66,7 +66,7 @@ const ComparisonSelector: React.FC<ComparisonSelectorProps> = ({
     <GlassCard style={{ marginBottom: 24 }}>
       <div style={{ marginBottom: 16 }}>
         <div
-          style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 8 }}
+          style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}
         >
           Entity Type
         </div>
@@ -87,7 +87,7 @@ const ComparisonSelector: React.FC<ComparisonSelectorProps> = ({
       <Row gutter={[16, 16]} align="middle">
         <Col xs={24} sm={10}>
           <div
-            style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 6 }}
+            style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}
           >
             Entity A
           </div>
@@ -120,13 +120,13 @@ const ComparisonSelector: React.FC<ComparisonSelectorProps> = ({
           }}
         >
           <SwapOutlined
-            style={{ fontSize: 20, color: '#7A7A7A' }}
+            style={{ fontSize: 20, color: 'var(--text-muted)' }}
           />
         </Col>
 
         <Col xs={24} sm={10}>
           <div
-            style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 6 }}
+            style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}
           >
             Entity B
           </div>
@@ -157,8 +157,8 @@ const ComparisonSelector: React.FC<ComparisonSelectorProps> = ({
             background: canCompare
               ? 'rgba(95,143,107,0.2)'
               : undefined,
-            borderColor: canCompare ? '#5F8F6B' : undefined,
-            color: canCompare ? '#5F8F6B' : undefined,
+            borderColor: canCompare ? 'var(--status-working)' : undefined,
+            color: canCompare ? 'var(--status-working)' : undefined,
           }}
         >
           Compare

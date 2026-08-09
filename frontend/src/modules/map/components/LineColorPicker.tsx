@@ -104,8 +104,10 @@ export default function LineColorPicker({
 
       let clientX: number, clientY: number
       if ('touches' in e) {
-        clientX = e.touches[0].clientX
-        clientY = e.touches[0].clientY
+        const touch = e.touches[0]
+        if (!touch) return
+        clientX = touch.clientX
+        clientY = touch.clientY
       } else {
         clientX = e.clientX
         clientY = e.clientY
@@ -185,7 +187,7 @@ export default function LineColorPicker({
         <div>
           <div style={{
             fontSize: 10,
-            color: '#7A7A7A',
+            color: 'var(--text-muted)',
             textTransform: 'uppercase',
             letterSpacing: 0.8,
           }}>
@@ -346,9 +348,10 @@ export default function LineColorPicker({
 /** Convert rgb(...) string to hex */
 function rgbToHex(rgb: string): string {
   const match = rgb.match(/\d+/g)
-  if (!match || match.length < 3) return '#6B7B8D'
-  const r = parseInt(match[0])
-  const g = parseInt(match[1])
-  const b = parseInt(match[2])
+  const [rs, gs, bs] = match ?? []
+  if (rs === undefined || gs === undefined || bs === undefined) return '#6B7B8D'
+  const r = parseInt(rs)
+  const g = parseInt(gs)
+  const b = parseInt(bs)
   return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
 }

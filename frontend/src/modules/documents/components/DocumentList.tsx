@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Tag, Space, message } from 'antd';
 import {
   FilePdfOutlined,
@@ -26,15 +26,15 @@ interface DocumentListProps {
 function getFileIcon(fileType: string) {
   switch (fileType) {
     case 'pdf':
-      return <FilePdfOutlined style={{ fontSize: 28, color: '#9B3E3E' }} />;
+      return <FilePdfOutlined style={{ fontSize: 28, color: 'var(--status-faulty)' }} />;
     case 'image':
-      return <FileImageOutlined style={{ fontSize: 28, color: '#5F8F6B' }} />;
+      return <FileImageOutlined style={{ fontSize: 28, color: 'var(--status-working)' }} />;
     case 'spreadsheet':
-      return <FileExcelOutlined style={{ fontSize: 28, color: '#5F8F6B' }} />;
+      return <FileExcelOutlined style={{ fontSize: 28, color: 'var(--status-working)' }} />;
     case 'document':
       return <FileTextOutlined style={{ fontSize: 28, color: '#6E7E8A' }} />;
     default:
-      return <PaperClipOutlined style={{ fontSize: 28, color: '#7A7A7A' }} />;
+      return <PaperClipOutlined style={{ fontSize: 28, color: 'var(--text-muted)' }} />;
   }
 }
 
@@ -60,10 +60,10 @@ function formatDate(dateStr: string): string {
 
 const entityTypeColors: Record<string, string> = {
   device: '#6E7E8A',
-  couple: '#5F8F6B',
-  pair: '#B68A3C',
-  error: '#9B3E3E',
-  general: '#7A7A7A',
+  couple: 'var(--status-working)',
+  pair: 'var(--status-not-working)',
+  error: 'var(--status-faulty)',
+  general: 'var(--text-muted)',
 };
 
 export default function DocumentList({ documents, loading, onDelete }: DocumentListProps) {
@@ -129,7 +129,7 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                 <div style={{ flex: 1, overflow: 'hidden' }}>
                   <div
                     style={{
-                      color: '#F2F2F2',
+                      color: 'var(--text-primary)',
                       fontWeight: 600,
                       fontSize: 14,
                       whiteSpace: 'nowrap',
@@ -140,12 +140,12 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                   >
                     {doc.original_filename}
                   </div>
-                  <div style={{ color: '#7A7A7A', fontSize: 12, marginTop: 2 }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>
                     {formatFileSize(doc.file_size)} · {formatDate(doc.created_at)}
                   </div>
                   {doc.entity_type && (
                     <Tag
-                      color={entityTypeColors[doc.entity_type] || '#7A7A7A'}
+                      color={entityTypeColors[doc.entity_type] || 'var(--text-muted)'}
                       style={{ marginTop: 6, fontSize: 11 }}
                     >
                       {doc.entity_type}
@@ -154,7 +154,7 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                   {doc.description && (
                     <div
                       style={{
-                        color: '#B8B8B8',
+                        color: 'var(--text-secondary)',
                         fontSize: 12,
                         marginTop: 6,
                         whiteSpace: 'nowrap',
@@ -173,7 +173,7 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                   justifyContent: 'flex-end',
                   gap: 8,
                   marginTop: 12,
-                  borderTop: '1px solid #242424',
+                  borderTop: '1px solid var(--border)',
                   paddingTop: 10,
                 }}
               >
@@ -182,7 +182,7 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                 </GlassButton>
                 <GlassButton
                   onClick={() => setDeleteId(doc.id)}
-                  style={{ padding: '4px 10px', fontSize: 12, color: '#9B3E3E' }}
+                  style={{ padding: '4px 10px', fontSize: 12, color: 'var(--status-faulty)' }}
                 >
                   <DeleteOutlined />
                 </GlassButton>
@@ -194,14 +194,14 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
         <GlassCard style={{ padding: 0, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #242424' }}>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['File', 'Type', 'Size', 'Entity', 'Date', 'Actions'].map((h) => (
                   <th
                     key={h}
                     style={{
                       padding: '10px 12px',
                       textAlign: 'left',
-                      color: '#7A7A7A',
+                      color: 'var(--text-muted)',
                       fontSize: 12,
                       fontWeight: 500,
                     }}
@@ -222,7 +222,7 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                       {getFileIcon(doc.file_type)}
                       <span
                         style={{
-                          color: '#F2F2F2',
+                          color: 'var(--text-primary)',
                           fontSize: 13,
                           maxWidth: 200,
                           whiteSpace: 'nowrap',
@@ -236,25 +236,25 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                       </span>
                     </div>
                   </td>
-                  <td style={{ padding: '10px 12px', color: '#B8B8B8', fontSize: 12 }}>
+                  <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                     {doc.file_type}
                   </td>
-                  <td style={{ padding: '10px 12px', color: '#B8B8B8', fontSize: 12 }}>
+                  <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                     {formatFileSize(doc.file_size)}
                   </td>
                   <td style={{ padding: '10px 12px' }}>
                     {doc.entity_type ? (
                       <Tag
-                        color={entityTypeColors[doc.entity_type] || '#7A7A7A'}
+                        color={entityTypeColors[doc.entity_type] || 'var(--text-muted)'}
                         style={{ fontSize: 11 }}
                       >
                         {doc.entity_type}
                       </Tag>
                     ) : (
-                      <span style={{ color: '#7A7A7A', fontSize: 12 }}>—</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
                     )}
                   </td>
-                  <td style={{ padding: '10px 12px', color: '#7A7A7A', fontSize: 12 }}>
+                  <td style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: 12 }}>
                     {formatDate(doc.created_at)}
                   </td>
                   <td style={{ padding: '10px 12px' }}>
@@ -267,7 +267,7 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
                       </GlassButton>
                       <GlassButton
                         onClick={() => setDeleteId(doc.id)}
-                        style={{ padding: '2px 8px', fontSize: 11, color: '#9B3E3E' }}
+                        style={{ padding: '2px 8px', fontSize: 11, color: 'var(--status-faulty)' }}
                       >
                         <DeleteOutlined />
                       </GlassButton>

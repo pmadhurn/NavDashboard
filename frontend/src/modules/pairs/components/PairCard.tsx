@@ -1,4 +1,3 @@
-import React from 'react'
 import { Tag } from 'antd'
 import { SwapOutlined, UserOutlined } from '@ant-design/icons'
 import GlassCard from '@/shared/components/GlassCard'
@@ -46,7 +45,7 @@ function CoupleMinSection({ couple, label }: { couple: { name: string; status: s
   )
 }
 
-export default function PairCard({ pair, onClick, onEdit }: PairCardProps) {
+export default function PairCard({ pair, onClick }: PairCardProps) {
   const coupleA = pair.couples[0]
   const coupleB = pair.couples[1]
 

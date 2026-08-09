@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Upload, Select, Progress, message } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 import type { UploadFile as AntUploadFile } from 'antd/es/upload/interface';
@@ -114,24 +114,24 @@ export default function DocumentUploader({
           }
           style={{
             background: 'rgba(255,255,255,0.02)',
-            border: '1px dashed #242424',
+            border: '1px dashed var(--border)',
             borderRadius: 8,
           }}
         >
           <p className="ant-upload-drag-icon">
-            <InboxOutlined style={{ color: '#7A7A7A', fontSize: 40 }} />
+            <InboxOutlined style={{ color: 'var(--text-muted)', fontSize: 40 }} />
           </p>
-          <p style={{ color: '#F2F2F2', fontSize: 14 }}>
+          <p style={{ color: 'var(--text-primary)', fontSize: 14 }}>
             Click or drag a file to upload
           </p>
-          <p style={{ color: '#7A7A7A', fontSize: 12 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>
             PDF, images, documents, spreadsheets supported
           </p>
         </Dragger>
 
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <label style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 4, display: 'block' }}>
+            <label style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4, display: 'block' }}>
               Entity Type
             </label>
             <Select
@@ -144,7 +144,7 @@ export default function DocumentUploader({
             />
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 4, display: 'block' }}>
+            <label style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4, display: 'block' }}>
               Entity ID
             </label>
             <GlassInput
@@ -156,7 +156,7 @@ export default function DocumentUploader({
         </div>
 
         <div>
-          <label style={{ color: '#B8B8B8', fontSize: 12, marginBottom: 4, display: 'block' }}>
+          <label style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4, display: 'block' }}>
             Description
           </label>
           <GlassInput
@@ -169,8 +169,8 @@ export default function DocumentUploader({
         {uploadProgress > 0 && uploadProgress < 100 && (
           <Progress
             percent={uploadProgress}
-            strokeColor="#5F8F6B"
-            trailColor="#242424"
+            strokeColor="var(--status-working)"
+            trailColor="var(--border)"
             showInfo={false}
           />
         )}

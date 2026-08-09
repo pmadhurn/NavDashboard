@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { capturePageview } from '@/shared/lib/analytics';
 import { Layout as AntLayout, Drawer, Input } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LogoutOutlined, UserOutlined, MenuOutlined, SearchOutlined } from '@ant-design/icons';
@@ -23,6 +24,13 @@ function hexToRgb(hex: string): string {
 }
 
 export default function Layout() {
+  // react-router changes the URL without a page load, so PostHog would
+  // otherwise record one pageview per session.
+  const _loc = useLocation();
+  useEffect(() => {
+    capturePageview(_loc.pathname);
+  }, [_loc.pathname]);
+
   const navigate = useNavigate();
   const location = useLocation();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
@@ -61,8 +69,8 @@ export default function Layout() {
   }
 
   const handleLogout = () => logout();
-  const roleColor = user?.role ? getRoleColor(user.role) : '#7A7A7A';
-  const accent = workspaceByKey(activeWorkspace)?.accent ?? '#9FA3A8';
+  const roleColor = user?.role ? getRoleColor(user.role) : 'var(--text-muted)';
+  const accent = workspaceByKey(activeWorkspace)?.accent ?? 'var(--secondary)';
   const sidebarLeft = isMobile ? 0 : RAIL_WIDTH;
   const contentMargin = isMobile ? 0 : RAIL_WIDTH + (collapsed ? 64 : 240);
 
@@ -72,7 +80,7 @@ export default function Layout() {
   };
 
   return (
-    <AntLayout style={{ minHeight: '100vh', background: '#0A0A0A' }}>
+    <AntLayout style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
       {isMobile ? (
         <Drawer
           placement="left"
@@ -80,7 +88,7 @@ export default function Layout() {
           onClose={() => setMobileMenuOpen(false)}
           width={280}
           closable={false}
-          styles={{ body: { padding: 0, background: '#0F0F0F' } }}
+          styles={{ body: { padding: 0, background: 'var(--bg-sidebar)' } }}
         >
           <Sidebar showWorkspaceChips onNavigate={() => setMobileMenuOpen(false)} />
         </Drawer>
@@ -102,7 +110,7 @@ export default function Layout() {
               bottom: 0,
               zIndex: 100,
               background: 'transparent',
-              borderRight: '1px solid rgba(255, 255, 255, 0.04)',
+              borderRight: '1px solid var(--overlay-subtle)',
               overflow: 'hidden',
             }}
             trigger={null}
@@ -116,7 +124,7 @@ export default function Layout() {
         style={{
           marginLeft: contentMargin,
           transition: 'margin-left 0.3s ease',
-          background: '#0A0A0A',
+          background: 'var(--bg-main)',
         }}
       >
         <Header
@@ -131,7 +139,7 @@ export default function Layout() {
             padding: isMobile ? '0 12px' : '0 24px',
             height: 56,
             lineHeight: '56px',
-            background: 'rgba(10, 10, 10, 0.8)',
+            background: 'var(--header-bg)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             borderBottom: `1px solid rgba(${hexToRgb(accent)}, 0.18)`,
@@ -141,14 +149,14 @@ export default function Layout() {
             {isMobile && (
               <MenuOutlined
                 onClick={() => setMobileMenuOpen(true)}
-                style={{ fontSize: 18, color: '#F2F2F2', cursor: 'pointer', padding: 4 }}
+                style={{ fontSize: 18, color: 'var(--text-primary)', cursor: 'pointer', padding: 4 }}
               />
             )}
             <div
               style={{
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#F2F2F2',
+                color: 'var(--text-primary)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -165,18 +173,18 @@ export default function Layout() {
                 onChange={(e) => setSearchValue(e.target.value)}
                 onPressEnter={runSearch}
                 placeholder="Search everything…"
-                prefix={<SearchOutlined style={{ color: '#7A7A7A' }} />}
+                prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
                 style={{
                   width: 240,
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'var(--overlay-subtle)',
                   borderColor: 'rgba(255,255,255,0.08)',
                 }}
               />
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <UserOutlined style={{ color: '#B8B8B8', fontSize: 14 }} />
+              <UserOutlined style={{ color: 'var(--text-secondary)', fontSize: 14 }} />
               {!isMobile && (
-                <span style={{ color: '#F2F2F2', fontSize: 13, fontWeight: 500 }}>
+                <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>
                   {user?.full_name || user?.username || 'User'}
                 </span>
               )}
@@ -206,16 +214,16 @@ export default function Layout() {
                 gap: 6,
                 padding: '4px 12px',
                 borderRadius: 6,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 transition: 'all 0.3s ease',
                 fontSize: 13,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#F2F2F2';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.background = 'var(--overlay-subtle)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#7A7A7A';
+                e.currentTarget.style.color = 'var(--text-muted)';
                 e.currentTarget.style.background = 'transparent';
               }}
             >
@@ -228,7 +236,7 @@ export default function Layout() {
           style={{
             padding: isMobile ? 12 : 24,
             minHeight: 'calc(100vh - 56px)',
-            background: '#0A0A0A',
+            background: 'var(--bg-main)',
           }}
         >
           <ErrorBoundary>

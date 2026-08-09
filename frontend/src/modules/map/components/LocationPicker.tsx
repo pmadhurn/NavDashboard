@@ -16,8 +16,8 @@ const PICKER_ICON = L.divIcon({
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #E6E6E6;
-    border: 3px solid #F2F2F2;
+    background: var(--primary);
+    border: 3px solid var(--text-primary);
     box-shadow: 0 0 12px rgba(230,230,230,0.5), 0 0 24px rgba(230,230,230,0.2);
     cursor: grab;
   "></div>`,
@@ -120,7 +120,7 @@ export default function LocationPicker({
     borderRadius: 6,
     border: '1px solid rgba(255,255,255,0.08)',
     background: 'rgba(255,255,255,0.04)',
-    color: '#F2F2F2',
+    color: 'var(--text-primary)',
     fontSize: 12,
     outline: 'none',
   }
@@ -181,7 +181,7 @@ export default function LocationPicker({
               padding: '8px 16px',
               borderRadius: 8,
               fontSize: 12,
-              color: '#B8B8B8',
+              color: 'var(--text-secondary)',
               pointerEvents: 'none',
               zIndex: 500,
               whiteSpace: 'nowrap',
@@ -202,7 +202,7 @@ export default function LocationPicker({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-          <span style={{ fontSize: 11, color: '#7A7A7A', width: 24, flexShrink: 0 }}>Lat</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 24, flexShrink: 0 }}>Lat</span>
           <input
             type="number"
             step="0.0001"
@@ -213,7 +213,7 @@ export default function LocationPicker({
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-          <span style={{ fontSize: 11, color: '#7A7A7A', width: 24, flexShrink: 0 }}>Lng</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 24, flexShrink: 0 }}>Lng</span>
           <input
             type="number"
             step="0.0001"

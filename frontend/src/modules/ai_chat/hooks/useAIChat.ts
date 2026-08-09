@@ -34,6 +34,9 @@ export interface IngestStatus {
   last_sync: string | null;
   ollama_available: boolean;
   ollama_models: string[];
+  /** The model the backend actually answers with; the rest are just installed. */
+  chat_model: string;
+  embedding_model: string;
   embedding_model_available: boolean;
   chat_model_available: boolean;
 }

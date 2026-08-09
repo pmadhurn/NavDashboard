@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Select, message } from 'antd'
 import { PlusOutlined, DatabaseOutlined, UserOutlined, LinkOutlined } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
@@ -128,7 +128,7 @@ export default function PersonnelListPage() {
               </>
             )}
             <GlassButton
-              type="primary"
+              variant="primary"
               icon={<PlusOutlined />}
               onClick={handleAddClick}
             >

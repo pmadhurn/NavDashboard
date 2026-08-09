@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
   LeftOutlined,
   RightOutlined,
@@ -11,11 +11,11 @@ import { formatCoordinates } from '@/shared/utils/formatters'
 function getMarkerColor(status: string): string {
   switch (status) {
     case 'WORKING':
-      return '#5F8F6B'
+      return 'var(--status-working)'
     case 'NOT_WORKING':
-      return '#B68A3C'
+      return 'var(--status-not-working)'
     case 'FAULTY':
-      return '#9B3E3E'
+      return 'var(--status-faulty)'
     default:
       return '#7C7C7C'
   }
@@ -78,7 +78,7 @@ export default function MapSidePanel({
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderLeft: collapsed ? '1px solid rgba(255,255,255,0.08)' : 'none',
-          color: '#B8B8B8',
+          color: 'var(--text-secondary)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -87,11 +87,11 @@ export default function MapSidePanel({
           transition: 'all 0.3s ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#F2F2F2'
+          e.currentTarget.style.color = 'var(--text-primary)'
           e.currentTarget.style.background = 'rgba(30, 30, 30, 0.95)'
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = '#B8B8B8'
+          e.currentTarget.style.color = 'var(--text-secondary)'
           e.currentTarget.style.background = 'rgba(20, 20, 20, 0.9)'
         }}
       >
@@ -125,10 +125,10 @@ export default function MapSidePanel({
               gap: 8,
               fontSize: 14,
               fontWeight: 600,
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
             }}
           >
-            <EnvironmentOutlined style={{ fontSize: 14, color: '#B8B8B8' }} />
+            <EnvironmentOutlined style={{ fontSize: 14, color: 'var(--text-secondary)' }} />
             Locations
           </div>
           <span
@@ -137,7 +137,7 @@ export default function MapSidePanel({
               borderRadius: 10,
               background: 'rgba(255,255,255,0.06)',
               fontSize: 11,
-              color: '#7A7A7A',
+              color: 'var(--text-muted)',
             }}
           >
             {couples.length}
@@ -157,7 +157,7 @@ export default function MapSidePanel({
               top: '50%',
               transform: 'translateY(-50%)',
               fontSize: 12,
-              color: '#7A7A7A',
+              color: 'var(--text-muted)',
               zIndex: 1,
             }}
           />
@@ -172,7 +172,7 @@ export default function MapSidePanel({
               borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.08)',
               background: 'rgba(255,255,255,0.04)',
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               fontSize: 12,
               outline: 'none',
               transition: 'border-color 0.2s ease',
@@ -209,15 +209,15 @@ export default function MapSidePanel({
                 gap: 10,
                 padding: '10px 16px',
                 cursor: 'pointer',
-                background: isSelected ? '#1E1E1E' : 'transparent',
+                background: isSelected ? 'var(--sidebar-active)' : 'transparent',
                 borderLeft: isSelected
-                  ? '3px solid #E6E6E6'
+                  ? '3px solid var(--primary)'
                   : '3px solid transparent',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
-                  e.currentTarget.style.background = '#1A1A1A'
+                  e.currentTarget.style.background = 'var(--sidebar-hover)'
                 }
               }}
               onMouseLeave={(e) => {
@@ -244,7 +244,7 @@ export default function MapSidePanel({
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: isSelected ? '#F2F2F2' : '#D0D0D0',
+                    color: isSelected ? 'var(--text-primary)' : '#D0D0D0',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -255,7 +255,7 @@ export default function MapSidePanel({
                 <div
                   style={{
                     fontSize: 11,
-                    color: '#7A7A7A',
+                    color: 'var(--text-muted)',
                     marginTop: 2,
                   }}
                 >
@@ -284,7 +284,7 @@ export default function MapSidePanel({
             style={{
               padding: '24px 16px',
               textAlign: 'center',
-              color: '#7A7A7A',
+              color: 'var(--text-muted)',
               fontSize: 12,
             }}
           >

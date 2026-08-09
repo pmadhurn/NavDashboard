@@ -20,11 +20,11 @@ import {
 } from '../hooks/useFinance';
 
 const CLAIM_COLORS: Record<string, string> = {
-  DRAFT: '#7A7A7A',
-  SUBMITTED: '#B68A3C',
+  DRAFT: 'var(--text-muted)',
+  SUBMITTED: 'var(--status-not-working)',
   PARTIALLY_PAID: '#8C8468',
-  PAID: '#5F8F6B',
-  REJECTED: '#9B3E3E',
+  PAID: 'var(--status-working)',
+  REJECTED: 'var(--status-faulty)',
 };
 
 export default function ClaimsPage() {
@@ -92,8 +92,8 @@ export default function ClaimsPage() {
             <GlassCard key={c.id} padding="sm">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ color: '#F2F2F2', fontSize: 14, fontWeight: 600 }}>{c.title}</div>
-                  <div style={{ color: '#7A7A7A', fontSize: 12 }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>{c.title}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {c.expense_count} expenses · {formatMoney(c.total)}
                     {c.note && ` · ${c.note}`}
                   </div>
@@ -147,11 +147,11 @@ export default function ClaimsPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>Title</label>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Title</label>
             <GlassInput value={title} onChange={setTitle} placeholder="e.g. Mumbai site trip — March" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Project (optional)
             </label>
             <Select
@@ -167,7 +167,7 @@ export default function ClaimsPage() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Expenses to include ({claimable.length} available)
             </label>
             <Select
@@ -185,7 +185,7 @@ export default function ClaimsPage() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Note (optional)
             </label>
             <GlassInput value={note} onChange={setNote} placeholder="Anything finance should know" />

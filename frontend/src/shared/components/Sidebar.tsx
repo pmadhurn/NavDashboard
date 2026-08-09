@@ -1,5 +1,6 @@
 import { Menu } from 'antd';
 import { HomeOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import ThemeToggle from '@/shared/components/ThemeToggle';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUiStore } from '@/shared/stores/uiStore';
 import { useAuthStore } from '@/shared/stores/authStore';
@@ -35,7 +36,7 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
     activeCandidate && visibleItems(activeCandidate, user).length > 0
       ? activeCandidate
       : workspaces[0];
-  const accent = workspace?.accent ?? '#9FA3A8';
+  const accent = workspace?.accent ?? 'var(--secondary)';
 
   const items = workspace ? visibleItems(workspace, user) : [];
   const menuItems = [
@@ -58,7 +59,7 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: 'rgba(15, 15, 15, 0.85)',
+        background: 'var(--glass-sidebar-bg)',
         backdropFilter: 'blur(30px)',
         WebkitBackdropFilter: 'blur(30px)',
         // expose the workspace accent to descendants
@@ -73,7 +74,7 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'flex-start',
           gap: 10,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+          borderBottom: '1px solid var(--overlay-subtle)',
           minHeight: 64,
           boxSizing: 'border-box',
         }}
@@ -81,7 +82,7 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
         <span style={{ color: accent, fontSize: 18, display: 'flex' }}>{workspace?.icon}</span>
         {!collapsed && (
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#F2F2F2', lineHeight: 1.1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.1 }}>
               {workspace?.label ?? 'NavOS'}
             </div>
             <div style={{ fontSize: 10, color: '#6A6A6A', letterSpacing: 1, textTransform: 'uppercase' }}>
@@ -114,7 +115,7 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
                   fontSize: 12,
                   cursor: 'pointer',
                   border: `1px solid ${active ? ws.accent : 'rgba(255,255,255,0.08)'}`,
-                  background: active ? `${ws.accent}22` : 'rgba(255,255,255,0.02)',
+                  background: active ? `${ws.accent}22` : 'var(--overlay-subtle)',
                   color: active ? ws.accent : '#9A9A9A',
                 }}
               >
@@ -146,30 +147,33 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
       <div
         style={{
           padding: 12,
-          borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+          borderTop: '1px solid var(--overlay-subtle)',
           textAlign: 'center',
           display: inDrawer ? 'none' : 'block',
         }}
       >
+        <div style={{ padding: collapsed ? '0 8px 8px' : '0 12px 8px' }}>
+          <ThemeToggle collapsed={collapsed} />
+        </div>
         <div
           onClick={toggleSidebar}
           style={{
             cursor: 'pointer',
             padding: '8px',
             borderRadius: 8,
-            color: '#7A7A7A',
+            color: 'var(--text-muted)',
             transition: 'all 0.3s ease',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#1A1A1A';
-            e.currentTarget.style.color = '#F2F2F2';
+            e.currentTarget.style.background = 'var(--sidebar-hover)';
+            e.currentTarget.style.color = 'var(--text-primary)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = '#7A7A7A';
+            e.currentTarget.style.color = 'var(--text-muted)';
           }}
         >
           {collapsed ? (

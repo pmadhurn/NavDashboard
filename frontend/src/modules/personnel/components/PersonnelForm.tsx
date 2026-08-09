@@ -102,7 +102,9 @@ export default function PersonnelForm({ open, onClose, person }: PersonnelFormPr
   const removeCustomField = (idx: number) => setCustomFields(customFields.filter((_, i) => i !== idx))
   const updateCustomField = (idx: number, field: 'key' | 'value', val: string) => {
     const updated = [...customFields]
-    updated[idx] = { ...updated[idx], [field]: val }
+    const current = updated[idx]
+    if (!current) return
+    updated[idx] = { ...current, [field]: val }
     setCustomFields(updated)
   }
 
@@ -111,7 +113,7 @@ export default function PersonnelForm({ open, onClose, person }: PersonnelFormPr
   const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F2F2F2',
+    color: 'var(--text-primary)',
     borderRadius: 8,
   }
 
@@ -135,7 +137,7 @@ export default function PersonnelForm({ open, onClose, person }: PersonnelFormPr
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item
           name="full_name"
-          label={<span style={{ color: '#B8B8B8' }}>Full Name</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Full Name</span>}
           rules={[{ required: true, message: 'Name is required' }]}
         >
           <GlassInput placeholder="John Doe" />
@@ -143,7 +145,7 @@ export default function PersonnelForm({ open, onClose, person }: PersonnelFormPr
 
         <Form.Item
           name="role"
-          label={<span style={{ color: '#B8B8B8' }}>Role</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Role</span>}
           rules={[{ required: true, message: 'Role is required' }]}
         >
           <Select
@@ -154,27 +156,27 @@ export default function PersonnelForm({ open, onClose, person }: PersonnelFormPr
 
         <Form.Item
           name="email"
-          label={<span style={{ color: '#B8B8B8' }}>Email</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Email</span>}
         >
           <GlassInput placeholder="example@email.com" />
         </Form.Item>
 
         <Form.Item
           name="phone"
-          label={<span style={{ color: '#B8B8B8' }}>Phone Number</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Phone Number</span>}
         >
           <GlassInput placeholder="+1234567890" />
         </Form.Item>
 
         <Form.Item
           name="notes"
-          label={<span style={{ color: '#B8B8B8' }}>Notes</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Notes</span>}
         >
           <Input.TextArea rows={3} placeholder="Optional notes..." style={inputStyle} />
         </Form.Item>
 
         <div style={{ marginBottom: 8 }}>
-          <span style={{ color: '#B8B8B8', fontSize: 14 }}>Custom Fields</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Custom Fields</span>
         </div>
         {customFields.map((cf, idx) => (
           <Space key={idx} style={{ display: 'flex', marginBottom: 8 }} align="start">
@@ -194,7 +196,7 @@ export default function PersonnelForm({ open, onClose, person }: PersonnelFormPr
               type="text"
               icon={<MinusCircleOutlined />}
               onClick={() => removeCustomField(idx)}
-              style={{ color: '#9B3E3E' }}
+              style={{ color: 'var(--status-faulty)' }}
             />
           </Space>
         ))}
@@ -202,7 +204,7 @@ export default function PersonnelForm({ open, onClose, person }: PersonnelFormPr
           type="dashed"
           onClick={addCustomField}
           icon={<PlusOutlined />}
-          style={{ width: '100%', borderColor: 'rgba(255,255,255,0.1)', color: '#B8B8B8', borderRadius: 8 }}
+          style={{ width: '100%', borderColor: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)', borderRadius: 8 }}
         >
           Add Field
         </Button>

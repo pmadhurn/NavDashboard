@@ -1,7 +1,7 @@
-import React from 'react';
 import { Checkbox, DatePicker, Segmented, Tag } from 'antd';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassInput from '@/shared/components/GlassInput';
+import { colors } from '@/styles/theme';
 import type { ErrorFilterState } from '../hooks/useTroubleshooting';
 
 interface ErrorFiltersProps {
@@ -10,10 +10,10 @@ interface ErrorFiltersProps {
 }
 
 const SEVERITY_OPTIONS = [
-  { label: 'Low', value: 'LOW', color: '#6E6E6E' },
-  { label: 'Medium', value: 'MEDIUM', color: '#B68A3C' },
-  { label: 'High', value: 'HIGH', color: '#9B3E3E' },
-  { label: 'Critical', value: 'CRITICAL', color: '#6E2C2C' },
+  { label: 'Low', value: 'LOW', color: colors.severity.low },
+  { label: 'Medium', value: 'MEDIUM', color: colors.severity.medium },
+  { label: 'High', value: 'HIGH', color: colors.severity.high },
+  { label: 'Critical', value: 'CRITICAL', color: colors.severity.critical },
 ];
 
 export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
@@ -103,14 +103,14 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
       >
         {/* Severity checkboxes */}
         <div>
-          <div style={{ color: '#8C8C8C', fontSize: 12, marginBottom: 6 }}>Severity</div>
+          <div style={{ color: 'var(--role-admin)', fontSize: 12, marginBottom: 6 }}>Severity</div>
           <div style={{ display: 'flex', gap: 10 }}>
             {SEVERITY_OPTIONS.map((opt) => (
               <Checkbox
                 key={opt.value}
                 checked={filters.severity.includes(opt.value)}
                 onChange={(e) => handleSeverityChange(e.target.checked, opt.value)}
-                style={{ color: '#D9D9D9' }}
+                style={{ color: 'var(--chart1)' }}
               >
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <span
@@ -131,7 +131,7 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
 
         {/* Status segmented */}
         <div>
-          <div style={{ color: '#8C8C8C', fontSize: 12, marginBottom: 6 }}>Status</div>
+          <div style={{ color: 'var(--role-admin)', fontSize: 12, marginBottom: 6 }}>Status</div>
           <Segmented
             options={['All', 'Open', 'Resolved']}
             value={
@@ -147,7 +147,7 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
 
         {/* Entity type segmented */}
         <div>
-          <div style={{ color: '#8C8C8C', fontSize: 12, marginBottom: 6 }}>Entity</div>
+          <div style={{ color: 'var(--role-admin)', fontSize: 12, marginBottom: 6 }}>Entity</div>
           <Segmented
             options={[
               { label: 'All', value: 'all' },
@@ -166,7 +166,7 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
 
         {/* Error type search */}
         <div style={{ minWidth: 180 }}>
-          <div style={{ color: '#8C8C8C', fontSize: 12, marginBottom: 6 }}>Error Type</div>
+          <div style={{ color: 'var(--role-admin)', fontSize: 12, marginBottom: 6 }}>Error Type</div>
           <GlassInput
             placeholder="Search error type..."
             value={filters.error_type}
@@ -177,7 +177,7 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
 
         {/* Date range */}
         <div>
-          <div style={{ color: '#8C8C8C', fontSize: 12, marginBottom: 6 }}>Date Range</div>
+          <div style={{ color: 'var(--role-admin)', fontSize: 12, marginBottom: 6 }}>Date Range</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <DatePicker
               placeholder="From"
@@ -187,7 +187,7 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
                 borderColor: 'rgba(255,255,255,0.1)',
               }}
             />
-            <span style={{ color: '#8C8C8C' }}>–</span>
+            <span style={{ color: 'var(--role-admin)' }}>–</span>
             <DatePicker
               placeholder="To"
               onChange={handleDateRangeEnd}
@@ -211,7 +211,7 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
               style={{
                 background: 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.15)',
-                color: '#D9D9D9',
+                color: 'var(--chart1)',
                 borderRadius: 6,
               }}
             >

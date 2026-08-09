@@ -1,4 +1,3 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import GlassCard from '../../../shared/components/GlassCard'
 import LoadingSpinner from '../../../shared/components/LoadingSpinner'
@@ -12,10 +11,10 @@ interface RecentActivityProps {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  CREATE: '#5F8F6B',
-  UPDATE: '#7A7A7A',
-  DELETE: '#9B3E3E',
-  STATUS_CHANGE: '#B68A3C',
+  CREATE: 'var(--status-working)',
+  UPDATE: 'var(--text-muted)',
+  DELETE: 'var(--status-faulty)',
+  STATUS_CHANGE: 'var(--status-not-working)',
 }
 
 export default function RecentActivity({
@@ -36,7 +35,7 @@ export default function RecentActivity({
       >
         <h3
           style={{
-            color: '#F2F2F2',
+            color: 'var(--text-primary)',
             fontSize: 16,
             fontWeight: 600,
             margin: 0,
@@ -47,16 +46,16 @@ export default function RecentActivity({
         <span
           onClick={() => navigate('/audit')}
           style={{
-            color: '#7A7A7A',
+            color: 'var(--text-muted)',
             fontSize: 13,
             cursor: 'pointer',
             transition: 'color 0.2s',
           }}
           onMouseEnter={(e) => {
-            ;(e.target as HTMLSpanElement).style.color = '#B8B8B8'
+            ;(e.target as HTMLSpanElement).style.color = 'var(--text-secondary)'
           }}
           onMouseLeave={(e) => {
-            ;(e.target as HTMLSpanElement).style.color = '#7A7A7A'
+            ;(e.target as HTMLSpanElement).style.color = 'var(--text-muted)'
           }}
         >
           View All →
@@ -85,7 +84,7 @@ export default function RecentActivity({
           }}
         >
           {items.map((item, index) => {
-            const dotColor = ACTION_COLORS[item.action] || '#7A7A7A'
+            const dotColor = ACTION_COLORS[item.action] || 'var(--text-muted)'
             const isLast = index === items.length - 1
 
             return (
@@ -107,7 +106,7 @@ export default function RecentActivity({
                       top: 14,
                       bottom: 0,
                       width: 1,
-                      background: '#2C2C2C',
+                      background: 'var(--audit-line)',
                     }}
                   />
                 )}

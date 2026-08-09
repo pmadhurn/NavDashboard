@@ -1,0 +1,56 @@
+# Production overlay for hosting behind the SHARED host cloudflared tunnel.
+# Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d
+#
+# How this differs from docker-compose.prod.yml
+# ---------------------------------------------
+# prod.yml assumes a DEDICATED tunnel running as a compose service, so it
+# publishes nothing to the host and requires a TUNNEL_TOKEN. That is the
+# navdashboard.com plan and it still works — see
+# ~/obsidian-vault/2026-08-09-navdashboard-cloudflare-deploy-guide.md
+#
+# This file is for nav.madhur.dev, which rides the tunnel that already runs on
+# this host as a systemd service (/etc/cloudflared/config.yml, 13 other
+# hostnames on it). That cloudflared lives OUTSIDE the compose network, so it
+# can only reach the app through a published loopback port — hence nginx stays
+# on 127.0.0.1:8085 exactly as in docker-compose.override.yml. Nothing is
+# exposed on a public interface; the tunnel is still the only way in.
+#
+# NOTE: pass -f explicitly (as above) so Compose does NOT auto-load
+# docker-compose.override.yml, which would drag the Vite dev server back in.
+services:
+  frontend:
+    build:
+      target: production
+    # Distinct tag from the dev stack — see the comment in docker-compose.prod.yml.
+    image: navdashboard-frontend:prod
+    # !override, not a merge: the dev mount of ./frontend over /app would
+    # shadow the built assets baked into the image.
+    volumes: !override []
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  nginx:
+    # Loopback only. The host cloudflared dials this; nothing else can.
+    ports: !override
+      - "127.0.0.1:8085:80"
+
+  minio:
+    ports: !override
+      - "127.0.0.1:9010:9000"
+      - "127.0.0.1:9011:9001"
+
+  backend:
+    # Keep the backups bind-mount, drop the ./backend:/app source mount so the
+    # running code is the built image rather than whatever is on disk.
+    volumes: !override
+      - ./database/backups:/backups
+    environment:
+      ENVIRONMENT: production
+      # Replaces allow_origins=["*"]. Once this is not "*", allow_credentials
+      # flips on automatically (see backend/core/config.py).
+      CORS_ORIGINS: https://nav.madhur.dev

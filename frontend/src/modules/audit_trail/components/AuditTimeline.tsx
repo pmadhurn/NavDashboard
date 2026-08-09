@@ -17,13 +17,13 @@ interface AuditTimelineProps {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  CREATE: '#5F8F6B',
-  SEED_CREATE: '#5F8F6B',
-  UPDATE: '#7A7A7A',
-  STATUS_CHANGE: '#7A7A7A',
-  DELETE: '#9B3E3E',
-  RESOLVE: '#5F8F6B',
-  ADD_STEP: '#7A7A7A',
+  CREATE: 'var(--status-working)',
+  SEED_CREATE: 'var(--status-working)',
+  UPDATE: 'var(--text-muted)',
+  STATUS_CHANGE: 'var(--text-muted)',
+  DELETE: 'var(--status-faulty)',
+  RESOLVE: 'var(--status-working)',
+  ADD_STEP: 'var(--text-muted)',
 };
 
 function getEntityRoute(entityType: string, entityId: string): string | null {
@@ -59,7 +59,7 @@ const ChangesDiff: React.FC<{
 
   if (allKeys.size === 0) {
     return (
-      <div style={{ color: '#7A7A7A', fontSize: 12, padding: '8px 0' }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 12, padding: '8px 0' }}>
         No change details available
       </div>
     );
@@ -86,7 +86,7 @@ const ChangesDiff: React.FC<{
             <div
               style={{
                 width: 120,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 fontWeight: 600,
                 flexShrink: 0,
               }}
@@ -101,7 +101,7 @@ const ChangesDiff: React.FC<{
                   : 'transparent',
                 padding: changed ? '2px 6px' : '2px 0',
                 borderRadius: 3,
-                color: '#B8B8B8',
+                color: 'var(--text-secondary)',
                 fontFamily: 'monospace',
                 wordBreak: 'break-all',
               }}
@@ -116,7 +116,7 @@ const ChangesDiff: React.FC<{
                   : 'transparent',
                 padding: changed ? '2px 6px' : '2px 0',
                 borderRadius: 3,
-                color: '#B8B8B8',
+                color: 'var(--text-secondary)',
                 fontFamily: 'monospace',
                 wordBreak: 'break-all',
               }}
@@ -133,7 +133,7 @@ const ChangesDiff: React.FC<{
 const AuditTimelineEntry: React.FC<{ entry: AuditEntry }> = ({ entry }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
-  const dotColor = ACTION_COLORS[entry.action] || '#7A7A7A';
+  const dotColor = ACTION_COLORS[entry.action] || 'var(--text-muted)';
   const entityRoute = getEntityRoute(entry.entity_type, entry.entity_id);
   const hasChanges =
     (entry.old_values && Object.keys(entry.old_values).length > 0) ||
@@ -164,7 +164,7 @@ const AuditTimelineEntry: React.FC<{ entry: AuditEntry }> = ({ entry }) => {
           style={{
             width: 2,
             flex: 1,
-            background: '#2C2C2C',
+            background: 'var(--audit-line)',
             marginTop: 4,
           }}
         />
@@ -196,7 +196,7 @@ const AuditTimelineEntry: React.FC<{ entry: AuditEntry }> = ({ entry }) => {
               style={{
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.06)',
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 borderRadius: 4,
                 fontSize: 11,
               }}
@@ -204,13 +204,13 @@ const AuditTimelineEntry: React.FC<{ entry: AuditEntry }> = ({ entry }) => {
               {entry.entity_type}
             </Tag>
             <Tooltip title={new Date(entry.timestamp).toLocaleString()}>
-              <span style={{ color: '#7A7A7A', fontSize: 12 }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                 {dayjs(entry.timestamp).fromNow()}
               </span>
             </Tooltip>
           </div>
 
-          <div style={{ color: '#F2F2F2', fontSize: 13, marginBottom: 6 }}>
+          <div style={{ color: 'var(--text-primary)', fontSize: 13, marginBottom: 6 }}>
             {entry.description || `${entry.action} on ${entry.entity_type}`}
           </div>
 
@@ -223,12 +223,12 @@ const AuditTimelineEntry: React.FC<{ entry: AuditEntry }> = ({ entry }) => {
             }}
           >
             {entry.user_name && (
-              <span style={{ color: '#7A7A7A' }}>by {entry.user_name}</span>
+              <span style={{ color: 'var(--text-muted)' }}>by {entry.user_name}</span>
             )}
             {entityRoute && (
               <span
                 style={{
-                  color: '#5F8F6B',
+                  color: 'var(--status-working)',
                   cursor: 'pointer',
                   textDecoration: 'underline',
                 }}
@@ -240,7 +240,7 @@ const AuditTimelineEntry: React.FC<{ entry: AuditEntry }> = ({ entry }) => {
             {hasChanges && (
               <span
                 style={{
-                  color: '#B8B8B8',
+                  color: 'var(--text-secondary)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -281,7 +281,7 @@ const AuditTimeline: React.FC<AuditTimelineProps> = ({
       {onLoadMore && (
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <span
-            style={{ color: '#5F8F6B', cursor: 'pointer', fontSize: 13 }}
+            style={{ color: 'var(--status-working)', cursor: 'pointer', fontSize: 13 }}
             onClick={onLoadMore}
           >
             Load more

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Select, Input, message } from 'antd'
 import {
@@ -183,7 +183,7 @@ export default function PairListPage() {
             current: data?.page ?? 1,
             pageSize: data?.size ?? size,
             total: data?.total ?? 0,
-            onChange: (p, s) => {
+            onChange: (p) => {
               setPage(p)
             },
           }}

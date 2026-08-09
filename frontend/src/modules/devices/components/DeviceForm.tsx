@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Form, Select, Input, Button, Space, message } from 'antd'
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import GlassModal from '@/shared/components/GlassModal'
@@ -107,7 +107,9 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
     val: string
   ) => {
     const updated = [...customFields]
-    updated[index] = { ...updated[index], [field]: val }
+    const current = updated[index]
+    if (!current) return
+    updated[index] = { ...current, [field]: val }
     setCustomFields(updated)
   }
 
@@ -122,7 +124,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <GlassButton onClick={onClose}>Cancel</GlassButton>
           <GlassButton
-            type="primary"
+            variant="primary"
             onClick={handleSubmit}
             loading={isLoading}
           >
@@ -134,7 +136,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item
           name="serial_number"
-          label={<span style={{ color: '#B8B8B8' }}>Serial Number</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Serial Number</span>}
           rules={[{ required: true, message: 'Serial number is required' }]}
         >
           <GlassInput
@@ -145,7 +147,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
 
         <Form.Item
           name="device_type"
-          label={<span style={{ color: '#B8B8B8' }}>Device Type</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Device Type</span>}
           rules={[{ required: true, message: 'Device type is required' }]}
         >
           <Select
@@ -162,7 +164,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
 
         <Form.Item
           name="status"
-          label={<span style={{ color: '#B8B8B8' }}>Status</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Status</span>}
         >
           <Select
             options={[
@@ -176,7 +178,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
 
         <Form.Item
           name="notes"
-          label={<span style={{ color: '#B8B8B8' }}>Notes</span>}
+          label={<span style={{ color: 'var(--text-secondary)' }}>Notes</span>}
         >
           <Input.TextArea
             rows={3}
@@ -184,14 +186,14 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
             style={{
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               borderRadius: 8,
             }}
           />
         </Form.Item>
 
         <div style={{ marginBottom: 8 }}>
-          <span style={{ color: '#B8B8B8', fontSize: 14 }}>Custom Fields</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Custom Fields</span>
         </div>
         {customFields.map((cf, idx) => (
           <Space
@@ -207,7 +209,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
                 width: 150,
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                color: '#F2F2F2',
+                color: 'var(--text-primary)',
                 borderRadius: 8,
               }}
             />
@@ -219,7 +221,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
                 width: 200,
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                color: '#F2F2F2',
+                color: 'var(--text-primary)',
                 borderRadius: 8,
               }}
             />
@@ -227,7 +229,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
               type="text"
               icon={<MinusCircleOutlined />}
               onClick={() => removeCustomField(idx)}
-              style={{ color: '#9B3E3E' }}
+              style={{ color: 'var(--status-faulty)' }}
             />
           </Space>
         ))}
@@ -238,7 +240,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
           style={{
             width: '100%',
             borderColor: 'rgba(255,255,255,0.1)',
-            color: '#B8B8B8',
+            color: 'var(--text-secondary)',
             borderRadius: 8,
           }}
         >

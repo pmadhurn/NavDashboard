@@ -1,4 +1,3 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Tag } from 'antd'
 import { WifiOutlined } from '@ant-design/icons'
@@ -31,7 +30,7 @@ export default function CoupleCard({ couple, onClick }: CoupleCardProps) {
       style={{ minHeight: 140 }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-        <span style={{ fontSize: 16, fontWeight: 600, color: '#F2F2F2' }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
           {couple.name}
         </span>
         <StatusBadge status={couple.status as 'WORKING' | 'NOT_WORKING' | 'FAULTY'} size="sm" />
@@ -39,7 +38,7 @@ export default function CoupleCard({ couple, onClick }: CoupleCardProps) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: '#B8B8B8', fontSize: 13 }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
             {couple.devices.length} device{couple.devices.length !== 1 ? 's' : ''}
           </span>
           {couple.has_rf && (
@@ -54,14 +53,14 @@ export default function CoupleCard({ couple, onClick }: CoupleCardProps) {
         </div>
 
         {couple.handling_person_name && (
-          <span style={{ color: '#7A7A7A', fontSize: 12 }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
             {couple.handling_person_name}
           </span>
         )}
       </div>
 
       <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
-        <span style={{ color: '#7A7A7A', fontSize: 11 }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
           {couple.location
             ? formatCoordinates(couple.location.latitude, couple.location.longitude)
             : 'No location'}

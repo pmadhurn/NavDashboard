@@ -17,11 +17,11 @@ import {
 import ExportModal from '../components/ExportModal';
 
 const CLAIM_COLORS: Record<string, string> = {
-  DRAFT: '#7A7A7A',
-  SUBMITTED: '#B68A3C',
+  DRAFT: 'var(--text-muted)',
+  SUBMITTED: 'var(--status-not-working)',
   PARTIALLY_PAID: '#8C8468',
-  PAID: '#5F8F6B',
-  REJECTED: '#9B3E3E',
+  PAID: 'var(--status-working)',
+  REJECTED: 'var(--status-faulty)',
 };
 
 export default function SettlementPage() {
@@ -63,21 +63,21 @@ export default function SettlementPage() {
         }}
       >
         <GlassCard padding="sm">
-          <div style={{ color: '#7A7A7A', fontSize: 11, textTransform: 'uppercase' }}>Pending payout</div>
-          <div style={{ color: '#B68A3C', fontSize: 22, fontWeight: 700, marginTop: 4 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase' }}>Pending payout</div>
+          <div style={{ color: 'var(--status-not-working)', fontSize: 22, fontWeight: 700, marginTop: 4 }}>
             {formatMoney(summary.total_pending)}
           </div>
         </GlassCard>
         <GlassCard padding="sm">
-          <div style={{ color: '#7A7A7A', fontSize: 11, textTransform: 'uppercase' }}>Paid out</div>
-          <div style={{ color: '#5F8F6B', fontSize: 22, fontWeight: 700, marginTop: 4 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase' }}>Paid out</div>
+          <div style={{ color: 'var(--status-working)', fontSize: 22, fontWeight: 700, marginTop: 4 }}>
             {formatMoney(summary.total_paid)}
           </div>
         </GlassCard>
       </div>
 
       {/* Claims awaiting the finance person */}
-      <div style={{ color: '#7A7A7A', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
         Claims to process
       </div>
       {openClaims.length === 0 ? (
@@ -88,8 +88,8 @@ export default function SettlementPage() {
             <GlassCard key={c.id} padding="sm">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ color: '#F2F2F2', fontSize: 13, fontWeight: 600 }}>{c.title}</div>
-                  <div style={{ color: '#7A7A7A', fontSize: 12 }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{c.title}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {c.expense_count} expenses · {formatMoney(c.total)}
                   </div>
                 </div>
@@ -146,23 +146,23 @@ export default function SettlementPage() {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
         {/* Per person */}
         <GlassCard padding="md">
-          <div style={{ color: '#E6E6E6', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>By person</div>
+          <div style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>By person</div>
           {summary.by_person.length === 0 ? (
-            <div style={{ color: '#7A7A7A', fontSize: 13 }}>No expenses logged yet.</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>No expenses logged yet.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {summary.by_person.map((p) => (
                 <div key={p.user_id ?? p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                   <div>
-                    <div style={{ color: '#F2F2F2', fontSize: 13 }}>{p.name}</div>
-                    <div style={{ color: '#5A5A5A', fontSize: 11 }}>
+                    <div style={{ color: 'var(--text-primary)', fontSize: 13 }}>{p.name}</div>
+                    <div style={{ color: 'var(--chart4)', fontSize: 11 }}>
                       advance {formatMoney(p.advances)} · spent {formatMoney(p.spent)} · balance{' '}
                       {formatMoney(p.balance)}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', fontSize: 12 }}>
-                    <div style={{ color: '#B68A3C' }}>{formatMoney(p.pending)} pending</div>
-                    <div style={{ color: '#5F8F6B' }}>{formatMoney(p.paid)} paid</div>
+                    <div style={{ color: 'var(--status-not-working)' }}>{formatMoney(p.pending)} pending</div>
+                    <div style={{ color: 'var(--status-working)' }}>{formatMoney(p.paid)} paid</div>
                   </div>
                 </div>
               ))}
@@ -172,17 +172,17 @@ export default function SettlementPage() {
 
         {/* Per project */}
         <GlassCard padding="md">
-          <div style={{ color: '#E6E6E6', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>By project</div>
+          <div style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>By project</div>
           {summary.by_project.length === 0 ? (
-            <div style={{ color: '#7A7A7A', fontSize: 13 }}>No project expenses yet.</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>No project expenses yet.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {summary.by_project.map((p) => (
                 <div key={p.project_id ?? p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <span style={{ color: '#F2F2F2', fontSize: 13 }}>{p.name}</span>
+                  <span style={{ color: 'var(--text-primary)', fontSize: 13 }}>{p.name}</span>
                   <div style={{ textAlign: 'right', fontSize: 12 }}>
-                    <div style={{ color: '#B68A3C' }}>{formatMoney(p.pending)} pending</div>
-                    <div style={{ color: '#5F8F6B' }}>{formatMoney(p.paid)} paid</div>
+                    <div style={{ color: 'var(--status-not-working)' }}>{formatMoney(p.pending)} pending</div>
+                    <div style={{ color: 'var(--status-working)' }}>{formatMoney(p.paid)} paid</div>
                   </div>
                 </div>
               ))}
@@ -193,12 +193,12 @@ export default function SettlementPage() {
 
       {closedClaims.length > 0 && (
         <>
-          <div style={{ color: '#5A5A5A', fontSize: 12, marginTop: 24, marginBottom: 8 }}>Settled claims</div>
+          <div style={{ color: 'var(--chart4)', fontSize: 12, marginTop: 24, marginBottom: 8 }}>Settled claims</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {closedClaims.slice(0, 10).map((c) => (
               <GlassCard key={c.id} padding="sm">
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                  <span style={{ color: '#B8B8B8' }}>{c.title}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{c.title}</span>
                   <span style={{ color: CLAIM_COLORS[c.status] }}>
                     {c.status} · {formatMoney(c.total)}
                   </span>

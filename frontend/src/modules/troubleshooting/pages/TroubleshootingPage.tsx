@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -25,12 +25,13 @@ import {
   type ErrorLog,
   type ErrorFilterState,
 } from '../hooks/useTroubleshooting';
+import { colors } from '@/styles/theme';
 
 const SEVERITY_COLORS: Record<string, string> = {
-  LOW: '#6E6E6E',
-  MEDIUM: '#B68A3C',
-  HIGH: '#9B3E3E',
-  CRITICAL: '#6E2C2C',
+  LOW: colors.severity.low,
+  MEDIUM: colors.severity.medium,
+  HIGH: colors.severity.high,
+  CRITICAL: colors.severity.critical,
 };
 
 export default function TroubleshootingPage() {
@@ -106,8 +107,8 @@ export default function TroubleshootingPage() {
         <Tag
           style={{
             background: `${SEVERITY_COLORS[sev] || '#6E6E6E'}33`,
-            border: `1px solid ${SEVERITY_COLORS[sev] || '#6E6E6E'}`,
-            color: SEVERITY_COLORS[sev] || '#6E6E6E',
+            border: `1px solid ${SEVERITY_COLORS[sev] || 'var(--severity-low)'}`,
+            color: SEVERITY_COLORS[sev] || 'var(--severity-low)',
             borderRadius: 12,
             fontSize: 11,
           }}
@@ -141,7 +142,7 @@ export default function TroubleshootingPage() {
       key: 'reporter',
       width: 130,
       render: (name: string | null) => (
-        <span style={{ color: name ? '#D9D9D9' : '#595959' }}>{name || '—'}</span>
+        <span style={{ color: name ? 'var(--chart1)' : '#595959' }}>{name || '—'}</span>
       ),
     },
     {
@@ -150,7 +151,7 @@ export default function TroubleshootingPage() {
       key: 'date',
       width: 150,
       render: (dt: string) => (
-        <span style={{ color: '#8C8C8C', fontSize: 12 }}>{formatDateTime(dt)}</span>
+        <span style={{ color: 'var(--role-admin)', fontSize: 12 }}>{formatDateTime(dt)}</span>
       ),
     },
     {
@@ -177,7 +178,7 @@ export default function TroubleshootingPage() {
             style={{
               background: 'rgba(182,138,60,0.15)',
               border: '1px solid rgba(182,138,60,0.3)',
-              color: '#B68A3C',
+              color: 'var(--status-not-working)',
               borderRadius: 12,
             }}
           >
@@ -255,11 +256,11 @@ export default function TroubleshootingPage() {
           marginBottom: 20,
         }}
       >
-        <GlassCard padding="md" accentColor="#B68A3C">
+        <GlassCard padding="md" accentColor="var(--status-not-working)">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <AlertOutlined style={{ fontSize: 28, color: '#B68A3C' }} />
+            <AlertOutlined style={{ fontSize: 28, color: 'var(--status-not-working)' }} />
             <div>
-              <div style={{ color: '#8C8C8C', fontSize: 12 }}>Open Errors</div>
+              <div style={{ color: 'var(--role-admin)', fontSize: 12 }}>Open Errors</div>
               <div style={{ color: '#F0F0F0', fontSize: 28, fontWeight: 700 }}>
                 {stats?.open ?? '—'}
               </div>
@@ -271,7 +272,7 @@ export default function TroubleshootingPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <CheckCircleOutlined style={{ fontSize: 28, color: '#5BB98B' }} />
             <div>
-              <div style={{ color: '#8C8C8C', fontSize: 12 }}>Resolved</div>
+              <div style={{ color: 'var(--role-admin)', fontSize: 12 }}>Resolved</div>
               <div style={{ color: '#F0F0F0', fontSize: 28, fontWeight: 700 }}>
                 {stats?.resolved ?? '—'}
               </div>
@@ -279,11 +280,13 @@ export default function TroubleshootingPage() {
           </div>
         </GlassCard>
 
-        <GlassCard padding="md" accentColor="#6E2C2C">
+        <GlassCard padding="md" accentColor={colors.severity.critical}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <ExclamationCircleOutlined style={{ fontSize: 28, color: '#6E2C2C' }} />
+            <ExclamationCircleOutlined
+              style={{ fontSize: 28, color: colors.severity.critical }}
+            />
             <div>
-              <div style={{ color: '#8C8C8C', fontSize: 12 }}>Critical</div>
+              <div style={{ color: 'var(--role-admin)', fontSize: 12 }}>Critical</div>
               <div style={{ color: '#F0F0F0', fontSize: 28, fontWeight: 700 }}>
                 {stats?.by_severity?.CRITICAL ?? 0}
               </div>

@@ -5,9 +5,10 @@ import { message } from 'antd';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassInput from '@/shared/components/GlassInput';
 import GlassButton from '@/shared/components/GlassButton';
-import { useLogin, useGoogleLogin } from '@/modules/auth/hooks/useAuth';
+import { useLogin, useGoogleLogin, useClerkLogin } from '@/modules/auth/hooks/useAuth';
 import { useAuthStore } from '@/shared/stores/authStore';
 import GoogleSignInButton, { googleSignInEnabled } from '@/modules/auth/components/GoogleSignInButton';
+import ClerkSignInButton, { clerkSignInEnabled } from '@/modules/auth/components/ClerkSignInButton';
 
 /** Pull the API's `detail` off an axios error, falling back when it is absent. */
 function errorDetail(error: unknown, fallback: string): string {
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const token = useAuthStore((s) => s.token);
   const { mutate: login, isPending } = useLogin();
   const { mutate: googleLogin } = useGoogleLogin();
+  const { mutate: clerkLogin } = useClerkLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#0A0A0A',
+        background: 'var(--bg-main)',
         padding: 24,
       }}
     >
@@ -86,7 +88,7 @@ export default function LoginPage() {
             style={{
               fontSize: 24,
               fontWeight: 700,
-              color: '#E6E6E6',
+              color: 'var(--primary)',
               margin: 0,
               letterSpacing: 1,
               textShadow: '0 0 20px rgba(230, 230, 230, 0.15)',
@@ -94,7 +96,7 @@ export default function LoginPage() {
           >
             NavDashboard
           </h1>
-          <p style={{ color: '#7A7A7A', fontSize: 13, marginTop: 8 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>
             Sign in to your account
           </p>
         </div>
@@ -103,7 +105,7 @@ export default function LoginPage() {
             <label
               style={{
                 display: 'block',
-                color: '#B8B8B8',
+                color: 'var(--text-secondary)',
                 fontSize: 13,
                 marginBottom: 6,
                 fontWeight: 500,
@@ -116,7 +118,7 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={setEmail}
-              prefix={<MailOutlined style={{ color: '#7A7A7A' }} />}
+              prefix={<MailOutlined style={{ color: 'var(--text-muted)' }} />}
               size="lg"
             />
           </div>
@@ -124,7 +126,7 @@ export default function LoginPage() {
             <label
               style={{
                 display: 'block',
-                color: '#B8B8B8',
+                color: 'var(--text-secondary)',
                 fontSize: 13,
                 marginBottom: 6,
                 fontWeight: 500,
@@ -137,7 +139,7 @@ export default function LoginPage() {
               placeholder="Enter your password"
               value={password}
               onChange={setPassword}
-              prefix={<LockOutlined style={{ color: '#7A7A7A' }} />}
+              prefix={<LockOutlined style={{ color: 'var(--text-muted)' }} />}
               size="lg"
             />
           </div>
@@ -159,7 +161,7 @@ export default function LoginPage() {
               borderRadius: 10,
               background: 'rgba(139, 195, 74, 0.08)',
               border: '1px solid rgba(139, 195, 74, 0.25)',
-              color: '#B8B8B8',
+              color: 'var(--text-secondary)',
               fontSize: 13,
               textAlign: 'center',
             }}
@@ -167,6 +169,22 @@ export default function LoginPage() {
             {pendingMessage}
           </div>
         )}
+        {clerkSignInEnabled && (
+          <div style={{ marginTop: 12 }}>
+            <ClerkSignInButton
+              onSessionToken={(token) =>
+                clerkLogin(token, {
+                  onSuccess: (d) => {
+                    if (d.pending) message.info(d.message || 'Awaiting admin approval');
+                    else navigate('/');
+                  },
+                  onError: (e) => message.error(errorDetail(e, 'Clerk sign-in failed')),
+                })
+              }
+            />
+          </div>
+        )}
+
         {googleSignInEnabled && (
           <>
             <div
@@ -175,7 +193,7 @@ export default function LoginPage() {
                 alignItems: 'center',
                 gap: 12,
                 margin: '20px 0',
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 fontSize: 12,
               }}
             >

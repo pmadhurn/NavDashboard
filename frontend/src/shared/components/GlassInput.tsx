@@ -12,6 +12,8 @@ interface GlassInputProps {
   disabled?: boolean;
   size?: 'sm' | 'md' | 'lg';
   onPressEnter?: () => void;
+  style?: React.CSSProperties;
+  allowClear?: boolean;
 }
 
 const sizeMap = {
@@ -31,12 +33,15 @@ export default function GlassInput({
   disabled = false,
   size = 'md',
   onPressEnter,
+  style,
+  allowClear = false,
 }: GlassInputProps) {
   const wrapperStyle: React.CSSProperties = {
     background: 'rgba(255, 255, 255, 0.05)',
-    border: `1px solid ${error ? '#A14242' : '#2A2A2A'}`,
+    border: `1px solid ${error ? 'var(--input-error)' : 'var(--input-border)'}`,
     borderRadius: 8,
     transition: 'all 0.3s ease',
+    ...style,
   };
 
   const handleChange = (
@@ -57,7 +62,7 @@ export default function GlassInput({
           style={wrapperStyle}
         />
         {error && (
-          <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
+          <div style={{ color: 'var(--input-error)', fontSize: 12, marginTop: 4 }}>
             {error}
           </div>
         )}
@@ -78,7 +83,7 @@ export default function GlassInput({
           style={wrapperStyle}
         />
         {error && (
-          <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
+          <div style={{ color: 'var(--input-error)', fontSize: 12, marginTop: 4 }}>
             {error}
           </div>
         )}
@@ -96,12 +101,13 @@ export default function GlassInput({
         onPressEnter={onPressEnter}
         prefix={prefix}
         suffix={suffix}
+        allowClear={allowClear}
         disabled={disabled}
         size={sizeMap[size]}
         style={wrapperStyle}
       />
       {error && (
-        <div style={{ color: '#A14242', fontSize: 12, marginTop: 4 }}>
+        <div style={{ color: 'var(--input-error)', fontSize: 12, marginTop: 4 }}>
           {error}
         </div>
       )}

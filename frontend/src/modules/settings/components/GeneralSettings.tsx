@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -119,11 +119,11 @@ export default function GeneralSettings() {
             marginBottom: 20,
           }}
         >
-          <DatabaseOutlined style={{ color: '#7A7A7A', fontSize: 16 }} />
+          <DatabaseOutlined style={{ color: 'var(--text-muted)', fontSize: 16 }} />
           <h3
             style={{
               margin: 0,
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               fontSize: 16,
               fontWeight: 600,
             }}
@@ -143,7 +143,7 @@ export default function GeneralSettings() {
               <div
                 style={{
                   fontSize: 11,
-                  color: '#7A7A7A',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
                   marginBottom: 4,
@@ -154,7 +154,7 @@ export default function GeneralSettings() {
               <div
                 style={{
                   fontSize: 15,
-                  color: '#F2F2F2',
+                  color: 'var(--text-primary)',
                   fontWeight: 500,
                 }}
               >
@@ -175,11 +175,11 @@ export default function GeneralSettings() {
             marginBottom: 20,
           }}
         >
-          <CloudOutlined style={{ color: '#7A7A7A', fontSize: 16 }} />
+          <CloudOutlined style={{ color: 'var(--text-muted)', fontSize: 16 }} />
           <h3
             style={{
               margin: 0,
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               fontSize: 16,
               fontWeight: 600,
             }}
@@ -201,18 +201,18 @@ export default function GeneralSettings() {
           }}
         >
           {systemInfo?.ollama_status === 'connected' ? (
-            <CheckCircleOutlined style={{ color: '#5F8F6B', fontSize: 14 }} />
+            <CheckCircleOutlined style={{ color: 'var(--status-working)', fontSize: 14 }} />
           ) : (
-            <CloseCircleOutlined style={{ color: '#9B3E3E', fontSize: 14 }} />
+            <CloseCircleOutlined style={{ color: 'var(--status-faulty)', fontSize: 14 }} />
           )}
-          <span style={{ fontSize: 13, color: '#B8B8B8' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             Ollama:{' '}
             <span
               style={{
                 color:
                   systemInfo?.ollama_status === 'connected'
-                    ? '#5F8F6B'
-                    : '#9B3E3E',
+                    ? 'var(--status-working)'
+                    : 'var(--status-faulty)',
                 fontWeight: 500,
               }}
             >
@@ -222,7 +222,7 @@ export default function GeneralSettings() {
             </span>
           </span>
           {systemInfo?.ollama_models && systemInfo.ollama_models.length > 0 && (
-            <span style={{ fontSize: 11, color: '#7A7A7A', marginLeft: 12 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 12 }}>
               Models: {systemInfo.ollama_models.join(', ')}
             </span>
           )}
@@ -240,7 +240,7 @@ export default function GeneralSettings() {
               style={{
                 display: 'block',
                 fontSize: 12,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 marginBottom: 6,
               }}
             >
@@ -258,7 +258,7 @@ export default function GeneralSettings() {
               style={{
                 display: 'block',
                 fontSize: 12,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 marginBottom: 6,
               }}
             >
@@ -276,7 +276,7 @@ export default function GeneralSettings() {
               style={{
                 display: 'block',
                 fontSize: 12,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 marginBottom: 6,
               }}
             >
@@ -314,11 +314,11 @@ export default function GeneralSettings() {
             marginBottom: 20,
           }}
         >
-          <EnvironmentOutlined style={{ color: '#7A7A7A', fontSize: 16 }} />
+          <EnvironmentOutlined style={{ color: 'var(--text-muted)', fontSize: 16 }} />
           <h3
             style={{
               margin: 0,
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               fontSize: 16,
               fontWeight: 600,
             }}
@@ -338,7 +338,7 @@ export default function GeneralSettings() {
               style={{
                 display: 'block',
                 fontSize: 12,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 marginBottom: 6,
               }}
             >
@@ -357,7 +357,7 @@ export default function GeneralSettings() {
               style={{
                 display: 'block',
                 fontSize: 12,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 marginBottom: 6,
               }}
             >
@@ -376,7 +376,7 @@ export default function GeneralSettings() {
               style={{
                 display: 'block',
                 fontSize: 12,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 marginBottom: 6,
               }}
             >

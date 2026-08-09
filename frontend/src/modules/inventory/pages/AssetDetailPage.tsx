@@ -13,8 +13,8 @@ import { useAsset, useAssetHistory } from '../hooks/useAssets';
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
-      <span style={{ color: '#7A7A7A' }}>{label}</span>
-      <span style={{ color: '#E6E6E6', textAlign: 'right' }}>{value ?? '—'}</span>
+      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ color: 'var(--primary)', textAlign: 'right' }}>{value ?? '—'}</span>
     </div>
   );
 }
@@ -59,7 +59,7 @@ export default function AssetDetailPage() {
         }}
       >
         <GlassCard padding="md">
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#E6E6E6', marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary)', marginBottom: 14 }}>
             Details
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -87,7 +87,7 @@ export default function AssetDetailPage() {
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#E6E6E6',
+              color: 'var(--primary)',
               marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
@@ -97,7 +97,7 @@ export default function AssetDetailPage() {
             <HistoryOutlined /> Trail
           </div>
           {!history || history.length === 0 ? (
-            <div style={{ color: '#7A7A7A', fontSize: 13 }}>No events recorded yet.</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>No events recorded yet.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {history.map((event) => (
@@ -108,19 +108,19 @@ export default function AssetDetailPage() {
                     paddingLeft: 12,
                   }}
                 >
-                  <div style={{ color: '#E6E6E6', fontSize: 13 }}>
+                  <div style={{ color: 'var(--primary)', fontSize: 13 }}>
                     {event.event_type.replace(/_/g, ' ')}
                     {event.old_status && event.new_status && (
-                      <span style={{ color: '#7A7A7A' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>
                         {' '}
                         · {event.old_status} → {event.new_status}
                       </span>
                     )}
                   </div>
                   {event.note && (
-                    <div style={{ color: '#B8B8B8', fontSize: 12 }}>{event.note}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{event.note}</div>
                   )}
-                  <div style={{ color: '#5A5A5A', fontSize: 11 }}>
+                  <div style={{ color: 'var(--chart4)', fontSize: 11 }}>
                     {formatDateTime(event.occurred_at)}
                   </div>
                 </div>

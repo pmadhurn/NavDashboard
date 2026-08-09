@@ -1,0 +1,63 @@
+# Production overlay. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Note this deliberately does NOT include docker-compose.override.yml, which
+# Compose only auto-loads when you pass no -f flags. The override binds ports to
+# 127.0.0.1 for local-only access; here nothing is published to the host at all,
+# because cloudflared dials out from inside the compose network.
+#
+# What changes vs. dev:
+#   - frontend builds the static `production` stage instead of running Vite
+#   - the source bind-mounts are gone, so the image is self-contained and a
+#     container restart can't pick up half-edited files
+#   - no published ports on nginx/minio; the tunnel is the only ingress
+services:
+  frontend:
+    build:
+      target: production
+    # Distinct tag from the dev stack. Without this both stages build to
+    # `navdashboard-frontend:latest`, whichever ran last wins the tag, and a
+    # later `docker compose up -d` (no --build) silently starts the dev stack
+    # on the production nginx image — Vite never runs and source edits stop
+    # appearing. That exact mix-up happened on 2026-08-09.
+    image: navdashboard-frontend:prod
+    # !override, not a merge: dev mounts ./frontend over /app, which would
+    # shadow the built assets baked into the image with raw source.
+    volumes: !override []
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  nginx:
+    ports: !override []
+
+  minio:
+    ports: !override []
+
+  backend:
+    # Keep the backups bind-mount (operators need to reach the files) but drop
+    # the ./backend:/app source mount so the running code is the built image.
+    volumes: !override
+      - ./database/backups:/backups
+    environment:
+      ENVIRONMENT: production
+      # Replaces the old hardcoded allow_origins=["*"]. Once this is not "*",
+      # allow_credentials flips on automatically (see core/config.py).
+      CORS_ORIGINS: https://navdashboard.com,https://www.navdashboard.com
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      # Set TUNNEL_TOKEN in a .env file next to this compose file. Do NOT paste
+      # the token inline — the previous token was committed to this repo and had
+      # to be revoked.
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?TUNNEL_TOKEN must be set (see .env)}
+    depends_on:
+      - nginx
+    networks:
+      - navdashboard
+    restart: unless-stopped

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Upload, message, Tag } from 'antd';
+import { useState } from 'react';
+import { Upload, message } from 'antd';
 import {
   InboxOutlined,
   UploadOutlined,
@@ -57,7 +57,7 @@ export default function ImportUploader() {
 
   return (
     <div>
-      <h3 style={{ color: '#F2F2F2', fontSize: 16, marginBottom: 12 }}>Data Import</h3>
+      <h3 style={{ color: 'var(--text-primary)', fontSize: 16, marginBottom: 12 }}>Data Import</h3>
 
       <Dragger
         beforeUpload={(file) => {
@@ -85,16 +85,16 @@ export default function ImportUploader() {
         }
         style={{
           background: 'rgba(255,255,255,0.02)',
-          border: '1px dashed #242424',
+          border: '1px dashed var(--border)',
           borderRadius: 8,
           marginBottom: 12,
         }}
       >
         <p className="ant-upload-drag-icon">
-          <InboxOutlined style={{ color: '#7A7A7A', fontSize: 36 }} />
+          <InboxOutlined style={{ color: 'var(--text-muted)', fontSize: 36 }} />
         </p>
-        <p style={{ color: '#F2F2F2', fontSize: 13 }}>Drop XLSX, CSV, or ZIP file here</p>
-        <p style={{ color: '#7A7A7A', fontSize: 11 }}>
+        <p style={{ color: 'var(--text-primary)', fontSize: 13 }}>Drop XLSX, CSV, or ZIP file here</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 11 }}>
           Records will be matched by ID or serial_number/name
         </p>
       </Dragger>
@@ -111,7 +111,7 @@ export default function ImportUploader() {
             alignItems: 'center',
           }}
         >
-          <span style={{ color: '#B8B8B8', fontSize: 12 }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
             {selectedFile.name} ({formatFileSize(selectedFile.size)})
           </span>
           <GlassButton
@@ -135,36 +135,36 @@ export default function ImportUploader() {
           marginBottom: 12,
         }}
       >
-        <span style={{ color: '#B68A3C', fontSize: 12 }}>
+        <span style={{ color: 'var(--status-not-working)', fontSize: 12 }}>
           ⚠️ Existing records will be updated. New records will be created.
         </span>
       </div>
 
       {importResult && (
         <GlassCard style={{ padding: 16, marginTop: 12 }}>
-          <h4 style={{ color: '#F2F2F2', fontSize: 14, marginBottom: 12 }}>Import Result</h4>
+          <h4 style={{ color: 'var(--text-primary)', fontSize: 14, marginBottom: 12 }}>Import Result</h4>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 11 }}>Total Rows</div>
-              <div style={{ color: '#F2F2F2', fontSize: 20, fontWeight: 600 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Total Rows</div>
+              <div style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 600 }}>
                 {importResult.total_rows}
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 11 }}>Created</div>
-              <div style={{ color: '#5F8F6B', fontSize: 20, fontWeight: 600 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Created</div>
+              <div style={{ color: 'var(--status-working)', fontSize: 20, fontWeight: 600 }}>
                 <CheckCircleOutlined /> {importResult.created}
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 11 }}>Updated</div>
-              <div style={{ color: '#B68A3C', fontSize: 20, fontWeight: 600 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Updated</div>
+              <div style={{ color: 'var(--status-not-working)', fontSize: 20, fontWeight: 600 }}>
                 <WarningOutlined /> {importResult.updated}
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7A7A7A', fontSize: 11 }}>Errors</div>
-              <div style={{ color: '#9B3E3E', fontSize: 20, fontWeight: 600 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Errors</div>
+              <div style={{ color: 'var(--status-faulty)', fontSize: 20, fontWeight: 600 }}>
                 <CloseCircleOutlined /> {importResult.errors}
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function ImportUploader() {
                   }}
                 >
                   {importResult.error_details.map((err, idx) => (
-                    <div key={idx} style={{ color: '#B8B8B8', fontSize: 11, marginBottom: 4 }}>
+                    <div key={idx} style={{ color: 'var(--text-secondary)', fontSize: 11, marginBottom: 4 }}>
                       {err}
                     </div>
                   ))}

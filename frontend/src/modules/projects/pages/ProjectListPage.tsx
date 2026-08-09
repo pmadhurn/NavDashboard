@@ -17,10 +17,10 @@ import { useProjects, useCreateProject, Project } from '../hooks/useProjects';
 const PROJECT_TYPES = ['POC', 'DEMO', 'INSTALLATION', 'OTHER'] as const;
 
 const TYPE_COLORS: Record<string, string> = {
-  POC: '#6F7A8C',
+  POC: 'var(--role-technician)',
   DEMO: '#8C8468',
-  INSTALLATION: '#5F8F6B',
-  OTHER: '#7A7A7A',
+  INSTALLATION: 'var(--status-working)',
+  OTHER: 'var(--text-muted)',
 };
 
 function ProjectCard({ project, onClick }: { project: Project; onClick: () => void }) {
@@ -31,7 +31,7 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ color: '#F2F2F2', fontSize: 15, fontWeight: 600 }}>
+              <span style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 600 }}>
                 {project.name}
               </span>
               <span
@@ -48,21 +48,21 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
                 {project.project_type}
               </span>
             </div>
-            <div style={{ color: '#7A7A7A', fontSize: 12, marginTop: 4 }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
               {[project.customer_name, project.site_location].filter(Boolean).join(' · ') ||
                 'No customer/site yet'}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {activeMembers.length > 0 && (
-              <span style={{ color: '#7A7A7A', fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
                 <TeamOutlined /> {activeMembers.length}
               </span>
             )}
             <StatusBadge status={project.status} />
           </div>
         </div>
-        <div style={{ color: '#5A5A5A', fontSize: 11, marginTop: 8 }}>
+        <div style={{ color: 'var(--chart4)', fontSize: 11, marginTop: 8 }}>
           Started {formatRelativeTime(project.start_date ?? project.created_at)}
         </div>
       </GlassCard>
@@ -117,7 +117,7 @@ export default function ProjectListPage() {
             value={search}
             onChange={setSearch}
             placeholder="Search projects..."
-            prefix={<SearchOutlined style={{ color: '#7A7A7A' }} />}
+            prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
           />
         </div>
         <Select
@@ -147,10 +147,10 @@ export default function ProjectListPage() {
         .dl-select .ant-select-selector {
           background: rgba(255,255,255,0.03) !important;
           border: 1px solid rgba(255,255,255,0.08) !important;
-          color: #F2F2F2 !important;
+          color: var(--text-primary) !important;
         }
-        .dl-select .ant-select-selection-placeholder { color: #5A5A5A !important; }
-        .dl-select .ant-select-selection-item { color: #F2F2F2 !important; }
+        .dl-select .ant-select-selection-placeholder { color: var(--chart4) !important; }
+        .dl-select .ant-select-selection-item { color: var(--text-primary) !important; }
       `}</style>
 
       {isLoading ? (
@@ -205,13 +205,13 @@ export default function ProjectListPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Project name
             </label>
             <GlassInput value={name} onChange={setName} placeholder="e.g. Metro Line 3 POC" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Type
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -225,7 +225,7 @@ export default function ProjectListPage() {
                     borderRadius: 8,
                     border: `1px solid ${newType === t ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
                     background: newType === t ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.02)',
-                    color: newType === t ? '#F2F2F2' : '#7A7A7A',
+                    color: newType === t ? 'var(--text-primary)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     fontSize: 11,
                     fontWeight: 600,
@@ -237,7 +237,7 @@ export default function ProjectListPage() {
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#7A7A7A', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
               Customer / site (optional)
             </label>
             <GlassInput value={customer} onChange={setCustomer} placeholder="Who is this for?" />

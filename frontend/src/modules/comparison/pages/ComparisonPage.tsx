@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { DiffOutlined } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
-import GlassButton from '@/shared/components/GlassButton';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import EmptyState from '@/shared/components/EmptyState';
 import ComparisonSelector from '../components/ComparisonSelector';
@@ -76,7 +75,7 @@ const ComparisonPage: React.FC = () => {
         <div style={{ marginTop: 48 }}>
           <EmptyState
             icon={
-              <DiffOutlined style={{ fontSize: 48, color: '#7A7A7A' }} />
+              <DiffOutlined style={{ fontSize: 48, color: 'var(--text-muted)' }} />
             }
             title="Select two entities to compare"
             description="Select two entities of the same type to compare their configurations side by side"

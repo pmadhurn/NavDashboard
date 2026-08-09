@@ -41,8 +41,8 @@ export default function WorkspaceRail({ onSwitch }: { onSwitch?: () => void }) {
         gap: 6,
         padding: '12px 0',
         height: '100%',
-        background: 'rgba(9, 9, 9, 0.92)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+        background: 'var(--glass-rail-bg)',
+        borderRight: '1px solid var(--overlay-subtle)',
       }}
     >
       <img
@@ -54,7 +54,7 @@ export default function WorkspaceRail({ onSwitch }: { onSwitch?: () => void }) {
       <RailButton
         label="Home"
         active={isHome}
-        accent="#9FA3A8"
+        accent="var(--secondary)"
         onClick={() => {
           navigate('/');
           onSwitch?.();
@@ -63,7 +63,7 @@ export default function WorkspaceRail({ onSwitch }: { onSwitch?: () => void }) {
         <HomeOutlined />
       </RailButton>
 
-      <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+      <div style={{ width: 24, height: 1, background: 'var(--overlay-medium)', margin: '4px 0' }} />
 
       {workspaces.map((ws) => (
         <RailButton
@@ -107,7 +107,7 @@ function RailButton({
           borderRadius: 12,
           cursor: 'pointer',
           fontSize: 18,
-          color: active ? accent : '#7A7A7A',
+          color: active ? accent : 'var(--text-muted)',
           background: active ? `${accent}1F` : 'transparent',
           transition: 'all 0.2s ease',
         }}
@@ -120,7 +120,7 @@ function RailButton({
         onMouseLeave={(e) => {
           if (!active) {
             e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = '#7A7A7A';
+            e.currentTarget.style.color = 'var(--text-muted)';
           }
         }}
       >

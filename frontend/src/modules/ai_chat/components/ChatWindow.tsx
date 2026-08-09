@@ -1,15 +1,14 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { useChatMessages, useSendMessageStream } from '../hooks/useAIChat';
-import type { ChatMessageItem, SourceRef } from '../hooks/useAIChat';
+import type { ChatMessageItem } from '../hooks/useAIChat';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 
 interface ChatWindowProps {
   sessionId: string | null;
   onSessionCreated: (id: string) => void;
   showThink?: boolean;
-  selectedModel?: string;
 }
 
 export default function ChatWindow({ sessionId, onSessionCreated, showThink = false }: ChatWindowProps) {

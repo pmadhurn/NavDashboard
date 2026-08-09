@@ -71,3 +71,20 @@ class GoogleAuthResponse(BaseModel):
     pending: bool = False
     message: Optional[str] = None
     token: Optional[TokenResponse] = None
+
+class ClerkLoginRequest(BaseModel):
+    """Clerk session JWT, obtained client-side via getToken()."""
+
+    token: str
+
+
+class ClerkAuthResponse(BaseModel):
+    pending: bool
+    message: str | None = None
+    access_token: str | None = None
+    token_type: str | None = None
+
+
+class ClerkConfigResponse(BaseModel):
+    enabled: bool
+    publishable_key: str | None = None

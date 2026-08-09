@@ -26,10 +26,10 @@ const SECTIONS: { key: string; label: string }[] = [
 const LEVELS = ['NONE', 'VIEW', 'EDIT', 'MANAGE'] as const;
 
 const LEVEL_COLORS: Record<string, string> = {
-  NONE: '#5A5A5A',
-  VIEW: '#6F7A8C',
+  NONE: 'var(--chart4)',
+  VIEW: 'var(--role-technician)',
   EDIT: '#8C8468',
-  MANAGE: '#5F8F6B',
+  MANAGE: 'var(--status-working)',
 };
 
 interface Props {
@@ -84,7 +84,7 @@ export default function PermissionMatrixModal({ user, onClose }: Props) {
       {isLoading ? (
         <LoadingSpinner text="Loading permissions..." />
       ) : isAdmin ? (
-        <div style={{ color: '#B8B8B8', fontSize: 13, padding: '12px 0' }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: 13, padding: '12px 0' }}>
           Admins automatically have full access to every section.
         </div>
       ) : (
@@ -102,7 +102,7 @@ export default function PermissionMatrixModal({ user, onClose }: Props) {
                   flexWrap: 'wrap',
                 }}
               >
-                <span style={{ color: '#E6E6E6', fontSize: 13, minWidth: 130 }}>
+                <span style={{ color: 'var(--primary)', fontSize: 13, minWidth: 130 }}>
                   {section.label}
                 </span>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -128,7 +128,7 @@ export default function PermissionMatrixModal({ user, onClose }: Props) {
                           background: active
                             ? `${LEVEL_COLORS[level]}33`
                             : 'rgba(255,255,255,0.02)',
-                          color: active ? LEVEL_COLORS[level] : '#7A7A7A',
+                          color: active ? LEVEL_COLORS[level] : 'var(--text-muted)',
                         }}
                       >
                         {level}

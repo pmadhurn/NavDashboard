@@ -1,4 +1,3 @@
-import React from 'react'
 import { Dropdown } from 'antd'
 import { EditOutlined, DeleteOutlined, EllipsisOutlined } from '@ant-design/icons'
 import DataTable from '@/shared/components/DataTable'
@@ -32,7 +31,7 @@ export default function PersonnelTable({
       dataIndex: 'full_name',
       key: 'full_name',
       render: (text: string) => (
-        <span style={{ color: '#F2F2F2', fontWeight: 500 }}>{text}</span>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{text}</span>
       ),
     },
     {
@@ -47,7 +46,7 @@ export default function PersonnelTable({
       title: 'Contact',
       key: 'contact',
       render: (_: unknown, record: Person) => (
-        <div style={{ color: '#B8B8B8', fontSize: 13, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: 13, display: 'flex', flexDirection: 'column', gap: 2 }}>
           {record.email && <span>{record.email}</span>}
           {record.phone && <span>{record.phone}</span>}
         </div>
@@ -58,7 +57,7 @@ export default function PersonnelTable({
       dataIndex: 'notes',
       key: 'notes',
       render: (text: string) => (
-        <span style={{ color: '#7A7A7A', fontSize: 12 }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
           {text && text.length > 50 ? `${text.substring(0, 50)}...` : text || '—'}
         </span>
       ),
@@ -89,9 +88,9 @@ export default function PersonnelTable({
           }}
         >
           <GlassButton
-            type="text"
+            variant="ghost"
             icon={<EllipsisOutlined />}
-            style={{ color: '#B8B8B8', padding: '4px 8px' }}
+            style={{ color: 'var(--text-secondary)', padding: '4px 8px' }}
           />
         </Dropdown>
       ),

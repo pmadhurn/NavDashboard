@@ -76,7 +76,7 @@ export default function PersonPicker({
             <span>
               {opt.label}
               {meta?.role && (
-                <span style={{ color: '#7A7A7A', fontSize: 11, marginLeft: 6 }}>{meta.role}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 6 }}>{meta.role}</span>
               )}
             </span>
             {meta?.hasLogin && (

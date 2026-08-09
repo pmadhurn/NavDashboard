@@ -39,6 +39,7 @@ export default function MaterialSelector({ value, onChange }: MaterialSelectorPr
     const entries = Object.entries(debouncedSearch)
     if (entries.length === 0) return
     const lastEntry = entries[entries.length - 1]
+    if (!lastEntry) return
     const query = lastEntry[1]
     if (typeof query === 'string' && query.length >= 2) {
       api
@@ -58,7 +59,9 @@ export default function MaterialSelector({ value, onChange }: MaterialSelectorPr
 
   const updateRow = (index: number, field: keyof MaterialCreateInline, val: string | number | null) => {
     const updated = [...value]
-    updated[index] = { ...updated[index], [field]: val }
+    const current = updated[index]
+    if (!current) return
+    updated[index] = { ...current, [field]: val }
     onChange(updated)
   }
 
@@ -81,7 +84,7 @@ export default function MaterialSelector({ value, onChange }: MaterialSelectorPr
   const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F2F2F2',
+    color: 'var(--text-primary)',
     borderRadius: 8,
   }
 
@@ -138,7 +141,7 @@ export default function MaterialSelector({ value, onChange }: MaterialSelectorPr
             type="text"
             icon={<MinusCircleOutlined />}
             onClick={() => removeRow(idx)}
-            style={{ color: '#9B3E3E' }}
+            style={{ color: 'var(--status-faulty)' }}
           />
         </Space>
       ))}
@@ -150,7 +153,7 @@ export default function MaterialSelector({ value, onChange }: MaterialSelectorPr
         style={{
           width: '100%',
           borderColor: 'rgba(255,255,255,0.1)',
-          color: '#B8B8B8',
+          color: 'var(--text-secondary)',
           borderRadius: 8,
         }}
       >

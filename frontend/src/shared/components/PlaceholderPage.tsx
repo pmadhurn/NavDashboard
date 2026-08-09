@@ -20,21 +20,21 @@ export default function PlaceholderPage({ title, icon }: PlaceholderPageProps) {
         }}
       >
         <GlassCard padding="lg" style={{ maxWidth: 460, width: '100%', textAlign: 'center' }}>
-          <div style={{ fontSize: 56, color: '#7A7A7A', marginBottom: 20 }}>
+          <div style={{ fontSize: 56, color: 'var(--text-muted)', marginBottom: 20 }}>
             {icon || <ClockCircleOutlined />}
           </div>
           <h2
             style={{
               fontSize: 22,
               fontWeight: 600,
-              color: '#F2F2F2',
+              color: 'var(--text-primary)',
               marginBottom: 8,
             }}
           >
             Coming Soon
           </h2>
-          <p style={{ color: '#7A7A7A', fontSize: 14, margin: 0 }}>
-            The <strong style={{ color: '#B8B8B8' }}>{title}</strong> module is
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>
+            The <strong style={{ color: 'var(--text-secondary)' }}>{title}</strong> module is
             under development and will be available in a future phase.
           </p>
         </GlassCard>

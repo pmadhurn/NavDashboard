@@ -28,6 +28,9 @@ export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
         fontWeight: 500,
         color,
         lineHeight: 1,
+        // 'Not Working' wrapped to two lines in narrow table columns,
+        // which broke row height and collided with lineHeight: 1.
+        whiteSpace: 'nowrap',
       }}
     >
       <span
@@ -40,12 +43,6 @@ export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
         }}
       />
       {statusLabels[status] || status}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
     </span>
   );
 }

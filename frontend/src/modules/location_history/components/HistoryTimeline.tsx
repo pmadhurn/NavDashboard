@@ -69,12 +69,12 @@ export default function HistoryTimeline({
           top: 0,
           bottom: 0,
           width: 2,
-          background: '#2C2C2C',
+          background: 'var(--audit-line)',
           borderRadius: 1,
         }}
       />
 
-      {entries.map((entry, idx) => {
+      {entries.map((entry) => {
         const isSelected = selectedId === entry.id;
         const isExpanded = expandedIds.has(entry.id);
 
@@ -89,8 +89,8 @@ export default function HistoryTimeline({
                 width: 10,
                 height: 10,
                 borderRadius: '50%',
-                background: isSelected ? '#E6E6E6' : '#4A4A4A',
-                border: `2px solid ${isSelected ? '#E6E6E6' : '#2C2C2C'}`,
+                background: isSelected ? 'var(--primary)' : '#4A4A4A',
+                border: `2px solid ${isSelected ? 'var(--primary)' : 'var(--audit-line)'}`,
                 boxShadow: isSelected ? '0 0 8px rgba(230, 230, 230, 0.4)' : 'none',
                 zIndex: 1,
                 transition: 'all 0.3s ease',
@@ -102,7 +102,7 @@ export default function HistoryTimeline({
               padding="sm"
               onClick={() => onSelect(entry.id)}
               style={{
-                borderLeft: isSelected ? '3px solid #E6E6E6' : '3px solid transparent',
+                borderLeft: isSelected ? '3px solid var(--primary)' : '3px solid transparent',
                 background: isSelected
                   ? 'rgba(255, 255, 255, 0.06)'
                   : 'rgba(255, 255, 255, 0.03)',
@@ -126,7 +126,7 @@ export default function HistoryTimeline({
                         padding: '2px 8px',
                         borderRadius: 4,
                         fontSize: 11,
-                        color: '#B8B8B8',
+                        color: 'var(--text-secondary)',
                         fontWeight: 500,
                       }}
                     >
@@ -135,7 +135,7 @@ export default function HistoryTimeline({
                   )}
                 </div>
                 <span
-                  style={{ fontSize: 11, color: '#7A7A7A' }}
+                  style={{ fontSize: 11, color: 'var(--text-muted)' }}
                   title={formatDateTime(entry.moved_at)}
                 >
                   <ClockCircleOutlined style={{ marginRight: 4 }} />
@@ -153,11 +153,11 @@ export default function HistoryTimeline({
                   flexWrap: 'wrap',
                 }}
               >
-                <span style={{ fontSize: 12, color: '#7A7A7A' }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {formatCoordinates(entry.old_latitude, entry.old_longitude)}
                 </span>
                 <span style={{ fontSize: 14, color: '#4A4A4A' }}>→</span>
-                <span style={{ fontSize: 12, color: '#F2F2F2' }}>
+                <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>
                   {formatCoordinates(entry.new_latitude, entry.new_longitude)}
                 </span>
                 {entry.distance_meters != null && (
@@ -167,7 +167,7 @@ export default function HistoryTimeline({
                       padding: '1px 8px',
                       borderRadius: 10,
                       fontSize: 11,
-                      color: '#7A7A7A',
+                      color: 'var(--text-muted)',
                       fontWeight: 500,
                     }}
                   >
@@ -182,7 +182,7 @@ export default function HistoryTimeline({
                   display: 'flex',
                   gap: 16,
                   fontSize: 11,
-                  color: '#7A7A7A',
+                  color: 'var(--text-muted)',
                   marginBottom: 4,
                 }}
               >
@@ -208,7 +208,7 @@ export default function HistoryTimeline({
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#7A7A7A',
+                      color: 'var(--text-muted)',
                       fontSize: 11,
                       cursor: 'pointer',
                       padding: '2px 0',
@@ -241,7 +241,7 @@ export default function HistoryTimeline({
                           <div
                             style={{
                               fontSize: 10,
-                              color: '#7A7A7A',
+                              color: 'var(--text-muted)',
                               textTransform: 'uppercase',
                               letterSpacing: 0.5,
                               marginBottom: 4,
@@ -249,7 +249,7 @@ export default function HistoryTimeline({
                           >
                             Notes
                           </div>
-                          <div style={{ color: '#B8B8B8' }}>{entry.notes}</div>
+                          <div style={{ color: 'var(--text-secondary)' }}>{entry.notes}</div>
                         </div>
                       )}
 
@@ -261,7 +261,7 @@ export default function HistoryTimeline({
                             <div
                               style={{
                                 fontSize: 10,
-                                color: '#7A7A7A',
+                                color: 'var(--text-muted)',
                                 textTransform: 'uppercase',
                                 letterSpacing: 0.5,
                                 marginBottom: 4,
@@ -273,14 +273,14 @@ export default function HistoryTimeline({
                               style={{
                                 margin: 0,
                                 paddingLeft: 16,
-                                color: '#B8B8B8',
+                                color: 'var(--text-secondary)',
                               }}
                             >
                               {entry.fitting_materials_snapshot.map(
                                 (mat: Record<string, unknown>, i: number) => (
                                   <li key={i} style={{ marginBottom: 2 }}>
                                     {String(mat.name || 'Unknown')}
-                                    {mat.quantity && ` ×${mat.quantity}`}
+                                    {mat.quantity ? ` ×${String(mat.quantity)}` : null}
                                   </li>
                                 )
                               )}
@@ -294,7 +294,7 @@ export default function HistoryTimeline({
                           <div
                             style={{
                               fontSize: 10,
-                              color: '#7A7A7A',
+                              color: 'var(--text-muted)',
                               textTransform: 'uppercase',
                               letterSpacing: 0.5,
                               marginBottom: 4,
@@ -305,7 +305,7 @@ export default function HistoryTimeline({
                           <pre
                             style={{
                               margin: 0,
-                              color: '#B8B8B8',
+                              color: 'var(--text-secondary)',
                               fontSize: 11,
                               fontFamily: 'monospace',
                               whiteSpace: 'pre-wrap',
@@ -333,7 +333,7 @@ export default function HistoryTimeline({
             style={{
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#B8B8B8',
+              color: 'var(--text-secondary)',
               padding: '8px 24px',
               borderRadius: 8,
               cursor: 'pointer',

@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 async def get_table_counts(db: AsyncSession) -> dict[str, int]:
     """Get row counts for all exportable tables."""
+    # Must stay in step with exporter._get_export_tables(), or the UI reports
+    # counts for a narrower set of tables than the archive actually contains.
     tables = [
         "devices",
         "couples",
@@ -17,6 +19,21 @@ async def get_table_counts(db: AsyncSession) -> dict[str, int]:
         "troubleshoot_entries",
         "status_change_logs",
         "users",
+        "projects",
+        "project_phases",
+        "project_members",
+        "project_deployments",
+        "project_timeline_entries",
+        "expenses",
+        "expense_batches",
+        "expense_claims",
+        "expense_members",
+        "fund_allocations",
+        "assets",
+        "asset_categories",
+        "asset_history",
+        "asset_reports",
+        "documents",
     ]
     counts = {}
     for table in tables:

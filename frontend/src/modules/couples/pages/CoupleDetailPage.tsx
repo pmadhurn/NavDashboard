@@ -12,7 +12,6 @@ import ShareButton from '@/shared/components/ShareButton'
 import GlassCard from '@/shared/components/GlassCard'
 import GlassButton from '@/shared/components/GlassButton'
 import GlassModal from '@/shared/components/GlassModal'
-import GlassInput from '@/shared/components/GlassInput'
 import StatusBadge from '@/shared/components/StatusBadge'
 import EmptyState from '@/shared/components/EmptyState'
 import LoadingSpinner from '@/shared/components/LoadingSpinner'
@@ -24,7 +23,7 @@ import {
   useDeleteCouple,
   useChangeCoupleLocation,
 } from '../hooks/useCouples'
-import { getDeviceTypeColor, getStatusColor } from '@/shared/utils/colors'
+import { getDeviceTypeColor } from '@/shared/utils/colors'
 import { formatDateTime, formatCoordinates } from '@/shared/utils/formatters'
 import type { LocationHistory } from '@/shared/types/locations'
 
@@ -45,7 +44,7 @@ export default function CoupleDetailPage() {
   const [locationNotes, setLocationNotes] = useState('')
 
   if (isLoading) return <LoadingSpinner text="Loading couple..." />
-  if (!couple) return <div style={{ color: '#B8B8B8', padding: 40 }}>Couple not found</div>
+  if (!couple) return <div style={{ color: 'var(--text-secondary)', padding: 40 }}>Couple not found</div>
 
   const confirmDelete = async () => {
     try {
@@ -99,7 +98,7 @@ export default function CoupleDetailPage() {
   const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F2F2F2',
+    color: 'var(--text-primary)',
     borderRadius: 8,
   }
 
@@ -153,48 +152,48 @@ export default function CoupleDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Info Card */}
           <GlassCard>
-            <h3 style={{ color: '#F2F2F2', marginBottom: 16, fontSize: 16 }}>Information</h3>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>Information</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Name</div>
-                <div style={{ color: '#F2F2F2', fontSize: 14 }}>{couple.name}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Name</div>
+                <div style={{ color: 'var(--text-primary)', fontSize: 14 }}>{couple.name}</div>
               </div>
               <div>
-                <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Status</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Status</div>
                 <StatusBadge status={couple.status as 'WORKING' | 'NOT_WORKING' | 'FAULTY'} />
               </div>
               <div>
-                <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Has RF</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Has RF</div>
                 <div>
                   {couple.has_rf ? (
                     <Tag icon={<WifiOutlined />} color="blue" style={{ borderRadius: 6 }}>RF Active</Tag>
                   ) : (
-                    <span style={{ color: '#7A7A7A' }}>No</span>
+                    <span style={{ color: 'var(--text-muted)' }}>No</span>
                   )}
                 </div>
               </div>
               <div>
-                <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Pair</div>
-                <div style={{ color: '#F2F2F2', fontSize: 14 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Pair</div>
+                <div style={{ color: 'var(--text-primary)', fontSize: 14 }}>
                   {couple.pair_id ? couple.pair_id.slice(0, 8) + '...' : 'Unpaired'}
                 </div>
               </div>
               <div>
-                <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Handling Person</div>
-                <div style={{ color: '#F2F2F2', fontSize: 14 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Handling Person</div>
+                <div style={{ color: 'var(--text-primary)', fontSize: 14 }}>
                   {couple.handling_person_name || 'None'}
                 </div>
               </div>
               <div>
-                <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Created</div>
-                <div style={{ color: '#B8B8B8', fontSize: 13 }}>{formatDateTime(couple.created_at)}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Created</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{formatDateTime(couple.created_at)}</div>
               </div>
             </div>
           </GlassCard>
 
           {/* Devices Card */}
           <GlassCard>
-            <h3 style={{ color: '#F2F2F2', marginBottom: 16, fontSize: 16 }}>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>
               Devices ({couple.devices.length})
             </h3>
             {couple.devices.length === 0 ? (
@@ -223,7 +222,7 @@ export default function CoupleDetailPage() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ color: '#F2F2F2', fontWeight: 500, fontSize: 13 }}>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: 13 }}>
                         {device.serial_number}
                       </span>
                       <Tag
@@ -245,7 +244,7 @@ export default function CoupleDetailPage() {
 
           {/* Materials Card */}
           <GlassCard>
-            <h3 style={{ color: '#F2F2F2', marginBottom: 16, fontSize: 16 }}>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>
               Fitting Materials ({couple.materials.length})
             </h3>
             {couple.materials.length === 0 ? (
@@ -264,8 +263,8 @@ export default function CoupleDetailPage() {
                       background: 'rgba(255,255,255,0.02)',
                     }}
                   >
-                    <span style={{ color: '#F2F2F2', fontSize: 13 }}>{mat.name}</span>
-                    <span style={{ color: '#B8B8B8', fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-primary)', fontSize: 13 }}>{mat.name}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                       {mat.quantity}{mat.unit ? ` ${mat.unit}` : ''}
                     </span>
                   </div>
@@ -279,19 +278,19 @@ export default function CoupleDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Location Card */}
           <GlassCard>
-            <h3 style={{ color: '#F2F2F2', marginBottom: 16, fontSize: 16 }}>Location</h3>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>Location</h3>
             {couple.location ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div>
-                  <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Coordinates</div>
-                  <div style={{ color: '#F2F2F2', fontSize: 14 }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Coordinates</div>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 14 }}>
                     {formatCoordinates(couple.location.latitude, couple.location.longitude)}
                   </div>
                 </div>
                 {couple.location.address_note && (
                   <div>
-                    <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>Address Note</div>
-                    <div style={{ color: '#B8B8B8', fontSize: 13 }}>{couple.location.address_note}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Address Note</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{couple.location.address_note}</div>
                   </div>
                 )}
               </div>
@@ -302,41 +301,41 @@ export default function CoupleDetailPage() {
 
           {/* Configuration Card */}
           <GlassCard>
-            <h3 style={{ color: '#F2F2F2', marginBottom: 16, fontSize: 16 }}>Configuration</h3>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>Configuration</h3>
             {couple.configuration && Object.keys(couple.configuration).length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {Object.entries(couple.configuration).map(([key, value]) => (
                   <div key={key}>
-                    <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>{key}</div>
-                    <div style={{ color: '#F2F2F2', fontSize: 13 }}>{String(value)}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>{key}</div>
+                    <div style={{ color: 'var(--text-primary)', fontSize: 13 }}>{String(value)}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <span style={{ color: '#7A7A7A', fontSize: 13 }}>No configuration</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>No configuration</span>
             )}
           </GlassCard>
 
           {/* Custom Fields Card */}
           <GlassCard>
-            <h3 style={{ color: '#F2F2F2', marginBottom: 16, fontSize: 16 }}>Custom Fields</h3>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>Custom Fields</h3>
             {couple.custom_fields && Object.keys(couple.custom_fields).length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {Object.entries(couple.custom_fields).map(([key, value]) => (
                   <div key={key}>
-                    <div style={{ color: '#7A7A7A', fontSize: 12, marginBottom: 4 }}>{key}</div>
-                    <div style={{ color: '#F2F2F2', fontSize: 13 }}>{String(value)}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>{key}</div>
+                    <div style={{ color: 'var(--text-primary)', fontSize: 13 }}>{String(value)}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <span style={{ color: '#7A7A7A', fontSize: 13 }}>No custom fields</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>No custom fields</span>
             )}
           </GlassCard>
 
           {/* Location History Card */}
           <GlassCard>
-            <h3 style={{ color: '#F2F2F2', marginBottom: 16, fontSize: 16 }}>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>
               Location History ({locationHistory.length})
             </h3>
             {locationHistory.length === 0 ? (
@@ -358,24 +357,24 @@ export default function CoupleDetailPage() {
                       padding: '10px 12px',
                       borderRadius: 8,
                       background: 'rgba(255,255,255,0.02)',
-                      borderLeft: '3px solid #7A7A7A',
+                      borderLeft: '3px solid var(--text-muted)',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ color: '#B8B8B8', fontSize: 12 }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                         {formatDateTime(entry.moved_at)}
                       </span>
                       {entry.distance_meters !== null && (
-                        <span style={{ color: '#7A7A7A', fontSize: 11 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                           {entry.distance_meters.toFixed(0)}m
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#B8B8B8' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       <span>
                         {formatCoordinates(entry.old_latitude, entry.old_longitude)}
                       </span>
-                      <span style={{ margin: '0 8px', color: '#7A7A7A' }}>→</span>
+                      <span style={{ margin: '0 8px', color: 'var(--text-muted)' }}>→</span>
                       <span>
                         {formatCoordinates(entry.new_latitude, entry.new_longitude)}
                       </span>
@@ -385,7 +384,7 @@ export default function CoupleDetailPage() {
                         <Tag color="blue" style={{ fontSize: 10, borderRadius: 4 }}>RF</Tag>
                       )}
                       {entry.notes && (
-                        <span style={{ color: '#7A7A7A', fontSize: 11 }}>{entry.notes}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{entry.notes}</span>
                       )}
                     </div>
                   </div>
@@ -432,7 +431,7 @@ export default function CoupleDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ color: '#B8B8B8', fontSize: 14, marginBottom: 8 }}>Latitude</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 8 }}>Latitude</div>
               <Input
                 type="number"
                 value={newLat}
@@ -443,7 +442,7 @@ export default function CoupleDetailPage() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ color: '#B8B8B8', fontSize: 14, marginBottom: 8 }}>Longitude</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 8 }}>Longitude</div>
               <Input
                 type="number"
                 value={newLng}
@@ -455,7 +454,7 @@ export default function CoupleDetailPage() {
             </div>
           </div>
           <div>
-            <div style={{ color: '#B8B8B8', fontSize: 14, marginBottom: 8 }}>Address Note</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 8 }}>Address Note</div>
             <Input
               value={newAddrNote}
               onChange={(e) => setNewAddrNote(e.target.value)}
@@ -464,7 +463,7 @@ export default function CoupleDetailPage() {
             />
           </div>
           <div>
-            <div style={{ color: '#B8B8B8', fontSize: 14, marginBottom: 8 }}>Notes (for history)</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 8 }}>Notes (for history)</div>
             <Input.TextArea
               value={locationNotes}
               onChange={(e) => setLocationNotes(e.target.value)}

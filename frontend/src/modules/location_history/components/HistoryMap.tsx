@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { formatDateTime, formatCoordinates } from '@/shared/utils/formatters';
@@ -39,7 +39,7 @@ function MapController({
     const maxLng = Math.max(...lngs);
 
     if (maxLat - minLat < 0.001 && maxLng - minLng < 0.001) {
-      map.setView([lats[0], lngs[0]], 16);
+      map.setView([minLat, minLng], 16);
     } else {
       map.fitBounds(
         [
@@ -175,11 +175,11 @@ export default function HistoryMap({
               center={[point.lat, point.lng]}
               radius={isLatest ? 7 : isSelected ? 6 : 4}
               pathOptions={{
-                color: isSelected ? '#E6E6E6' : '#7C7C7C',
+                color: isSelected ? 'var(--primary)' : '#7C7C7C',
                 fillColor: isSelected
-                  ? '#E6E6E6'
+                  ? 'var(--primary)'
                   : isLatest
-                  ? '#5F8F6B'
+                  ? 'var(--status-working)'
                   : '#7C7C7C',
                 fillOpacity: isSelected ? 1 : point.opacity,
                 opacity: isSelected ? 1 : point.opacity,
@@ -198,7 +198,7 @@ export default function HistoryMap({
                     </div>
                   )}
                   {isLatest && (
-                    <div style={{ color: '#5F8F6B', marginTop: 2, fontWeight: 500 }}>
+                    <div style={{ color: 'var(--status-working)', marginTop: 2, fontWeight: 500 }}>
                       Current
                     </div>
                   )}
@@ -218,8 +218,8 @@ export default function HistoryMap({
                 center={[entry.new_latitude, entry.new_longitude]}
                 radius={isSelected ? 7 : 5}
                 pathOptions={{
-                  color: isSelected ? '#E6E6E6' : '#5F8F6B',
-                  fillColor: isSelected ? '#E6E6E6' : '#5F8F6B',
+                  color: isSelected ? 'var(--primary)' : 'var(--status-working)',
+                  fillColor: isSelected ? 'var(--primary)' : 'var(--status-working)',
                   fillOpacity: isSelected ? 1 : 0.7,
                   opacity: isSelected ? 1 : 0.7,
                   weight: isSelected ? 2 : 1,

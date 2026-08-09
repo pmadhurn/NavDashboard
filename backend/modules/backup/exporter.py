@@ -20,6 +20,22 @@ from modules.pairs.models import Pair
 from modules.personnel.models import Person
 from modules.status.models import StatusChangeLog
 from modules.troubleshooting.models import ErrorLog, TroubleshootEntry
+from modules.projects.models import (
+    Project,
+    ProjectDeployment,
+    ProjectMember,
+    ProjectPhase,
+    ProjectTimelineEntry,
+)
+from modules.finance.models import (
+    Expense,
+    ExpenseBatch,
+    ExpenseClaim,
+    ExpenseMember,
+    FundAllocation,
+)
+from modules.assets.models import Asset, AssetCategory, AssetHistory, AssetReport
+from modules.documents.models import Document
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +155,151 @@ def _get_export_tables() -> list[dict]:
             "columns": [
                 "id", "email", "username", "full_name", "role", "is_active",
                 "created_at", "updated_at",
+            ],
+        },
+        # --- Projects -----------------------------------------------------
+        # Everything below was missing from the export: a "full backup" covered
+        # only devices/couples/pairs and their history, so projects, money and
+        # assets were silently absent from every archive taken before 2026-08-09.
+        {
+            "name": "Projects",
+            "key": "projects",
+            "model": Project,
+            "columns": [
+                "id", "name", "project_type", "status", "customer_name",
+                "site_location", "latitude", "longitude", "start_date", "end_date",
+                "description", "custom_fields", "created_by",
+                "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "ProjectPhases",
+            "key": "project_phases",
+            "model": ProjectPhase,
+            "columns": [
+                "id", "project_id", "phase_type", "status", "started_at",
+                "ended_at", "lead_person_id", "note", "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "ProjectMembers",
+            "key": "project_members",
+            "model": ProjectMember,
+            "columns": [
+                "id", "project_id", "person_id", "role_in_project", "phase_id",
+                "joined_at", "left_at", "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "ProjectDeployments",
+            "key": "project_deployments",
+            "model": ProjectDeployment,
+            "columns": [
+                "id", "project_id", "entity_type", "entity_id", "deployed_at",
+                "removed_at", "note", "created_by", "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "ProjectTimeline",
+            "key": "project_timeline_entries",
+            "model": ProjectTimelineEntry,
+            "columns": [
+                "id", "project_id", "entry_type", "title", "body", "entry_date",
+                "created_by", "metadata_json", "created_at", "updated_at",
+            ],
+        },
+        # --- Finance ------------------------------------------------------
+        {
+            "name": "Expenses",
+            "key": "expenses",
+            "model": Expense,
+            "columns": [
+                "id", "title", "amount", "currency", "expense_date", "category",
+                "project_id", "batch_id", "claim_id", "added_by", "notes",
+                "status", "paid_by", "paid_at", "custom_fields",
+                "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "ExpenseBatches",
+            "key": "expense_batches",
+            "model": ExpenseBatch,
+            "columns": ["id", "title", "notes", "created_by", "created_at", "updated_at"],
+        },
+        {
+            "name": "ExpenseClaims",
+            "key": "expense_claims",
+            "model": ExpenseClaim,
+            "columns": [
+                "id", "title", "project_id", "submitted_by", "status", "note",
+                "submitted_at", "settled_by", "settled_at", "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "ExpenseMembers",
+            "key": "expense_members",
+            "model": ExpenseMember,
+            "columns": ["id", "expense_id", "person_id", "share_amount",
+                        "created_at", "updated_at"],
+        },
+        {
+            "name": "FundAllocations",
+            "key": "fund_allocations",
+            "model": FundAllocation,
+            "columns": [
+                "id", "person_id", "project_id", "amount", "currency",
+                "received_date", "source_note", "logged_by",
+                "created_at", "updated_at",
+            ],
+        },
+        # --- Assets -------------------------------------------------------
+        {
+            "name": "Assets",
+            "key": "assets",
+            "model": Asset,
+            "columns": [
+                "id", "asset_code", "name", "category_id", "item_kind",
+                "serial_number", "quantity", "status", "current_project_id",
+                "current_person_id", "device_id", "purchase_date", "purchase_price",
+                "notes", "tags", "tag_identifiers", "custom_fields",
+                "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "AssetCategories",
+            "key": "asset_categories",
+            "model": AssetCategory,
+            "columns": ["id", "name", "parent_id", "sort_order", "created_at", "updated_at"],
+        },
+        {
+            "name": "AssetHistory",
+            "key": "asset_history",
+            "model": AssetHistory,
+            "columns": [
+                "id", "asset_id", "event_type", "old_status", "new_status",
+                "project_id", "person_id", "note", "performed_by", "occurred_at",
+                "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "AssetReports",
+            "key": "asset_reports",
+            "model": AssetReport,
+            "columns": [
+                "id", "report_type", "asset_id", "title", "details", "quantity",
+                "created_at", "updated_at",
+            ],
+        },
+        # --- Documents ----------------------------------------------------
+        # Metadata only. The files themselves live in MinIO and are not part of
+        # this archive — back that up separately.
+        {
+            "name": "Documents",
+            "key": "documents",
+            "model": Document,
+            "columns": [
+                "id", "filename", "entity_type", "entity_id", "content_type",
+                "size_bytes", "uploaded_by", "created_at", "updated_at",
             ],
         },
     ]

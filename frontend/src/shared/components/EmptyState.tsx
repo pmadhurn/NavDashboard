@@ -25,13 +25,13 @@ export default function EmptyState({
         textAlign: 'center',
       }}
     >
-      <div style={{ fontSize: 48, color: '#7A7A7A', marginBottom: 16 }}>
+      <div style={{ fontSize: 48, color: 'var(--text-muted)', marginBottom: 16 }}>
         {icon || <InboxOutlined />}
       </div>
       <div
         style={{
           fontSize: 18,
-          color: '#B8B8B8',
+          color: 'var(--text-secondary)',
           fontWeight: 500,
           marginBottom: 8,
         }}
@@ -42,7 +42,7 @@ export default function EmptyState({
         <div
           style={{
             fontSize: 14,
-            color: '#7A7A7A',
+            color: 'var(--text-muted)',
             maxWidth: 400,
             marginBottom: 16,
           }}

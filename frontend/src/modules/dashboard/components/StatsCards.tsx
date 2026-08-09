@@ -27,29 +27,29 @@ const cards: CardDef[] = [
   {
     label: 'Total Pairs',
     key: 'total_pairs',
-    icon: <SwapOutlined style={{ fontSize: 24, color: '#7A7A7A' }} />,
+    icon: <SwapOutlined style={{ fontSize: 24, color: 'var(--text-muted)' }} />,
     accent: '#2E2E2E',
     link: '/pairs',
   },
   {
     label: 'Total Devices',
     key: 'total_devices',
-    icon: <ApiOutlined style={{ fontSize: 24, color: '#7A7A7A' }} />,
+    icon: <ApiOutlined style={{ fontSize: 24, color: 'var(--text-muted)' }} />,
     accent: '#2E2E2E',
     link: '/devices',
   },
   {
     label: 'Active Errors',
     key: 'active_errors',
-    icon: <WarningOutlined style={{ fontSize: 24, color: '#7A7A7A' }} />,
-    accent: '#9B3E3E',
+    icon: <WarningOutlined style={{ fontSize: 24, color: 'var(--text-muted)' }} />,
+    accent: 'var(--status-faulty)',
     link: '/troubleshooting',
   },
   {
     label: 'Working Devices',
     key: 'devices_working',
-    icon: <CheckCircleOutlined style={{ fontSize: 24, color: '#7A7A7A' }} />,
-    accent: '#5F8F6B',
+    icon: <CheckCircleOutlined style={{ fontSize: 24, color: 'var(--text-muted)' }} />,
+    accent: 'var(--status-working)',
   },
 ]
 
@@ -68,7 +68,7 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
         const value = stats ? stats[card.key] : 0
         const dynamicAccent =
           card.key === 'active_errors' && stats && stats.active_errors > 0
-            ? '#9B3E3E'
+            ? 'var(--status-faulty)'
             : card.accent
 
         return (
@@ -107,7 +107,7 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
                 <div>{card.icon}</div>
                 <div
                   style={{
-                    color: '#B8B8B8',
+                    color: 'var(--text-secondary)',
                     fontSize: 14,
                     lineHeight: '20px',
                   }}
@@ -116,7 +116,7 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
                 </div>
                 <div
                   style={{
-                    color: '#F2F2F2',
+                    color: 'var(--text-primary)',
                     fontSize: 32,
                     fontWeight: 700,
                     lineHeight: '38px',
@@ -127,7 +127,7 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
                 {card.link && (
                   <div
                     style={{
-                      color: '#5F8F6B',
+                      color: 'var(--status-working)',
                       fontSize: 11,
                       marginTop: 4,
                       opacity: 0.7,

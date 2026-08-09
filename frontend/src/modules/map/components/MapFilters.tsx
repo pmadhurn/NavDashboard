@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Switch, Select } from 'antd'
 import { FilterOutlined, CloseOutlined } from '@ant-design/icons'
 import type { MapFilters as MapFiltersType } from '../hooks/useMapData'
@@ -18,9 +18,9 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
   }
 
   const statusItems: { key: keyof Pick<MapFiltersType, 'showWorking' | 'showNotWorking' | 'showFaulty'>; label: string; color: string }[] = [
-    { key: 'showWorking', label: 'Working', color: '#5F8F6B' },
-    { key: 'showNotWorking', label: 'Not Working', color: '#B68A3C' },
-    { key: 'showFaulty', label: 'Faulty', color: '#9B3E3E' },
+    { key: 'showWorking', label: 'Working', color: 'var(--status-working)' },
+    { key: 'showNotWorking', label: 'Not Working', color: 'var(--status-not-working)' },
+    { key: 'showFaulty', label: 'Faulty', color: 'var(--status-faulty)' },
   ]
 
   return (
@@ -47,17 +47,17 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
-            color: '#B8B8B8',
+            color: 'var(--text-secondary)',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(30, 30, 30, 0.9)'
-            e.currentTarget.style.color = '#F2F2F2'
+            e.currentTarget.style.color = 'var(--text-primary)'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'rgba(20, 20, 20, 0.85)'
-            e.currentTarget.style.color = '#B8B8B8'
+            e.currentTarget.style.color = 'var(--text-secondary)'
           }}
         >
           <FilterOutlined style={{ fontSize: 16 }} />
@@ -94,7 +94,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
                 gap: 6,
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#F2F2F2',
+                color: 'var(--text-primary)',
               }}
             >
               <FilterOutlined style={{ fontSize: 13 }} />
@@ -111,17 +111,17 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
                 borderRadius: 6,
                 border: 'none',
                 background: 'transparent',
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-                e.currentTarget.style.color = '#F2F2F2'
+                e.currentTarget.style.color = 'var(--text-primary)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = '#7A7A7A'
+                e.currentTarget.style.color = 'var(--text-muted)'
               }}
             >
               <CloseOutlined style={{ fontSize: 11 }} />
@@ -133,7 +133,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
             <div
               style={{
                 fontSize: 11,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
                 marginBottom: 8,
@@ -151,7 +151,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
                   padding: '4px 0',
                   cursor: 'pointer',
                   fontSize: 13,
-                  color: '#B8B8B8',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 <input
@@ -209,7 +209,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
               borderTop: '1px solid rgba(255,255,255,0.06)',
             }}
           >
-            <span style={{ fontSize: 13, color: '#B8B8B8' }}>RF Only</span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>RF Only</span>
             <Switch
               size="small"
               checked={filters.showRfOnly}
@@ -222,7 +222,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
             <div
               style={{
                 fontSize: 11,
-                color: '#7A7A7A',
+                color: 'var(--text-muted)',
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
                 marginBottom: 6,
@@ -253,7 +253,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
               borderTop: '1px solid rgba(255,255,255,0.06)',
             }}
           >
-            <span style={{ fontSize: 13, color: '#B8B8B8' }}>Show Trails</span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Show Trails</span>
             <Switch
               size="small"
               checked={filters.showTrails}

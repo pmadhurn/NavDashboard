@@ -1,9 +1,9 @@
-import React from 'react';
 import { Tabs } from 'antd';
-import { SettingOutlined, TeamOutlined } from '@ant-design/icons';
+import { DatabaseOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
 import GeneralSettings from '../components/GeneralSettings';
 import UserManagement from '../components/UserManagement';
+import DemoDataSettings from '../components/DemoDataSettings';
 import { useAuthStore } from '@/shared/stores/authStore';
 
 export default function SettingsPage() {
@@ -33,6 +33,16 @@ export default function SettingsPage() {
             ),
             children: <UserManagement />,
           },
+          {
+            key: 'demo-data',
+            label: (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <DatabaseOutlined />
+                Demo Data
+              </span>
+            ),
+            children: <DemoDataSettings />,
+          },
         ]
       : []),
   ];
@@ -46,27 +56,27 @@ export default function SettingsPage() {
       <Tabs
         items={tabItems}
         defaultActiveKey="general"
-        style={{ color: '#F2F2F2' }}
+        style={{ color: 'var(--text-primary)' }}
         tabBarStyle={{
-          borderBottom: '1px solid #242424',
+          borderBottom: '1px solid var(--border)',
           marginBottom: 24,
         }}
       />
 
       <style>{`
         .ant-tabs-tab {
-          color: #7A7A7A !important;
+          color: var(--text-muted) !important;
           font-size: 14px !important;
           padding: 8px 16px !important;
         }
         .ant-tabs-tab:hover {
-          color: #B8B8B8 !important;
+          color: var(--text-secondary) !important;
         }
         .ant-tabs-tab-active .ant-tabs-tab-btn {
-          color: #E6E6E6 !important;
+          color: var(--primary) !important;
         }
         .ant-tabs-ink-bar {
-          background: #E6E6E6 !important;
+          background: var(--primary) !important;
         }
       `}</style>
     </div>
