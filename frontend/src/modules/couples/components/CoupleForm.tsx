@@ -44,12 +44,15 @@ export default function CoupleForm({ open, onClose, couple }: CoupleFormProps) {
 
   useEffect(() => {
     if (!open) return
+    // Trailing slashes are required: without them FastAPI answers with a 307 to
+    // the canonical path, and that Location is absolute — so the redirect only
+    // survives if the proxy preserved the port (see nginx `Host $http_host`).
     api
-      .get<PaginatedResponse<PersonOption>>('/personnel', { size: 100 })
+      .get<PaginatedResponse<PersonOption>>('/personnel/', { size: 100 })
       .then((res) => setPersonnelOptions(res.items))
       .catch(() => {})
     api
-      .get<PaginatedResponse<Device>>('/devices', { size: 100 })
+      .get<PaginatedResponse<Device>>('/devices/', { size: 100 })
       .then((res) => setDeviceOptions(res.items))
       .catch(() => {})
   }, [open])

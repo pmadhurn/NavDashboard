@@ -5,6 +5,7 @@ import PageHeader from '@/shared/components/PageHeader';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
+import EmptyState from '@/shared/components/EmptyState';
 import StatusBadge from '@/shared/components/StatusBadge';
 import ShareButton from '@/shared/components/ShareButton';
 import { formatDateTime } from '@/shared/utils/formatters';
@@ -25,8 +26,24 @@ export default function AssetDetailPage() {
   const { data: asset, isLoading } = useAsset(id);
   const { data: history } = useAssetHistory(id);
 
-  if (isLoading || !asset) {
+  // `isLoading` and "no data" are distinct states: a 404 ends the load with
+  // `asset` still undefined, so folding them together spins forever.
+  if (isLoading) {
     return <LoadingSpinner text="Loading asset..." />;
+  }
+
+  if (!asset) {
+    return (
+      <EmptyState
+        title="Asset not found"
+        description="This asset may have been deleted, or the link is wrong."
+        action={
+          <GlassButton icon={<ArrowLeftOutlined />} onClick={() => navigate('/inventory/assets')}>
+            Back to Inventory
+          </GlassButton>
+        }
+      />
+    );
   }
 
   return (

@@ -800,8 +800,24 @@ export default function ProjectDetailPage() {
   const canEdit = usePermission('projects', 'EDIT');
   const [closeOpen, setCloseOpen] = useState(false);
 
-  if (isLoading || !project || !id) {
+  // `isLoading` and "no data" are distinct states: a 404 ends the load with
+  // `project` still undefined, so folding them together spins forever.
+  if (isLoading) {
     return <LoadingSpinner text="Loading project..." />;
+  }
+
+  if (!project || !id) {
+    return (
+      <EmptyState
+        title="Project not found"
+        description="This project may have been deleted, or the link is wrong."
+        action={
+          <GlassButton icon={<ArrowLeftOutlined />} onClick={() => navigate('/projects')}>
+            Back to Projects
+          </GlassButton>
+        }
+      />
+    );
   }
 
   return (
