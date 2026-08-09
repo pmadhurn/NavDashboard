@@ -1,12 +1,34 @@
 // NavOS route sweep — all 29 routes x {1440, 390}.
 // Read-only against production: navigates, opens the primary action, closes it.
 // Never submits a form.
-import { chromium } from '/home/ubuntu/.npm/_npx/9833c18b2d85bc59/node_modules/playwright/index.mjs';
+//
+// Setup (no password change, no DB write — mints a token with the app's own
+// signing key, then captures the /auth/me payload the store hydrates from):
+//
+//   UID=$(docker exec navdashboard-db-1 psql -U navdashboard -d navdashboard -t -A \
+//     -c "SELECT id FROM users WHERE role='ADMIN' AND deleted_at IS NULL LIMIT 1")
+//   docker exec navdashboard-backend-1 python -c \
+//     "import sys;sys.path.insert(0,'/app');from core.security import create_access_token;\
+//      print(create_access_token('$UID','ADMIN'))" | tail -1 > tok.txt
+//   curl -s http://127.0.0.1:8085/api/v1/auth/me -H "Authorization: Bearer $(cat tok.txt)" > user.json
+//
+// BOTH files are required. authStore.ts hydrates `user` from auth_user, and
+// routes.tsx reads `if (user && !hasPermission(...))` — a null user FAILS OPEN,
+// so a token-only session renders every guarded route and the sweep lies.
+//
+// Run (needs `playwright` resolvable — `npm i -D playwright`, or point
+// PLAYWRIGHT_MODULE at an existing install as below):
+//   PLAYWRIGHT_MODULE=/path/to/node_modules/playwright/index.mjs \
+//   PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/.cache/ms-playwright \
+//   node scripts/route-sweep.mjs
+//
+// Env: TOK_FILE, USER_FILE, OUT all default to ./ in the working directory.
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 import fs from 'fs';
 
 const BASE = 'http://127.0.0.1:8085';
-const TOKEN = fs.readFileSync('/tmp/claude-1001/-home-ubuntu/f966faad-a72e-40a1-8e74-cb16cd2c49bf/scratchpad/tok.txt', 'utf8').trim();
-const USER = fs.readFileSync('/tmp/claude-1001/-home-ubuntu/f966faad-a72e-40a1-8e74-cb16cd2c49bf/scratchpad/user.json', 'utf8').trim();
+const TOKEN = fs.readFileSync(process.env.TOK_FILE || './tok.txt', 'utf8').trim();
+const USER = fs.readFileSync(process.env.USER_FILE || './user.json', 'utf8').trim();
 
 const ID = {
   device: '2c84e9ec-710c-4f46-9f6f-b212274a9809',
@@ -124,5 +146,5 @@ for (const [wName, w, h] of [['desktop', 1440, 900], ['mobile', 390, 844]]) {
   await browser.close();
 }
 
-fs.writeFileSync('/tmp/claude-1001/-home-ubuntu/f966faad-a72e-40a1-8e74-cb16cd2c49bf/scratchpad/sweep.json', JSON.stringify(results, null, 2));
+fs.writeFileSync(process.env.OUT || './sweep.json', JSON.stringify(results, null, 2));
 console.log('checks:', results.length);

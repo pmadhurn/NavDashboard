@@ -1,8 +1,8 @@
-import { chromium } from '/home/ubuntu/.npm/_npx/9833c18b2d85bc59/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 import fs from 'fs';
 const BASE='http://127.0.0.1:8085';
-const TOKEN=fs.readFileSync('/tmp/claude-1001/-home-ubuntu/f966faad-a72e-40a1-8e74-cb16cd2c49bf/scratchpad/tok.txt','utf8').trim();
-const USER =fs.readFileSync('/tmp/claude-1001/-home-ubuntu/f966faad-a72e-40a1-8e74-cb16cd2c49bf/scratchpad/user.json','utf8').trim();
+const TOKEN=fs.readFileSync(process.env.TOK_FILE || './tok.txt','utf8').trim();
+const USER =fs.readFileSync(process.env.USER_FILE || './user.json','utf8').trim();
 const ID={device:'2c84e9ec-710c-4f46-9f6f-b212274a9809',couple:'cf211940-d29b-4531-bb21-c41db9940fca',pair:'2f064754-d439-47b1-b52a-b3b8400f6eaa',project:'e8a5b046-114c-4b4d-8317-c28411e7781a',asset:'6ca0cd01-09e6-4e11-913e-76fb86054ccb'};
 
 // route -> primary action. `btn` = exact visible label to click (opens a form/modal,
@@ -88,5 +88,5 @@ for(const [vp,w,h] of [['desktop',1440,900],['mobile',390,844]]){
   }
   await browser.close();
 }
-fs.writeFileSync('/tmp/claude-1001/-home-ubuntu/f966faad-a72e-40a1-8e74-cb16cd2c49bf/scratchpad/actions.json',JSON.stringify(out,null,2));
+fs.writeFileSync(process.env.OUT || './actions.json',JSON.stringify(out,null,2));
 console.log('action checks:',out.length,'failures:',out.filter(x=>x.result==='FAIL').length);

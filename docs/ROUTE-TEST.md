@@ -76,13 +76,15 @@ GET /api/v1/devices?size=100
 → 307  location: http://127.0.0.1/api/v1/devices/?size=100     # port gone → ERR_CONNECTION_REFUSED
 ```
 
-`CoupleForm.tsx:48,52` requested `/personnel` and `/devices` **without** trailing slashes — the only two such callers in the codebase — so the Add Couple and Edit Couple forms loaded with **empty Handling Person and Assign Devices dropdowns**. A `.catch(() => {})` on both calls swallowed the failure, which is why it produced no visible error for a month.
+`CoupleForm.tsx:48,52` requested `/personnel` and `/devices` **without** trailing slashes, so the Add Couple and Edit Couple forms loaded with **empty Handling Person and Assign Devices dropdowns**. A `.catch(() => {})` on both calls swallowed the failure, which is why it produced no visible error for a month.
 
 *Why this was never caught:* on `nav.madhur.dev` the port is 443, the default, so the port-less redirect resolves correctly. The 2026-08-09 sweep ran against the tunnel domain and could not have seen it. It only manifests on a non-default port — i.e. exactly the loopback setup used for development.
 
 **Fix — both layers.** `Host $http_host` in all five `proxy_set_header` sites (root cause: fixes every present and future caller), plus trailing slashes on the two `CoupleForm` calls (correctness: avoids a pointless redirect round-trip).
 
 > **Why fix both rather than just the callers:** patching only `CoupleForm` leaves the next developer to rediscover this. Patching only nginx leaves two calls taking a needless 307. **Rejected:** disabling FastAPI's `redirect_slashes` — that turns a working-with-redirect call into a hard 404 and would have broken more than it fixed.
+
+**Blast radius, checked two ways.** Only a *collection root* without its slash triggers the redirect, so every API path literal in the frontend was enumerated — both `api.get/post/put/delete` chains and the 9 raw `fetch('/api/v1/…')` calls (`reports/generate`, four `backup/export|import`, `backup/pg-dump/*`, `documents/upload`, `personnel/?size=100`). Every one except the two in `CoupleForm` is either an exact registered sub-path or already carries the slash. Those two were the whole exposure.
 
 **Verified:** `location: http://127.0.0.1:8085/api/v1/devices/?size=100` (port preserved); both calls now return **200** with no redirect; Handling Person shows all 5 personnel, Assign Devices shows 15 devices, Status shows 3. `https://nav.madhur.dev` re-checked and still healthy.
 
@@ -126,4 +128,6 @@ A 404 ends the load with the entity still `undefined`, so the guard stays true *
 
 The existing surface is sound. 29 routes render on desktop and mobile with no blank pages and no horizontal overflow; every route's primary action opens the form it should. Two genuine defects were found and fixed, one of which (the Couple form) had been silently broken on every non-443 deployment.
 
-**Step 2 may proceed on this foundation.**
+The more important result is about *method*, not coverage: the 2026-08-09 sweep ran against `nav.madhur.dev`, where port 443 is implicit — so it was **structurally incapable** of seeing defect 1, no matter how many routes it walked. Verification that only ever runs against the public hostname cannot detect a class of bug that the public hostname hides.
+
+**Step 1 is complete.** Awaiting go-ahead for Step 2.

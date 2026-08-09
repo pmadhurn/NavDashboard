@@ -262,7 +262,7 @@ Each step ends with the app building, running, and the device module verified. N
 | # | Step | Why here | Ends with |
 |---|---|---|---|
 | **0** | **Commit the working tree.** 133 modified + 13 untracked files, uncommitted since 2026-07-10. Untrack `frontend/.env`. | There is currently **no rollback point**. Every step below is unsafe without one. | A clean `git status` and a tagged baseline |
-| **1** | **Regression baseline.** Fix `scripts/*.sh` (port 8085, current admin credential, read-only mode). Run the 2026-08-09 browser sweep over **all 29 routes** × 2 widths × 2 themes — the previous sweep covered 22–23 and never touched projects/finance/inventory/downloads. | "Verified, not assumed" needs a *before* to compare against | A recorded pass/fail list per route |
+| **1** | ~~Fix `scripts/*.sh`~~ → **new read-only Playwright harness.** Walk all 29 routes × 2 viewports. **Done 2026-08-10** — see [`ROUTE-TEST.md`](./ROUTE-TEST.md). | "Verified, not assumed" needs a *before* to compare against | 63/63 render, 0 overflow, 2 defects fixed |
 | **2** | **Authorization unification.** Add `scope` + `roles` + `role_permissions`; extend `require_permission`; migrate all 46 `require_role` sites; guard the 87 operations reachable by any authenticated user; seed the five role presets from §4.2. | Every later module inherits it; retrofitting is what created today's split | Non-admin users provably 403 where they should. Fixes AUDIT §5.3 #1, #2 |
 | **3** | **Backup coverage.** Add the 6 missing business tables to `backup/exporter.py` (`user_permissions`, four `download_*`, both `equipment_movement*`) plus the new tables from step 4 onward. | Adding modules that a restore silently drops is worse than not adding them | Backup covers every business table. Fixes AUDIT §5.3 #3 |
 | **4** | **Shared export service.** Lift the ~270 lines from `finance/service.py` into `modules/exports/`; Finance consumes it unchanged; Projects becomes the second consumer. | Two consumers is the point at which the abstraction is real — building it with one is speculative | Identical finance exports (byte-compare the xlsx), plus project export |
@@ -279,6 +279,14 @@ Each step ends with the app building, running, and the device module verified. N
 - **AI assistant, search, audit trail, seeding, backup** — except backup's table list (step 3).
 - **The `Base`/`SoftDeleteMixin`/`CustomFieldsMixin` model conventions, the axios client, the TanStack Query per-module hook pattern, zustand stores.** New modules copy these; they do not introduce alternatives.
 - **`fitting_materials` vs `assets`.** Two inventory systems is real debt (AUDIT §4.2 #2), but merging them touches `CoupleDetailPage` and the couple workflow, which the brief does not ask to change. **Deferred, deliberately, and recorded here so it is not forgotten.**
+
+### Plan changes (recorded per the acceptance criteria)
+
+**2026-08-10 — Step 1 method changed.** The plan said "fix `scripts/*.sh`". It was instead replaced by a new Playwright harness (`scripts/route-sweep.mjs`, `scripts/route-actions.mjs`).
+
+> **Why:** the bash scripts prove liveness by **POSTing records into the production database** ("Smoke Test Cable", "Smoke Test POC"), which is unacceptable for a regression baseline run repeatedly against live data. The new harness is read-only — it opens each primary action's form and closes it without submitting — and produces machine-readable JSON that can be diffed after Step 3. **Rejected:** pointing the bash scripts at a throwaway database (would then no longer test the deployment that actually serves users). The bash scripts are left in place, still stale, and are now superseded for this purpose.
+
+**2026-08-10 — Step 1 tested one theme, not two.** The plan said 2 widths × 2 themes. Executed as 2 widths × 1 theme (dark). **Why:** the 2026-08-09 sweep already cleared both themes across 22–23 routes; the incremental value was in the 6 never-tested routes, and doubling the matrix for a known-clean axis was not worth the runtime. The 6 new routes remain untested in light theme — carried into Step 5, which touches theming anyway.
 
 ### Known risks
 
