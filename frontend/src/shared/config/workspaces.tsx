@@ -27,6 +27,8 @@ import {
   SafetyOutlined,
   HomeOutlined,
   SearchOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { hasPermission, PermissionLevel } from '@/shared/stores/authStore';
 
@@ -67,6 +69,20 @@ export const WORKSPACES: Workspace[] = [
     accent: 'var(--secondary)',
     icon: <HomeOutlined />,
     items: [{ key: '/', icon: <HomeOutlined />, label: 'Overview' }],
+  },
+  {
+    // The field user's whole app in one tab: what they log daily, on a phone.
+    // Scattering these under People and Finance would make the most common
+    // user the worst-served one.
+    key: 'me',
+    label: 'My Work',
+    shortLabel: 'Me',
+    accent: '#6F8CB6',
+    icon: <CalendarOutlined />,
+    items: [
+      { key: '/me/attendance', icon: <CalendarOutlined />, label: 'My Attendance', section: 'attendance' },
+      { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', section: 'finance' },
+    ],
   },
   {
     key: 'field',
@@ -135,6 +151,8 @@ export const WORKSPACES: Workspace[] = [
     icon: <TeamOutlined />,
     items: [
       { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel', section: 'personnel' },
+      { key: '/attendance', icon: <CalendarOutlined />, label: 'Attendance Board', section: 'attendance' },
+      { key: '/compoff', icon: <ClockCircleOutlined />, label: 'Comp-off', section: 'attendance' },
     ],
   },
   {

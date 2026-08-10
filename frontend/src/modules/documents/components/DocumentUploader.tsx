@@ -91,6 +91,7 @@ export default function DocumentUploader({
       }}
       title="Upload Document"
       width={560}
+      footer={null}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Dragger

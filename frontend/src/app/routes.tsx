@@ -41,6 +41,9 @@ const FinancePage = lazy(() => import('@/modules/finance/pages/FinancePage'));
 const MyFinancePage = lazy(() => import('@/modules/finance/pages/MyFinancePage'));
 const ClaimsPage = lazy(() => import('@/modules/finance/pages/ClaimsPage'));
 const SettlementPage = lazy(() => import('@/modules/finance/pages/SettlementPage'));
+const MyAttendancePage = lazy(() => import('@/modules/attendance/pages/MyAttendancePage'));
+const AttendanceBoardPage = lazy(() => import('@/modules/attendance/pages/AttendanceBoardPage'));
+const CompOffPage = lazy(() => import('@/modules/attendance/pages/CompOffPage'));
 
 // Route guard: requires at least `level` on `section` (ADMIN always passes).
 function RequirePermission({
@@ -105,6 +108,9 @@ export function AppRoutes() {
           <Route path="finance/claims" element={<RequirePermission section="finance"><ClaimsPage /></RequirePermission>} />
           <Route path="finance/settlement" element={<RequirePermission section="finance" level="MANAGE"><SettlementPage /></RequirePermission>} />
           {/* Permission-gated routes */}
+          <Route path="me/attendance" element={<RequirePermission section="attendance"><MyAttendancePage /></RequirePermission>} />
+          <Route path="attendance" element={<RequirePermission section="attendance"><AttendanceBoardPage /></RequirePermission>} />
+          <Route path="compoff" element={<RequirePermission section="attendance"><CompOffPage /></RequirePermission>} />
           <Route path="personnel" element={<RequirePermission section="personnel"><PersonnelListPage /></RequirePermission>} />
           <Route path="search" element={<SearchPage />} />
           <Route path="audit" element={<RequirePermission section="admin"><AuditTrailPage /></RequirePermission>} />

@@ -75,12 +75,22 @@ async def my_summary(
     db: AsyncSession = Depends(get_db),
     user=Depends(require_permission("attendance", "VIEW")),
 ):
+    date_from, date_to = _default_range(date_from, date_to)
     person_id = await get_current_person_id(db, user)
     if person_id is None:
-        raise BadRequestException(
-            "This login is not linked to a personnel record, so it has no attendance"
+        # An unlinked login is an ordinary state, not an error: the page needs
+        # to explain it, which it cannot do from a 400.
+        from modules.attendance.models import DAY_TYPES
+
+        return AttendanceSummary(
+            person_id=None,
+            person_name=None,
+            date_from=date_from,
+            date_to=date_to,
+            counts={dt: 0 for dt in DAY_TYPES},
+            total_logged=0,
+            comp_off_balance=0,
         )
-    date_from, date_to = _default_range(date_from, date_to)
     return await service.summary(db, person_id, date_from, date_to)
 
 
@@ -91,8 +101,8 @@ async def my_comp_off(
 ):
     person_id = await get_current_person_id(db, user)
     if person_id is None:
-        raise BadRequestException(
-            "This login is not linked to a personnel record"
+        return CompOffBalance(
+            person_id=None, person_name=None, balance=0, accrued=0, consumed=0
         )
     return await service.comp_off_balance(db, person_id)
 

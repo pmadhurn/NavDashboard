@@ -937,9 +937,11 @@ body {
   background: var(--tab-accent, var(--secondary));
 }
 
-/* Below ~1100px the labels are the first thing to go: icons still identify the
-   workspace, and the active one keeps its label for orientation. */
-@media (max-width: 1100px) {
+/* Labels are the first thing to go: icons still identify the workspace, and the
+   active one keeps its label for orientation. The breakpoint is 1500px, not a
+   rounder 1100px, because eight full labels plus the brand, search box, theme
+   toggle and user chip measure ~1405px — at 1440 the last tab was clipped. */
+@media (max-width: 1500px) {
   .navos-tab > span:last-child { display: none; }
   .navos-tab.is-active > span:last-child { display: inline; }
   .navos-tab { padding: 7px 10px; }

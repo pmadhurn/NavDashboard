@@ -42,7 +42,7 @@ export default function ReportBuilder({ open, template, onClose }: ReportBuilder
     template.parameters.includes('date_from') || template.parameters.includes('date_to');
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Generate Report" width={480}>
+    <GlassModal open={open} onClose={onClose} title="Generate Report" width={480} footer={null}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div
           style={{

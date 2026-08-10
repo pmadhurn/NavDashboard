@@ -47,9 +47,14 @@ class AttendanceDayResponse(BaseModel):
 
 
 class AttendanceSummary(BaseModel):
-    """Day-type totals for a person over a range, plus the comp-off balance."""
+    """Day-type totals for a person over a range, plus the comp-off balance.
 
-    person_id: UUID
+    `person_id` is optional because a login need not be linked to a personnel
+    record; that is an ordinary state, not an error, and the caller needs to be
+    able to render an explanation rather than an error page.
+    """
+
+    person_id: Optional[UUID] = None
     person_name: Optional[str] = None
     date_from: date
     date_to: date
@@ -78,7 +83,7 @@ class CompOffAdjust(BaseModel):
 
 
 class CompOffBalance(BaseModel):
-    person_id: UUID
+    person_id: Optional[UUID] = None
     person_name: Optional[str] = None
     balance: Decimal
     accrued: Decimal
