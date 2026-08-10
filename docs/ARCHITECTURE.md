@@ -282,6 +282,18 @@ Each step ends with the app building, running, and the device module verified. N
 
 ### Plan changes (recorded per the acceptance criteria)
 
+**2026-08-11 — Steps resequenced to visible-first, at the user's direction.** New order: **5 → 4b → 2 → 6 → 7 → 3 → 4 → 8**.
+
+> **Why:** the user asked for "things which actually make work seen" first. Step 2's own stated rationale — *"every later module inherits it; retrofitting is what created today's split"* — applies to the **new** modules (Attendance, Updates), not to Steps 4b and 5, which touch existing pages only and change no router guard. So 4b and 5 can safely front-run it. **Step 2 still precedes Steps 6 and 7**, because those are the first consumers of `scope = SELF/TEAM` and building them against a scopeless model would mean building them twice. **Rejected:** moving Step 2 to the very end (fastest visible progress, but Attendance and Daily Updates are exactly the modules that need per-user scoping, so they would need reworking).
+
+**2026-08-11 — Step 1.1 nav model reversed: the top bar is back.** §1.1 rejected a horizontal top nav. The user's follow-up brief asks for "better navigation. Combination of top and side," and confirmed on 2026-08-11 that workspace switching should move to a top bar with the sidebar reserved for the active workspace's pages.
+
+> **Why the original rejection no longer holds:** it argued a top nav "collapses to a hamburger on mobile." That is only true if the top bar is the *only* switcher. Here mobile keeps a dedicated bottom tab bar, so the hamburger carries the contextual drawer, not the modules — the pattern the brief rejects is avoided. The vertical-space cost is one 56px bar, which replaces the header that already existed, so the net cost is zero. **Rejected:** top-bar-only with dropdown menus per module (29+ routes hidden behind hover menus).
+
+**2026-08-11 — Step 4b done, and the gate is phase-positive.** Implemented as: hide Equipment and Team when **every** phase is `DESKTOP_SURVEY`.
+
+> **Why tested positively rather than by absence of a field phase:** `modules/seeding/service.py` was writing `phase_type` values the API's own validator rejects (`SURVEY`, `COMMISSIONING`) and `project_type` values outside `VALID_TYPES` (`DEPLOYMENT`, `SURVEY`). An "no field phase found → desk-only" rule would read those unknown values as desk-only and hide tabs the project needs. The seeder is fixed in the same commit, but the frontend must not depend on that. A project with **no** phases keeps all tabs — unknown is not desk-only.
+
 **2026-08-10 — Step 1 method changed.** The plan said "fix `scripts/*.sh`". It was instead replaced by a new Playwright harness (`scripts/route-sweep.mjs`, `scripts/route-actions.mjs`).
 
 > **Why:** the bash scripts prove liveness by **POSTing records into the production database** ("Smoke Test Cable", "Smoke Test POC"), which is unacceptable for a regression baseline run repeatedly against live data. The new harness is read-only — it opens each primary action's form and closes it without submitting — and produces machine-readable JSON that can be diffed after Step 3. **Rejected:** pointing the bash scripts at a throwaway database (would then no longer test the deployment that actually serves users). The bash scripts are left in place, still stale, and are now superseded for this purpose.

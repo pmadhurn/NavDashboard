@@ -136,17 +136,30 @@ async def _seed_projects(db: AsyncSession, user_id: UUID) -> dict[str, list[UUID
         return {}
 
     now = datetime.now(timezone.utc)
+    # project_type must be one of service.VALID_TYPES and phase_type one of
+    # VALID_PHASE_TYPES — the seeder writes models directly and so bypasses the
+    # request-schema validation the API applies. It previously seeded
+    # "DEPLOYMENT"/"SURVEY" projects and "SURVEY"/"COMMISSIONING" phases, none of
+    # which the API would accept, which left the demo data unable to round-trip
+    # through the app's own endpoints.
+    #
+    # The third fixture is deliberately desktop-survey-only: locations arrive
+    # from the customer, LOS analysis happens at a desk, no team is sent. It is
+    # the fixture that exercises the desk-only project flow.
     fixtures = [
-        ("Marina Rooftop Rollout", "DEPLOYMENT", "ACTIVE", "Emaar Properties",
-         "Dubai Marina", 25.2048, 55.2708, 45),
+        ("Marina Rooftop Rollout", "INSTALLATION", "ACTIVE", "Emaar Properties",
+         "Dubai Marina", 25.2048, 55.2708, 45,
+         ["PHYSICAL_SURVEY", "INSTALLATION", "MAINTENANCE"]),
         ("Corniche POC", "POC", "ACTIVE", "ADNOC",
-         "Abu Dhabi Corniche", 24.4539, 54.3773, 20),
-        ("Industrial Area Survey", "SURVEY", "COMPLETED", "Sharjah Municipality",
-         "Sharjah Industrial 12", 25.3463, 55.4209, 90),
+         "Abu Dhabi Corniche", 24.4539, 54.3773, 20,
+         ["DESKTOP_SURVEY", "PHYSICAL_SURVEY", "INSTALLATION"]),
+        ("Industrial Area Desktop Survey", "OTHER", "COMPLETED", "Sharjah Municipality",
+         "Sharjah Industrial 12", 25.3463, 55.4209, 90,
+         ["DESKTOP_SURVEY"]),
     ]
     project_ids, phase_ids, member_ids = [], [], []
 
-    for name, ptype, status, customer, site, lat, lon, age_days in fixtures:
+    for name, ptype, status, customer, site, lat, lon, age_days, phase_types in fixtures:
         p = Project(
             name=name,
             project_type=ptype,
@@ -164,7 +177,7 @@ async def _seed_projects(db: AsyncSession, user_id: UUID) -> dict[str, list[UUID
         await db.flush()
         project_ids.append(p.id)
 
-        for idx, phase_type in enumerate(["SURVEY", "INSTALLATION", "COMMISSIONING"]):
+        for idx, phase_type in enumerate(phase_types):
             ph = ProjectPhase(
                 project_id=p.id,
                 phase_type=phase_type,

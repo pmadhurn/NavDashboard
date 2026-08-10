@@ -796,9 +796,27 @@ export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: project, isLoading } = useProject(id);
+  const { data: phases } = useProjectPhases(id);
   const updateProject = useUpdateProject();
   const canEdit = usePermission('projects', 'EDIT');
   const [closeOpen, setCloseOpen] = useState(false);
+
+  // Not every project sends a team to a site. A desktop survey — locations
+  // arrive from someone else, LOS analysis is done at a desk, a report goes
+  // back — has nothing to issue from the store and no site team, so showing it
+  // the outward/inward and Team tabs invites rows that will never be filled.
+  //
+  // A project earns those tabs once it has a phase that actually goes out. A
+  // project with no phases yet is *unknown*, not desk-only, so it keeps them:
+  // hiding a capability someone is about to need is worse than showing one they
+  // will not.
+  // Tested positively (every phase is a desktop survey) rather than by absence
+  // of a field phase: seeded rows carry phase_type values the API itself would
+  // reject (`SURVEY`, `COMMISSIONING`), and an unrecognised value must never be
+  // read as "desk-only" and silently hide a tab the project needs.
+  const deskOnly = Boolean(
+    phases && phases.length > 0 && phases.every((p) => p.phase_type === 'DESKTOP_SURVEY')
+  );
 
   // `isLoading` and "no data" are distinct states: a 404 ends the load with
   // `project` still undefined, so folding them together spins forever.
@@ -863,14 +881,40 @@ export default function ProjectDetailPage() {
         onClose={() => setCloseOpen(false)}
       />
 
+      {deskOnly && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            margin: '0 0 12px',
+            padding: '8px 12px',
+            borderRadius: 8,
+            background: 'var(--overlay-subtle)',
+            color: 'var(--text-muted)',
+            fontSize: 12,
+          }}
+        >
+          <FileOutlined />
+          <span>
+            Desktop survey — no equipment or site team yet. Start a physical survey
+            phase to issue equipment and add a site team.
+          </span>
+        </div>
+      )}
+
       <Tabs
         defaultActiveKey="timeline"
         items={[
           { key: 'timeline', label: 'Timeline', children: <TimelineTab projectId={id} /> },
           { key: 'phases', label: 'Phases', children: <PhasesTab projectId={id} /> },
-          { key: 'equipment', label: 'Equipment', children: <EquipmentTab projectId={id} /> },
+          ...(deskOnly
+            ? []
+            : [{ key: 'equipment', label: 'Equipment', children: <EquipmentTab projectId={id} /> }]),
           { key: 'deployed', label: 'Deployed', children: <DeployedTab projectId={id} /> },
-          { key: 'team', label: 'Team', children: <TeamTab projectId={id} /> },
+          ...(deskOnly
+            ? []
+            : [{ key: 'team', label: 'Team', children: <TeamTab projectId={id} /> }]),
         ]}
       />
       <style>{`
