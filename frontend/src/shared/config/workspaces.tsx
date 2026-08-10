@@ -191,6 +191,7 @@ export const WORKSPACES: Workspace[] = [
     accent: 'var(--role-technician)',
     icon: <SafetyOutlined />,
     items: [
+      { key: '/settings/access', icon: <SafetyOutlined />, label: 'Access Control', permission: 'users.read' },
       { key: '/settings', icon: <SettingOutlined />, label: 'Users & Settings', permission: 'settings.read' },
       { key: '/audit', icon: <AuditOutlined />, label: 'Audit Trail', permission: 'audit.read' },
       { key: '/backup', icon: <CloudDownloadOutlined />, label: 'Backup', permission: 'backup.read' },
