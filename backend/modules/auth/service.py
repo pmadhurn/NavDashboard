@@ -249,9 +249,13 @@ async def approve_user(db: AsyncSession, user_id: UUID, approved_by: UUID) -> Us
 
 
 async def update_permissions(
-    db: AsyncSession, user_id: UUID, permissions: dict[str, str], changed_by: UUID
+    db: AsyncSession,
+    user_id: UUID,
+    permissions: dict[str, str],
+    changed_by: UUID,
+    scopes: dict[str, str] | None = None,
 ) -> dict[str, str]:
-    from core.permissions import LEVELS, SECTIONS
+    from core.permissions import LEVELS, SCOPES, SECTIONS
 
     user = await repository.get_by_id(db, user_id)
     if not user:
@@ -265,9 +269,19 @@ async def update_permissions(
     if invalid:
         raise ConflictException(f"Invalid permissions: {', '.join(invalid)}")
 
+    # A scope for a section that is not being granted is meaningless, and
+    # silently dropping it would hide a caller's mistake.
+    invalid_scopes = [
+        f"{s}={sc}"
+        for s, sc in (scopes or {}).items()
+        if s not in permissions or sc not in SCOPES
+    ]
+    if invalid_scopes:
+        raise ConflictException(f"Invalid scopes: {', '.join(invalid_scopes)}")
+
     # NONE rows are stored explicitly: a user with any rows is "managed" and
     # no longer falls back to legacy role defaults.
-    rows = await repository.set_permissions(db, user_id, permissions)
+    rows = await repository.set_permissions(db, user_id, permissions, scopes)
     await record_audit(
         db,
         action="UPDATE",
@@ -277,6 +291,16 @@ async def update_permissions(
         new_values=permissions,
     )
     return {row.section: row.level for row in rows}
+
+
+async def get_permission_detail(db: AsyncSession, user) -> dict:
+    """Level map and scope map together, for the admin permission editor."""
+    from core.dependencies import get_permission_map, get_scope_map
+
+    return {
+        "permissions": await get_permission_map(db, user),
+        "scopes": await get_scope_map(db, user),
+    }
 
 
 async def ensure_default_admin(db: AsyncSession) -> None:

@@ -11,7 +11,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.auth.models import User
+from modules.auth.models import User, UserPermission
 from modules.couples.models import Couple
 from modules.devices.models import Device, DeviceStatusHistory
 from modules.inventory.models import FittingMaterial, MaterialTemplate
@@ -97,6 +97,7 @@ def _get_export_tables() -> list[dict]:
             "model": Person,
             "columns": [
                 "id", "full_name", "role", "email", "phone", "notes",
+                "user_id", "team_lead_id",
                 "custom_fields", "created_at", "updated_at",
             ],
         },
@@ -154,6 +155,18 @@ def _get_export_tables() -> list[dict]:
             "model": User,
             "columns": [
                 "id", "email", "username", "full_name", "role", "is_active",
+                "created_at", "updated_at",
+            ],
+        },
+        {
+            # Without this, a restore silently drops every permission grant and
+            # leaves the users it restored with nothing but their legacy role
+            # defaults — which look plausible, so nobody notices.
+            "name": "UserPermissions",
+            "key": "user_permissions",
+            "model": UserPermission,
+            "columns": [
+                "id", "user_id", "section", "level", "scope",
                 "created_at", "updated_at",
             ],
         },

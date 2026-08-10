@@ -101,15 +101,32 @@ async def get_permissions(db: AsyncSession, user_id: UUID) -> list[UserPermissio
 
 
 async def set_permissions(
-    db: AsyncSession, user_id: UUID, permissions: dict[str, str]
+    db: AsyncSession,
+    user_id: UUID,
+    permissions: dict[str, str],
+    scopes: dict[str, str] | None = None,
 ) -> list[UserPermission]:
-    """Replace the user's permission rows with the given section -> level map."""
+    """Replace the user's permission rows with the given section -> level map.
+
+    `scopes` is optional and per-section; a section omitted from it keeps the
+    widest scope, so a caller that knows nothing about scopes writes exactly the
+    rows it used to.
+    """
+    from core.permissions import DEFAULT_SCOPE
+
+    scopes = scopes or {}
     existing = {p.section: p for p in await get_permissions(db, user_id)}
     for section, level in permissions.items():
+        scope = scopes.get(section, DEFAULT_SCOPE)
         if section in existing:
             existing[section].level = level
+            existing[section].scope = scope
         else:
-            db.add(UserPermission(user_id=user_id, section=section, level=level))
+            db.add(
+                UserPermission(
+                    user_id=user_id, section=section, level=level, scope=scope
+                )
+            )
     for section, perm in existing.items():
         if section not in permissions:
             await db.delete(perm)

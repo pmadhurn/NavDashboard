@@ -40,9 +40,14 @@ class UserResponse(BaseModel):
 
 
 class PermissionsUpdate(BaseModel):
-    """Full section -> level map; replaces the user's permissions."""
+    """Full section -> level map; replaces the user's permissions.
+
+    `scopes` is optional and defaults per-section to ALL, so a client that has
+    not been updated for the scope dimension keeps its existing behaviour.
+    """
 
     permissions: dict[str, str]
+    scopes: Optional[dict[str, str]] = None
 
 
 class LoginRequest(BaseModel):

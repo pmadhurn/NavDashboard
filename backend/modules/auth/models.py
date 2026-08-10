@@ -34,3 +34,7 @@ class UserPermission(Base):
     )
     section: Mapped[str] = mapped_column(String(50), nullable=False)
     level: Mapped[str] = mapped_column(String(20), nullable=False, default="NONE")
+    # Whose records the level applies to: SELF | TEAM | ALL. Defaults to ALL so
+    # that adding this column leaves every pre-existing grant meaning exactly
+    # what it meant before.
+    scope: Mapped[str] = mapped_column(String(10), nullable=False, default="ALL")

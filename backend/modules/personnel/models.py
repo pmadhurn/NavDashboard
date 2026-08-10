@@ -24,6 +24,12 @@ class Person(Base, SoftDeleteMixin, CustomFieldsMixin):
     user_id: Mapped[Optional[UUID]] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=True
     )
+    # Who approves this person's attendance and sees their updates under
+    # scope=TEAM. Project membership alone cannot answer this — someone between
+    # projects would have no team, and so no lead able to approve their days.
+    team_lead_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("personnel.id"), nullable=True
+    )
 
 
 class AssignmentHistory(Base):

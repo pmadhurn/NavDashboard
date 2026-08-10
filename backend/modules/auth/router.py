@@ -167,7 +167,7 @@ async def get_user_permissions(
     current_user: User = Depends(require_role("ADMIN")),
 ):
     user = await service.get_profile(db, user_id)
-    return {"permissions": await get_permission_map(db, user)}
+    return await service.get_permission_detail(db, user)
 
 
 @router.put("/users/{user_id}/permissions")
@@ -178,7 +178,7 @@ async def set_user_permissions(
     current_user: User = Depends(require_role("ADMIN")),
 ):
     permissions = await service.update_permissions(
-        db, user_id, body.permissions, changed_by=current_user.id
+        db, user_id, body.permissions, changed_by=current_user.id, scopes=body.scopes
     )
     return {"permissions": permissions}
 
