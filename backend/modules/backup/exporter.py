@@ -37,6 +37,7 @@ from modules.finance.models import (
 from modules.assets.models import Asset, AssetCategory, AssetHistory, AssetReport
 from modules.documents.models import Document
 from modules.attendance.models import AttendanceDay, CompOffLedger
+from modules.updates.models import DailyUpdate, UpdateComment
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +192,25 @@ def _get_export_tables() -> list[dict]:
             "columns": [
                 "id", "person_id", "entry_type", "days", "source_day_id",
                 "reason", "created_by", "created_at", "updated_at",
+            ],
+        },
+        # --- Daily updates --------------------------------------------------
+        {
+            "name": "DailyUpdates",
+            "key": "daily_updates",
+            "model": DailyUpdate,
+            "columns": [
+                "id", "author_id", "person_id", "project_id", "body",
+                "posted_for", "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "UpdateComments",
+            "key": "update_comments",
+            "model": UpdateComment,
+            "columns": [
+                "id", "update_id", "author_id", "body",
+                "created_at", "updated_at",
             ],
         },
         # --- Projects -----------------------------------------------------

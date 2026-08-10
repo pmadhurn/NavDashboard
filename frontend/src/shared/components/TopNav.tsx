@@ -147,6 +147,10 @@ export default function TopNav() {
                 type="button"
                 onClick={() => openWorkspace(ws)}
                 aria-current={active ? 'page' : undefined}
+                // Below 1500px the label is hidden and only the icon remains,
+                // so the accessible name has to come from somewhere.
+                title={ws.label}
+                aria-label={ws.label}
                 className={`navos-tab${active ? ' is-active' : ''}`}
                 style={{
                   ['--tab-accent' as string]: ws.accent,

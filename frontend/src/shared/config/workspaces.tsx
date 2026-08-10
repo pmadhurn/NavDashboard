@@ -29,6 +29,8 @@ import {
   SearchOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  MessageOutlined,
+  CrownOutlined,
 } from '@ant-design/icons';
 import { hasPermission, PermissionLevel } from '@/shared/stores/authStore';
 
@@ -71,6 +73,19 @@ export const WORKSPACES: Workspace[] = [
     items: [{ key: '/', icon: <HomeOutlined />, label: 'Overview' }],
   },
   {
+    // A destination, not a workspace: one page, no sub-nav, visible only to
+    // holders of leadership:VIEW. It is the whole app for the person who only
+    // needs to see, not to do.
+    key: 'leadership',
+    label: 'Leadership',
+    shortLabel: 'Lead',
+    accent: '#B68A3C',
+    icon: <CrownOutlined />,
+    items: [
+      { key: '/leadership', icon: <CrownOutlined />, label: 'Overview', section: 'leadership' },
+    ],
+  },
+  {
     // The field user's whole app in one tab: what they log daily, on a phone.
     // Scattering these under People and Finance would make the most common
     // user the worst-served one.
@@ -82,6 +97,7 @@ export const WORKSPACES: Workspace[] = [
     items: [
       { key: '/me/attendance', icon: <CalendarOutlined />, label: 'My Attendance', section: 'attendance' },
       { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', section: 'finance' },
+      { key: '/updates', icon: <MessageOutlined />, label: 'Daily Updates', section: 'updates' },
     ],
   },
   {
@@ -152,6 +168,7 @@ export const WORKSPACES: Workspace[] = [
     items: [
       { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel', section: 'personnel' },
       { key: '/attendance', icon: <CalendarOutlined />, label: 'Attendance Board', section: 'attendance' },
+      { key: '/updates', icon: <MessageOutlined />, label: 'Daily Updates', section: 'updates' },
       { key: '/compoff', icon: <ClockCircleOutlined />, label: 'Comp-off', section: 'attendance' },
     ],
   },
