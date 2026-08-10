@@ -1,6 +1,6 @@
 # NavOS — Target Architecture
 
-**Date:** 2026-08-10 · **Status:** proposal, awaiting approval · **Companion:** [`AUDIT.md`](./AUDIT.md)
+**Date:** 2026-08-10 · **Updated:** 2026-08-11 · **Status:** approved; steps 1, 2a, 4b, 5 (nav), 6 and 7 delivered · **Companion:** [`AUDIT.md`](./AUDIT.md)
 
 Every section states the choice, **why**, and **what was rejected**. Where the repo already implements something, this document says *extend*, not *replace* — per the ground rule about not rewriting working modules.
 
@@ -9,6 +9,8 @@ Every section states the choice, **why**, and **what was rejected**. Where the r
 ## 1. Navigation model
 
 ### 1.1 Decision
+
+> ⚠️ **SUPERSEDED 2026-08-11.** This section's rejection of a top nav was reversed on the user's instruction — see "Plan changes" at the end of this document. **What shipped:** a full-width top bar carrying the workspace tabs, a contextual sidebar holding only the active workspace's pages, and a mobile bottom tab bar. The icon rail described below no longer exists (`WorkspaceRail.tsx` was deleted). §1.2 and §1.3 are likewise historical; §1.3's workspace list shipped as **9**, with Downloads promoted to its own tab and Leadership as a destination.
 
 **Keep the existing workspace rail + contextual sidebar. Extend it; do not rebuild it.** Add a mobile bottom bar as a third surface.
 
@@ -263,13 +265,14 @@ Each step ends with the app building, running, and the device module verified. N
 |---|---|---|---|
 | **0** | **Commit the working tree.** 133 modified + 13 untracked files, uncommitted since 2026-07-10. Untrack `frontend/.env`. | There is currently **no rollback point**. Every step below is unsafe without one. | A clean `git status` and a tagged baseline |
 | **1** | ~~Fix `scripts/*.sh`~~ → **new read-only Playwright harness.** Walk all 29 routes × 2 viewports. **Done 2026-08-10** — see [`ROUTE-TEST.md`](./ROUTE-TEST.md). | "Verified, not assumed" needs a *before* to compare against | 63/63 render, 0 overflow, 2 defects fixed |
-| **2** | **Authorization unification.** Add `scope` + `roles` + `role_permissions`; extend `require_permission`; migrate all 46 `require_role` sites; guard the 87 operations reachable by any authenticated user; seed the five role presets from §4.2. | Every later module inherits it; retrofitting is what created today's split | Non-admin users provably 403 where they should. Fixes AUDIT §5.3 #1, #2 |
-| **3** | **Backup coverage.** Add the 6 missing business tables to `backup/exporter.py` (`user_permissions`, four `download_*`, both `equipment_movement*`) plus the new tables from step 4 onward. | Adding modules that a restore silently drops is worse than not adding them | Backup covers every business table. Fixes AUDIT §5.3 #3 |
+| **2a** | **Scope mechanism. Done 2026-08-11.** `user_permissions.scope`, `personnel.team_lead_id`, `require_permission(scope_owner=…)`, `assert_scope`, four new sections. | Attendance and Updates need it; the legacy migration does not block them | `scripts/verify-scope.py` 15/15 against a non-admin. Additive: no existing guard changed behaviour |
+| **2b** | **Legacy authz migration. NOT STARTED.** The 46 `require_role` sites and the 87 operations reachable by any authenticated user. `roles` + `role_permissions` tables. | This is the pass that "will break things" — it belongs after the visible features, not in front of them | Non-admin users provably 403 where they should. Fixes AUDIT §5.3 #1, #2 |
+| **3** | **Backup coverage. PARTIAL.** `user_permissions` and all four new tables are covered; the four `download_*` and both `equipment_movement*` are still missing. Add the 6 missing business tables to `backup/exporter.py` (`user_permissions`, four `download_*`, both `equipment_movement*`) plus the new tables from step 4 onward. | Adding modules that a restore silently drops is worse than not adding them | Backup covers every business table. Fixes AUDIT §5.3 #3 |
 | **4** | **Shared export service.** Lift the ~270 lines from `finance/service.py` into `modules/exports/`; Finance consumes it unchanged; Projects becomes the second consumer. | Two consumers is the point at which the abstraction is real — building it with one is speculative | Identical finance exports (byte-compare the xlsx), plus project export |
-| **4b** | **Project-flow differentiation.** Make `ProjectDetailPage`'s tab set conditional on the project's active `phase_type`: a `DESKTOP_SURVEY` phase hides the Equipment (inward/outward) and Team tabs; a `PHYSICAL_SURVEY` phase shows them. Data model already supports this; only the page changes. | The brief's "project types differ and must not be forced into one flow" is the one Phase 3 requirement that is modelled but not implemented (AUDIT §5.2) | A desktop survey shows Timeline + Phases + Deployed only. Fixes the ❌ in AUDIT §5.2 |
-| **5** | **Design-system consolidation + mobile.** Token sweep over inline styles, bottom nav, tables→cards below 768px, thumb-reachable primary action. | Attendance and Daily Updates are mobile-first; building them on today's desktop-shaped primitives means building them twice | Every existing page re-swept clean at 390px |
-| **6** | **Attendance** (`attendance_days`, `comp_off_ledger`, `/me/attendance`, `/attendance`, `/compoff`) | Smallest new module; first real exercise of `scope = SELF/TEAM` | Field user can log a day in ≤3 taps |
-| **7** | **Daily updates + leadership home** (`daily_updates`, `update_comments`, `/updates`, `/leadership`) | Leadership home aggregates attendance, so attendance must exist | Timeline + inline comments + cross-module leadership metrics |
+| **4b** | **Project-flow differentiation. Done 2026-08-11.** Make `ProjectDetailPage`'s tab set conditional on the project's active `phase_type`: a `DESKTOP_SURVEY` phase hides the Equipment (inward/outward) and Team tabs; a `PHYSICAL_SURVEY` phase shows them. Data model already supports this; only the page changes. | The brief's "project types differ and must not be forced into one flow" is the one Phase 3 requirement that is modelled but not implemented (AUDIT §5.2) | A desktop survey shows Timeline + Phases + Deployed only. Fixes the ❌ in AUDIT §5.2 |
+| **5** | **Nav shell + mobile. PARTIAL — nav done 2026-08-11** (top bar + contextual sidebar + mobile bottom bar, 9 workspaces). Still open: the inline-style token sweep and tables→cards below 768px. Token sweep over inline styles, bottom nav, tables→cards below 768px, thumb-reachable primary action. | Attendance and Daily Updates are mobile-first; building them on today's desktop-shaped primitives means building them twice | Every existing page re-swept clean at 390px |
+| **6** | **Attendance. Done 2026-08-11.** (`attendance_days`, `comp_off_ledger`, `/me/attendance`, `/attendance`, `/compoff`) | Smallest new module; first real exercise of `scope = SELF/TEAM` | Field user can log a day in ≤3 taps |
+| **7** | **Daily updates + leadership home. Done 2026-08-11.** (`daily_updates`, `update_comments`, `/updates`, `/leadership`) | Leadership home aggregates attendance, so attendance must exist | Timeline + inline comments + cross-module leadership metrics |
 | **8** | **Admin engine completion** (`/settings/roles`, `/settings/permissions` matrix editor) | Editing a permission model that isn't finished until step 2 is pointless; doing it last means the UI is built against the final shape | Admin can define a role and grant per-module, per-scope access |
 
 ### What stays untouched
