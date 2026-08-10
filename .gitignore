@@ -42,3 +42,4 @@ database/backups/*.dump
 venv
 temperate
 frontend/.env
+frontend/.env
