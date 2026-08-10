@@ -11,9 +11,17 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 async def get_current_user(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ):
+    # The app-level `enforce_permissions` dependency has already authenticated
+    # this request and stashed the user. Reusing it keeps the cost at one
+    # lookup per request rather than two.
+    cached = getattr(request.state, "user", None)
+    if cached is not None:
+        return cached
+
     from modules.auth.models import User
 
     try:

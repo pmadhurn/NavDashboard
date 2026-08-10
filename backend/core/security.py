@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -17,7 +17,12 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def create_access_token(subject: UUID, role: str) -> str:
+def create_access_token(subject: UUID, role: str, jti: str | None = None) -> str:
+    """Mint a token. `jti` ties it to a `user_sessions` row.
+
+    Optional so that a token can still be minted outside a request (tests, the
+    admin CLI); a token without a jti simply cannot be revoked early.
+    """
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.JWT_EXPIRY_MINUTES)
     payload = {
@@ -25,7 +30,13 @@ def create_access_token(subject: UUID, role: str) -> str:
         "role": role,
         "exp": expire,
     }
+    if jti:
+        payload["jti"] = jti
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def new_jti() -> str:
+    return uuid4().hex
 
 
 def decode_access_token(token: str) -> dict:

@@ -1,11 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from core.authz import assert_full_coverage, enforce_permissions
 from core.config import settings
 from core.database import async_session_factory, engine
 from core.exceptions import (
@@ -64,6 +65,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Default admin creation failed: {e}")
 
+    # Refuse to serve if any operation lacks a permission mapping. This is what
+    # makes the central map in core/authz_endpoints.py safe: an endpoint added
+    # without a permission stops the app rather than shipping unguarded.
+    assert_full_coverage(app)
+
     logger.info("Startup complete.")
     yield
     logger.info("NavDashboard API shutting down...")
@@ -75,6 +81,12 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
+    # Authorization for EVERY operation, including any added later. Registered
+    # here rather than per-route because the property that matters — no
+    # operation escapes — is a statement about the whole route table. Appending
+    # to app.router.dependencies after this point does nothing: dependants are
+    # baked into each route at registration.
+    dependencies=[Depends(enforce_permissions)],
 )
 
 app.add_middleware(
