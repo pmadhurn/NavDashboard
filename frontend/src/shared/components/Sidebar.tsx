@@ -1,6 +1,5 @@
 import { Menu } from 'antd';
-import { HomeOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import ThemeToggle from '@/shared/components/ThemeToggle';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUiStore } from '@/shared/stores/uiStore';
 import { useAuthStore } from '@/shared/stores/authStore';
@@ -14,18 +13,20 @@ import {
 interface SidebarProps {
   /** Called after navigating (used by the mobile drawer to close itself). */
   onNavigate?: () => void;
-  /** Show a horizontal workspace selector at the top (mobile drawer). */
-  showWorkspaceChips?: boolean;
 }
 
-export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps) {
+/**
+ * Contextual navigation: the pages of the *active* workspace, and nothing else.
+ * Switching workspaces is the top bar's job (desktop) or the bottom tab bar's
+ * (mobile) — keeping the two axes apart is what removes the old confusion.
+ */
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const inDrawer = Boolean(onNavigate);
   const collapsed = useUiStore((s) => s.sidebarCollapsed) && !inDrawer;
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const activeWorkspaceKey = useUiStore((s) => s.activeWorkspace);
-  const setActiveWorkspace = useUiStore((s) => s.setActiveWorkspace);
   const user = useAuthStore((s) => s.user);
 
   const workspaces = visibleWorkspaces(user);
@@ -39,19 +40,13 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
   const accent = workspace?.accent ?? 'var(--secondary)';
 
   const items = workspace ? visibleItems(workspace, user) : [];
-  const menuItems = [
-    { key: '/', icon: <HomeOutlined />, label: 'Home' },
-    ...items.map(({ key, icon, label }) => ({ key, icon, label })),
-  ];
+  const menuItems = items.map(({ key, icon, label }) => ({ key, icon, label }));
 
   const selectedKey =
-    location.pathname === '/'
-      ? '/'
-      : items.find(
-          (item) =>
-            item.key === location.pathname ||
-            location.pathname.startsWith(item.key + '/')
-        )?.key || '/';
+    items.find(
+      (item) =>
+        item.key === location.pathname || location.pathname.startsWith(item.key + '/')
+    )?.key ?? '';
 
   return (
     <div
@@ -66,66 +61,36 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
         ['--ws-accent' as string]: accent,
       }}
     >
-      {/* Workspace header */}
+      {/* Which workspace these items belong to */}
       <div
         style={{
-          padding: collapsed ? '16px 0' : '18px 20px 14px',
+          padding: collapsed ? '14px 0' : '14px 20px 12px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'flex-start',
           gap: 10,
           borderBottom: '1px solid var(--overlay-subtle)',
-          minHeight: 64,
+          minHeight: 52,
           boxSizing: 'border-box',
         }}
       >
-        <span style={{ color: accent, fontSize: 18, display: 'flex' }}>{workspace?.icon}</span>
+        <span style={{ color: accent, fontSize: 17, display: 'flex' }}>{workspace?.icon}</span>
         {!collapsed && (
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-              {workspace?.label ?? 'NavOS'}
-            </div>
-            <div style={{ fontSize: 10, color: '#6A6A6A', letterSpacing: 1, textTransform: 'uppercase' }}>
-              NavOS
-            </div>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              letterSpacing: 0.3,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {workspace?.label ?? 'NavOS'}
           </div>
         )}
       </div>
-
-      {/* Mobile workspace chips */}
-      {showWorkspaceChips && (
-        <div style={{ display: 'flex', gap: 6, padding: '10px 12px', flexWrap: 'wrap' }}>
-          {workspaces.map((ws) => {
-            const active = ws.key === workspace?.key;
-            return (
-              <button
-                key={ws.key}
-                onClick={() => {
-                  setActiveWorkspace(ws.key);
-                  const first = visibleItems(ws, user)[0];
-                  if (first) navigate(first.key);
-                  onNavigate?.();
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 10px',
-                  borderRadius: 20,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  border: `1px solid ${active ? ws.accent : 'rgba(255,255,255,0.08)'}`,
-                  background: active ? `${ws.accent}22` : 'var(--overlay-subtle)',
-                  color: active ? ws.accent : '#9A9A9A',
-                }}
-              >
-                {ws.icon}
-                {ws.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* Navigation */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
@@ -133,7 +98,7 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
           mode="inline"
           theme="dark"
           inlineCollapsed={collapsed}
-          selectedKeys={[selectedKey]}
+          selectedKeys={selectedKey ? [selectedKey] : []}
           items={menuItems}
           onClick={({ key }) => {
             navigate(key);
@@ -143,23 +108,22 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
         />
       </div>
 
-      {/* Collapse Toggle (hidden inside the mobile drawer) */}
+      {/* Collapse toggle (hidden inside the mobile drawer) */}
       <div
         style={{
-          padding: 12,
+          padding: 10,
           borderTop: '1px solid var(--overlay-subtle)',
-          textAlign: 'center',
-          display: inDrawer ? 'none' : 'block',
+          display: inDrawer ? 'none' : 'flex',
+          justifyContent: 'center',
         }}
       >
-        <div style={{ padding: collapsed ? '0 8px 8px' : '0 12px 8px' }}>
-          <ThemeToggle collapsed={collapsed} />
-        </div>
         <div
           onClick={toggleSidebar}
+          role="button"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           style={{
             cursor: 'pointer',
-            padding: '8px',
+            padding: 8,
             borderRadius: 8,
             color: 'var(--text-muted)',
             transition: 'all 0.3s ease',
@@ -177,9 +141,9 @@ export default function Sidebar({ onNavigate, showWorkspaceChips }: SidebarProps
           }}
         >
           {collapsed ? (
-            <MenuUnfoldOutlined style={{ fontSize: 18 }} />
+            <MenuUnfoldOutlined style={{ fontSize: 17 }} />
           ) : (
-            <MenuFoldOutlined style={{ fontSize: 18 }} />
+            <MenuFoldOutlined style={{ fontSize: 17 }} />
           )}
         </div>
       </div>

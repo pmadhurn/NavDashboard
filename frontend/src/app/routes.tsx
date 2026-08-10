@@ -53,7 +53,10 @@ function RequirePermission({
   children: React.ReactNode;
 }) {
   const user = useAuthStore((s) => s.user);
-  if (user && !hasPermission(user, section, level)) {
+  // Fail *closed*. This previously read `if (user && !hasPermission(...))`, so a
+  // null user — which is the state whenever the cached `auth_user` key is
+  // missing but a token is present — rendered every guarded route.
+  if (!user || !hasPermission(user, section, level)) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;

@@ -879,3 +879,72 @@ body {
 
 .ai-md tbody tr:nth-child(even) { background: var(--table-alt-row); }
 .ai-md tbody tr:last-child td { border-bottom: none; }
+
+/* ── Top navigation ─────────────────────────────────────────────────────────
+   Workspace tabs live in the top bar; the sidebar carries only the active
+   workspace's pages. The strip scrolls horizontally rather than wrapping, so
+   the bar keeps a fixed height at every width. */
+
+.navos-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.navos-tabs::-webkit-scrollbar { display: none; }
+
+.navos-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.navos-tab:hover {
+  color: var(--text-primary);
+  background: var(--overlay-subtle);
+}
+
+.navos-tab.is-active {
+  color: var(--tab-accent, var(--text-primary));
+  background: var(--overlay-subtle);
+}
+
+/* Accent underline on the active tab, tied to the workspace colour. */
+.navos-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -9px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--tab-accent, var(--secondary));
+}
+
+/* Below ~1100px the labels are the first thing to go: icons still identify the
+   workspace, and the active one keeps its label for orientation. */
+@media (max-width: 1100px) {
+  .navos-tab > span:last-child { display: none; }
+  .navos-tab.is-active > span:last-child { display: inline; }
+  .navos-tab { padding: 7px 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navos-tab { transition: none; }
+}
