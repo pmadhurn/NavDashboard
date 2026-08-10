@@ -20,6 +20,8 @@ async def get_table_counts(db: AsyncSession) -> dict[str, int]:
         "status_change_logs",
         "users",
         "user_permissions",
+        "attendance_days",
+        "comp_off_ledger",
         "projects",
         "project_phases",
         "project_members",

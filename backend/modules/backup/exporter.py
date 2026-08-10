@@ -36,6 +36,7 @@ from modules.finance.models import (
 )
 from modules.assets.models import Asset, AssetCategory, AssetHistory, AssetReport
 from modules.documents.models import Document
+from modules.attendance.models import AttendanceDay, CompOffLedger
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +169,28 @@ def _get_export_tables() -> list[dict]:
             "columns": [
                 "id", "user_id", "section", "level", "scope",
                 "created_at", "updated_at",
+            ],
+        },
+        # --- Attendance ---------------------------------------------------
+        {
+            # Added with the module rather than deferred: a restore that silently
+            # drops a module's data is worse than not shipping the module.
+            "name": "AttendanceDays",
+            "key": "attendance_days",
+            "model": AttendanceDay,
+            "columns": [
+                "id", "person_id", "day", "day_type", "project_id", "phase_id",
+                "departed_at", "completed_at", "note", "logged_by",
+                "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "CompOffLedger",
+            "key": "comp_off_ledger",
+            "model": CompOffLedger,
+            "columns": [
+                "id", "person_id", "entry_type", "days", "source_day_id",
+                "reason", "created_by", "created_at", "updated_at",
             ],
         },
         # --- Projects -----------------------------------------------------

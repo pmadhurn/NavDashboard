@@ -38,6 +38,7 @@ from modules.assets.router import router as assets_router
 from modules.projects.router import router as projects_router
 from modules.finance.router import router as finance_router
 from modules.seeding.router import router as seeding_router
+from modules.attendance.router import router as attendance_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -132,6 +133,7 @@ app.include_router(assets_router, prefix=settings.API_V1_PREFIX + "/assets", tag
 app.include_router(projects_router, prefix=settings.API_V1_PREFIX + "/projects", tags=["projects"])
 app.include_router(finance_router, prefix=settings.API_V1_PREFIX + "/finance", tags=["finance"])
 app.include_router(seeding_router, prefix=settings.API_V1_PREFIX + "/seeding", tags=["seeding"])
+app.include_router(attendance_router, prefix=settings.API_V1_PREFIX + "/attendance", tags=["attendance"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])
