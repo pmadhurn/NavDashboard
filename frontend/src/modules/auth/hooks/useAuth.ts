@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '@/shared/api/client'
-import { useAuthStore, PermissionMap } from '@/shared/stores/authStore'
+import { useAuthStore, PermissionKey } from '@/shared/stores/authStore'
 
 interface User {
   id: string
@@ -11,7 +11,7 @@ interface User {
   is_active: boolean
   auth_provider?: string
   status?: string
-  permissions?: PermissionMap
+  permissions?: PermissionKey[]
 }
 
 interface LoginRequest {

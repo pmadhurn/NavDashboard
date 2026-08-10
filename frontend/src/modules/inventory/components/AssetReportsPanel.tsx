@@ -30,7 +30,7 @@ export default function AssetReportsPanel({ reportType }: Props) {
   const [assetId, setAssetId] = useState<string | undefined>();
   const [assetSearch, setAssetSearch] = useState('');
 
-  const canEdit = usePermission('inventory', 'EDIT');
+  const canEdit = usePermission('assets.reports');
   const { data: reports, isLoading } = useAssetReports(reportType);
   const { data: assetData } = useAssets({ search: assetSearch });
   const createReport = useCreateAssetReport();

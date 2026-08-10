@@ -257,4 +257,13 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.updates.router.get_update": "updates.read",  # GET /api/v1/updates/{update_id}
     "modules.updates.router.edit_update": "updates.update",  # PUT /api/v1/updates/{update_id}
     "modules.updates.router.add_comment": "updates.comment",  # POST /api/v1/updates/{update_id}/comments
+    # --- access control (added with the fine-grained permission engine) -----
+    "modules.authz.router.get_catalog": AUTHENTICATED,  # GET /api/v1/authz/catalog
+    "modules.authz.router.list_roles": "users.read",  # GET /api/v1/authz/roles
+    "modules.authz.router.create_role": "users.roles.manage",  # POST /api/v1/authz/roles
+    "modules.authz.router.update_role": "users.roles.manage",  # PUT /api/v1/authz/roles/{role_id}
+    "modules.authz.router.delete_role": "users.roles.manage",  # DELETE /api/v1/authz/roles/{role_id}
+    "modules.authz.router.list_sessions": "users.sessions.read",  # GET /api/v1/authz/sessions
+    "modules.authz.router.revoke_session": "users.sessions.revoke",  # DELETE /api/v1/authz/sessions/{session_id}
+    "modules.authz.router.revoke_user_sessions": "users.sessions.revoke",  # POST /api/v1/authz/sessions/revoke-user/{id}
 }

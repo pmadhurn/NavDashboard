@@ -1,5 +1,14 @@
 import { create } from 'zustand'
 
+/**
+ * A permission key from the backend catalog, e.g. 'devices.read',
+ * 'finance.settle'. The server is the authority; these gate what is *shown*,
+ * and every request is checked again server-side, so hiding a control is a
+ * courtesy and never the security boundary.
+ */
+export type PermissionKey = string
+
+/** Retained for the few call sites still typed against the old model. */
 export type PermissionLevel = 'NONE' | 'VIEW' | 'EDIT' | 'MANAGE'
 export type PermissionMap = Record<string, PermissionLevel>
 
@@ -12,7 +21,7 @@ interface User {
   is_active: boolean
   auth_provider?: string
   status?: string
-  permissions?: PermissionMap
+  permissions?: PermissionKey[]
 }
 
 interface AuthState {
@@ -67,27 +76,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }))
 
-const LEVEL_ORDER: Record<PermissionLevel, number> = {
-  NONE: 0,
-  VIEW: 1,
-  EDIT: 2,
-  MANAGE: 3,
-}
-
-/** True if the current user has at least `level` on `section`. ADMIN always passes. */
-export function hasPermission(
-  user: User | null,
-  section: string,
-  level: PermissionLevel = 'VIEW'
-): boolean {
+/**
+ * True if the user holds `key`.
+ *
+ * Fails closed on a null user: that is the state when the cached auth_user
+ * entry is missing, and treating it as "allow" is how a permission check
+ * quietly stops being one.
+ *
+ * ADMIN short-circuits, mirroring `effective_permissions()` on the server. The
+ * two must agree or the UI will offer actions the API refuses.
+ */
+export function can(user: User | null, key: PermissionKey): boolean {
   if (!user) return false
   if (user.role === 'ADMIN') return true
-  const userLevel = user.permissions?.[section] ?? 'NONE'
-  return LEVEL_ORDER[userLevel] >= LEVEL_ORDER[level]
+  return Array.isArray(user.permissions) && user.permissions.includes(key)
+}
+
+/** True if the user holds every one of `keys`. */
+export function canAll(user: User | null, keys: PermissionKey[]): boolean {
+  return keys.every((k) => can(user, k))
+}
+
+/** True if the user holds at least one of `keys`. */
+export function canAny(user: User | null, keys: PermissionKey[]): boolean {
+  return keys.some((k) => can(user, k))
 }
 
 /** Hook version for components. */
-export function usePermission(section: string, level: PermissionLevel = 'VIEW'): boolean {
+export function usePermission(key: PermissionKey): boolean {
   const user = useAuthStore((s) => s.user)
-  return hasPermission(user, section, level)
+  return can(user, key)
+}
+
+/** All keys the signed-in user holds — for the access screens. */
+export function usePermissionKeys(): PermissionKey[] {
+  const user = useAuthStore((s) => s.user)
+  return user?.permissions ?? []
 }

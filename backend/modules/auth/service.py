@@ -49,7 +49,9 @@ async def register_user(db: AsyncSession, user_in: UserCreate, current_user_role
     return user
 
 
-async def authenticate(db: AsyncSession, email: str, password: str) -> TokenResponse:
+async def authenticate(
+    db: AsyncSession, email: str, password: str, request=None
+) -> TokenResponse:
     user = await repository.find_by_email(db, email)
     if not user:
         raise UnauthorizedException("Invalid email or password")
@@ -67,16 +69,16 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> TokenResp
     await db.commit()
     await db.refresh(user)
 
-    access_token = create_access_token(subject=user.id, role=user.role)
-
-    from core.dependencies import get_permission_map
+    access_token = await issue_session(db, user, provider="LOCAL", request=request)
 
     user_response = UserResponse.model_validate(user)
-    user_response.permissions = await get_permission_map(db, user)
+    user_response.permissions = await effective_permission_list(db, user)
     return TokenResponse(access_token=access_token, user=user_response)
 
 
-async def google_authenticate(db: AsyncSession, credential: str) -> GoogleAuthResponse:
+async def google_authenticate(
+    db: AsyncSession, credential: str, request=None
+) -> GoogleAuthResponse:
     """Verify a Google ID token; sign in existing users, queue unknown ones as PENDING."""
     from google.auth.transport import requests as google_requests
     from google.oauth2 import id_token as google_id_token
@@ -127,12 +129,10 @@ async def google_authenticate(db: AsyncSession, credential: str) -> GoogleAuthRe
     await db.commit()
     await db.refresh(user)
 
-    access_token = create_access_token(subject=user.id, role=user.role)
-
-    from core.dependencies import get_permission_map
+    access_token = await issue_session(db, user, provider="GOOGLE", request=request)
 
     user_response = UserResponse.model_validate(user)
-    user_response.permissions = await get_permission_map(db, user)
+    user_response.permissions = await effective_permission_list(db, user)
     return GoogleAuthResponse(
         token=TokenResponse(access_token=access_token, user=user_response)
     )
@@ -317,3 +317,41 @@ async def ensure_default_admin(db: AsyncSession) -> None:
         logger.warning("Default admin account created. Change the password immediately!")
     else:
         logger.info("Users exist, skipping default admin creation.")
+
+async def issue_session(
+    db: AsyncSession, user, provider: str = "LOCAL", request=None
+) -> str:
+    """Mint a token and the session row that makes it revocable.
+
+    Every sign-in path goes through here — password, Google and Clerk — so the
+    admin sees one uniform list of who is signed in, regardless of how they got
+    there.
+    """
+    from datetime import timedelta
+
+    from core.config import settings
+    from core.security import create_access_token, new_jti
+    from modules.auth.models import UserSession
+
+    jti = new_jti()
+    now = datetime.now(timezone.utc)
+    db.add(
+        UserSession(
+            user_id=user.id,
+            jti=jti,
+            auth_provider=provider,
+            ip_address=(getattr(getattr(request, "client", None), "host", None) or None),
+            user_agent=(request.headers.get("user-agent")[:400] if request else None),
+            expires_at=now + timedelta(minutes=settings.JWT_EXPIRY_MINUTES),
+            last_seen_at=now,
+        )
+    )
+    await db.commit()
+    return create_access_token(subject=user.id, role=user.role, jti=jti)
+
+
+async def effective_permission_list(db: AsyncSession, user) -> list[str]:
+    """The permission keys the frontend gates its nav and buttons with."""
+    from core.authz import effective_permissions
+
+    return sorted(await effective_permissions(db, user))

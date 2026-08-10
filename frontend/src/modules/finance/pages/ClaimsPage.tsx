@@ -28,7 +28,7 @@ const CLAIM_COLORS: Record<string, string> = {
 };
 
 export default function ClaimsPage() {
-  const canEdit = usePermission('finance', 'EDIT');
+  const canEdit = usePermission('finance.claims');
   const { data: claims, isLoading } = useClaims();
   const { data: expenseData } = useExpenses({});
   const { data: projectData } = useProjects({});

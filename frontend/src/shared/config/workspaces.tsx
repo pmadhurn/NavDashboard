@@ -32,16 +32,18 @@ import {
   MessageOutlined,
   CrownOutlined,
 } from '@ant-design/icons';
-import { hasPermission, PermissionLevel } from '@/shared/stores/authStore';
+import { can } from '@/shared/stores/authStore';
 
 export interface WorkspaceItem {
   key: string; // route path
   icon: React.ReactNode;
   label: string;
-  /** Permission section required to see this entry; undefined = everyone. */
-  section?: string;
-  /** Minimum level on that section (defaults to VIEW). */
-  level?: PermissionLevel;
+  /**
+   * Permission key required to see this entry; undefined = every signed-in
+   * user. Hiding an entry is a courtesy — the route guard and the server both
+   * check again.
+   */
+  permission?: string;
 }
 
 export interface Workspace {
@@ -55,7 +57,7 @@ export interface Workspace {
   items: WorkspaceItem[];
 }
 
-type User = Parameters<typeof hasPermission>[0];
+type User = Parameters<typeof can>[0];
 
 /**
  * The single source of truth for navigation. A workspace is a top-bar tab; its
@@ -82,7 +84,7 @@ export const WORKSPACES: Workspace[] = [
     accent: '#B68A3C',
     icon: <CrownOutlined />,
     items: [
-      { key: '/leadership', icon: <CrownOutlined />, label: 'Overview', section: 'leadership' },
+      { key: '/leadership', icon: <CrownOutlined />, label: 'Overview', permission: 'leadership.read' },
     ],
   },
   {
@@ -95,9 +97,9 @@ export const WORKSPACES: Workspace[] = [
     accent: '#6F8CB6',
     icon: <CalendarOutlined />,
     items: [
-      { key: '/me/attendance', icon: <CalendarOutlined />, label: 'My Attendance', section: 'attendance' },
-      { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', section: 'finance' },
-      { key: '/updates', icon: <MessageOutlined />, label: 'Daily Updates', section: 'updates' },
+      { key: '/me/attendance', icon: <CalendarOutlined />, label: 'My Attendance', permission: 'attendance.read' },
+      { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', permission: 'finance.read' },
+      { key: '/updates', icon: <MessageOutlined />, label: 'Daily Updates', permission: 'updates.read' },
     ],
   },
   {
@@ -107,10 +109,10 @@ export const WORKSPACES: Workspace[] = [
     accent: 'var(--status-not-working)',
     icon: <ThunderboltOutlined />,
     items: [
-      { key: '/projects', icon: <ProjectOutlined />, label: 'Projects', section: 'projects' },
-      { key: '/inventory/assets', icon: <AppstoreOutlined />, label: 'Inventory', section: 'inventory' },
-      { key: '/inventory/deployed', icon: <DeploymentUnitOutlined />, label: 'Deployed', section: 'inventory' },
-      { key: '/documents', icon: <FileOutlined />, label: 'Documents', section: 'documents' },
+      { key: '/projects', icon: <ProjectOutlined />, label: 'Projects', permission: 'projects.read' },
+      { key: '/inventory/assets', icon: <AppstoreOutlined />, label: 'Inventory', permission: 'assets.read' },
+      { key: '/inventory/deployed', icon: <DeploymentUnitOutlined />, label: 'Deployed', permission: 'assets.read' },
+      { key: '/documents', icon: <FileOutlined />, label: 'Documents', permission: 'documents.read' },
     ],
   },
   {
@@ -120,14 +122,14 @@ export const WORKSPACES: Workspace[] = [
     accent: '#5E8C86',
     icon: <ClusterOutlined />,
     items: [
-      { key: '/devices', icon: <ApiOutlined />, label: 'Devices', section: 'devices' },
-      { key: '/couples', icon: <LinkOutlined />, label: 'Couples', section: 'devices' },
-      { key: '/pairs', icon: <SwapOutlined />, label: 'Pairs', section: 'devices' },
-      { key: '/map', icon: <EnvironmentOutlined />, label: 'Map', section: 'devices' },
-      { key: '/location-history', icon: <HistoryOutlined />, label: 'Location History', section: 'devices' },
-      { key: '/troubleshooting', icon: <ToolOutlined />, label: 'Troubleshooting', section: 'troubleshooting' },
-      { key: '/comparison', icon: <DiffOutlined />, label: 'Comparison', section: 'devices' },
-      { key: '/reports', icon: <BarChartOutlined />, label: 'Reports', section: 'reports' },
+      { key: '/devices', icon: <ApiOutlined />, label: 'Devices', permission: 'devices.read' },
+      { key: '/couples', icon: <LinkOutlined />, label: 'Couples', permission: 'devices.read' },
+      { key: '/pairs', icon: <SwapOutlined />, label: 'Pairs', permission: 'devices.read' },
+      { key: '/map', icon: <EnvironmentOutlined />, label: 'Map', permission: 'devices.read' },
+      { key: '/location-history', icon: <HistoryOutlined />, label: 'Location History', permission: 'devices.read' },
+      { key: '/troubleshooting', icon: <ToolOutlined />, label: 'Troubleshooting', permission: 'troubleshooting.read' },
+      { key: '/comparison', icon: <DiffOutlined />, label: 'Comparison', permission: 'devices.read' },
+      { key: '/reports', icon: <BarChartOutlined />, label: 'Reports', permission: 'reports.read' },
     ],
   },
   {
@@ -136,15 +138,14 @@ export const WORKSPACES: Workspace[] = [
     accent: 'var(--status-working)',
     icon: <BankOutlined />,
     items: [
-      { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', section: 'finance' },
-      { key: '/finance', icon: <DollarOutlined />, label: 'Expenses', section: 'finance' },
-      { key: '/finance/claims', icon: <FileTextOutlined />, label: 'Claims', section: 'finance' },
+      { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', permission: 'finance.read' },
+      { key: '/finance', icon: <DollarOutlined />, label: 'Expenses', permission: 'finance.read' },
+      { key: '/finance/claims', icon: <FileTextOutlined />, label: 'Claims', permission: 'finance.read' },
       {
         key: '/finance/settlement',
         icon: <AuditOutlined />,
         label: 'Settlement',
-        section: 'finance',
-        level: 'MANAGE',
+        permission: 'finance.settle'
       },
     ],
   },
@@ -157,7 +158,7 @@ export const WORKSPACES: Workspace[] = [
     accent: '#7E8FA6',
     icon: <DownloadOutlined />,
     items: [
-      { key: '/downloads', icon: <CloudDownloadOutlined />, label: 'Library', section: 'downloads' },
+      { key: '/downloads', icon: <CloudDownloadOutlined />, label: 'Library', permission: 'downloads.read' },
     ],
   },
   {
@@ -166,10 +167,10 @@ export const WORKSPACES: Workspace[] = [
     accent: '#9E7E8A',
     icon: <TeamOutlined />,
     items: [
-      { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel', section: 'personnel' },
-      { key: '/attendance', icon: <CalendarOutlined />, label: 'Attendance Board', section: 'attendance' },
-      { key: '/updates', icon: <MessageOutlined />, label: 'Daily Updates', section: 'updates' },
-      { key: '/compoff', icon: <ClockCircleOutlined />, label: 'Comp-off', section: 'attendance' },
+      { key: '/personnel', icon: <TeamOutlined />, label: 'Personnel', permission: 'personnel.read' },
+      { key: '/attendance', icon: <CalendarOutlined />, label: 'Attendance Board', permission: 'attendance.board' },
+      { key: '/updates', icon: <MessageOutlined />, label: 'Daily Updates', permission: 'updates.read' },
+      { key: '/compoff', icon: <ClockCircleOutlined />, label: 'Comp-off', permission: 'attendance.compoff' },
     ],
   },
   {
@@ -178,10 +179,10 @@ export const WORKSPACES: Workspace[] = [
     accent: '#7E6F9E',
     icon: <RobotOutlined />,
     items: [
-      { key: '/ai', icon: <RobotOutlined />, label: 'AI Assistant', section: 'ai' },
+      { key: '/ai', icon: <RobotOutlined />, label: 'AI Assistant', permission: 'ai.read' },
       // /search was previously in no workspace at all — reachable only by typing
       // the URL or via the header box. It lives here now.
-      { key: '/search', icon: <SearchOutlined />, label: 'Search', section: undefined },
+      { key: '/search', icon: <SearchOutlined />, label: 'Search', permission: 'search.read' },
     ],
   },
   {
@@ -190,18 +191,16 @@ export const WORKSPACES: Workspace[] = [
     accent: 'var(--role-technician)',
     icon: <SafetyOutlined />,
     items: [
-      { key: '/settings', icon: <SettingOutlined />, label: 'Users & Settings', section: 'admin' },
-      { key: '/audit', icon: <AuditOutlined />, label: 'Audit Trail', section: 'admin' },
-      { key: '/backup', icon: <CloudDownloadOutlined />, label: 'Backup', section: 'admin' },
+      { key: '/settings', icon: <SettingOutlined />, label: 'Users & Settings', permission: 'settings.read' },
+      { key: '/audit', icon: <AuditOutlined />, label: 'Audit Trail', permission: 'audit.read' },
+      { key: '/backup', icon: <CloudDownloadOutlined />, label: 'Backup', permission: 'backup.read' },
     ],
   },
 ];
 
 /** Items in a workspace the given user is allowed to see. */
 export function visibleItems(workspace: Workspace, user: User): WorkspaceItem[] {
-  return workspace.items.filter(
-    (item) => !item.section || hasPermission(user, item.section, item.level ?? 'VIEW')
-  );
+  return workspace.items.filter((item) => !item.permission || can(user, item.permission));
 }
 
 /** Workspaces that have at least one item the user can see. */

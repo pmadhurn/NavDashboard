@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/shared/components/Layout';
 import LoginPage from '@/modules/auth/pages/LoginPage';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
-import { useAuthStore, hasPermission, PermissionLevel } from '@/shared/stores/authStore';
+import { useAuthStore, can } from '@/shared/stores/authStore';
 
 // Every page below the shell is code-split. Layout and LoginPage stay eager —
 // one of the two renders on first paint no matter where you land, so lazying
@@ -47,21 +47,24 @@ const CompOffPage = lazy(() => import('@/modules/attendance/pages/CompOffPage'))
 const UpdatesPage = lazy(() => import('@/modules/updates/pages/UpdatesPage'));
 const LeadershipPage = lazy(() => import('@/modules/updates/pages/LeadershipPage'));
 
-// Route guard: requires at least `level` on `section` (ADMIN always passes).
+/**
+ * Route guard. Requires one permission key.
+ *
+ * This hides a page; it does not secure it. Every request the page makes is
+ * checked again on the server, which is what makes typing the URL directly
+ * fail rather than merely look untidy.
+ */
 function RequirePermission({
-  section,
-  level = 'VIEW',
+  permission,
   children,
 }: {
-  section: string;
-  level?: PermissionLevel;
+  permission: string;
   children: React.ReactNode;
 }) {
   const user = useAuthStore((s) => s.user);
-  // Fail *closed*. This previously read `if (user && !hasPermission(...))`, so a
-  // null user — which is the state whenever the cached `auth_user` key is
-  // missing but a token is present — rendered every guarded route.
-  if (!user || !hasPermission(user, section, level)) {
+  // Fails closed: a null user is the state when the cached auth_user entry is
+  // missing, and treating that as "allow" is how a guard stops being one.
+  if (!can(user, permission)) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;
@@ -99,29 +102,29 @@ export function AppRoutes() {
           <Route path="comparison" element={<ComparisonPage />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="location-history" element={<LocationHistoryPage />} />
-          <Route path="downloads" element={<RequirePermission section="downloads"><DownloadsPage /></RequirePermission>} />
-          <Route path="inventory/assets" element={<RequirePermission section="inventory"><AssetListPage /></RequirePermission>} />
-          <Route path="inventory/assets/:id" element={<RequirePermission section="inventory"><AssetDetailPage /></RequirePermission>} />
-          <Route path="inventory/deployed" element={<RequirePermission section="inventory"><DeployedPage /></RequirePermission>} />
-          <Route path="projects" element={<RequirePermission section="projects"><ProjectListPage /></RequirePermission>} />
-          <Route path="projects/:id" element={<RequirePermission section="projects"><ProjectDetailPage /></RequirePermission>} />
-          <Route path="finance" element={<RequirePermission section="finance"><FinancePage /></RequirePermission>} />
-          <Route path="finance/my" element={<RequirePermission section="finance"><MyFinancePage /></RequirePermission>} />
-          <Route path="finance/claims" element={<RequirePermission section="finance"><ClaimsPage /></RequirePermission>} />
-          <Route path="finance/settlement" element={<RequirePermission section="finance" level="MANAGE"><SettlementPage /></RequirePermission>} />
+          <Route path="downloads" element={<RequirePermission permission="downloads.read"><DownloadsPage /></RequirePermission>} />
+          <Route path="inventory/assets" element={<RequirePermission permission="assets.read"><AssetListPage /></RequirePermission>} />
+          <Route path="inventory/assets/:id" element={<RequirePermission permission="assets.read"><AssetDetailPage /></RequirePermission>} />
+          <Route path="inventory/deployed" element={<RequirePermission permission="assets.read"><DeployedPage /></RequirePermission>} />
+          <Route path="projects" element={<RequirePermission permission="projects.read"><ProjectListPage /></RequirePermission>} />
+          <Route path="projects/:id" element={<RequirePermission permission="projects.read"><ProjectDetailPage /></RequirePermission>} />
+          <Route path="finance" element={<RequirePermission permission="finance.read"><FinancePage /></RequirePermission>} />
+          <Route path="finance/my" element={<RequirePermission permission="finance.read"><MyFinancePage /></RequirePermission>} />
+          <Route path="finance/claims" element={<RequirePermission permission="finance.read"><ClaimsPage /></RequirePermission>} />
+          <Route path="finance/settlement" element={<RequirePermission permission="finance.settle"><SettlementPage /></RequirePermission>} />
           {/* Permission-gated routes */}
-          <Route path="me/attendance" element={<RequirePermission section="attendance"><MyAttendancePage /></RequirePermission>} />
-          <Route path="attendance" element={<RequirePermission section="attendance"><AttendanceBoardPage /></RequirePermission>} />
-          <Route path="compoff" element={<RequirePermission section="attendance"><CompOffPage /></RequirePermission>} />
-          <Route path="updates" element={<RequirePermission section="updates"><UpdatesPage /></RequirePermission>} />
-          <Route path="leadership" element={<RequirePermission section="leadership"><LeadershipPage /></RequirePermission>} />
-          <Route path="personnel" element={<RequirePermission section="personnel"><PersonnelListPage /></RequirePermission>} />
+          <Route path="me/attendance" element={<RequirePermission permission="attendance.read"><MyAttendancePage /></RequirePermission>} />
+          <Route path="attendance" element={<RequirePermission permission="attendance.read"><AttendanceBoardPage /></RequirePermission>} />
+          <Route path="compoff" element={<RequirePermission permission="attendance.read"><CompOffPage /></RequirePermission>} />
+          <Route path="updates" element={<RequirePermission permission="updates.read"><UpdatesPage /></RequirePermission>} />
+          <Route path="leadership" element={<RequirePermission permission="leadership.read"><LeadershipPage /></RequirePermission>} />
+          <Route path="personnel" element={<RequirePermission permission="personnel.read"><PersonnelListPage /></RequirePermission>} />
           <Route path="search" element={<SearchPage />} />
-          <Route path="audit" element={<RequirePermission section="admin"><AuditTrailPage /></RequirePermission>} />
-          <Route path="backup" element={<RequirePermission section="admin"><BackupPage /></RequirePermission>} />
-          <Route path="reports" element={<RequirePermission section="reports"><ReportsPage /></RequirePermission>} />
-          <Route path="ai" element={<RequirePermission section="ai"><AIChatPage /></RequirePermission>} />
-          <Route path="settings" element={<RequirePermission section="admin"><SettingsPage /></RequirePermission>} />
+          <Route path="audit" element={<RequirePermission permission="settings.read"><AuditTrailPage /></RequirePermission>} />
+          <Route path="backup" element={<RequirePermission permission="settings.read"><BackupPage /></RequirePermission>} />
+          <Route path="reports" element={<RequirePermission permission="reports.read"><ReportsPage /></RequirePermission>} />
+          <Route path="ai" element={<RequirePermission permission="ai.read"><AIChatPage /></RequirePermission>} />
+          <Route path="settings" element={<RequirePermission permission="settings.read"><SettingsPage /></RequirePermission>} />
         </Route>
         <Route path="login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

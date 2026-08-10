@@ -41,6 +41,7 @@ from modules.finance.router import router as finance_router
 from modules.seeding.router import router as seeding_router
 from modules.attendance.router import router as attendance_router
 from modules.updates.router import router as updates_router, leadership_router
+from modules.authz.router import router as authz_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -149,6 +150,7 @@ app.include_router(seeding_router, prefix=settings.API_V1_PREFIX + "/seeding", t
 app.include_router(attendance_router, prefix=settings.API_V1_PREFIX + "/attendance", tags=["attendance"])
 app.include_router(updates_router, prefix=settings.API_V1_PREFIX + "/updates", tags=["updates"])
 app.include_router(leadership_router, prefix=settings.API_V1_PREFIX + "/leadership", tags=["leadership"])
+app.include_router(authz_router, prefix=settings.API_V1_PREFIX + "/authz", tags=["access control"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])

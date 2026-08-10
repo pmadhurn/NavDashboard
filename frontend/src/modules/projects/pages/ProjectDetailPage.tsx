@@ -61,7 +61,7 @@ const ENTRY_ICONS: Record<string, React.ReactNode> = {
 function TimelineTab({ projectId }: { projectId: string }) {
   const [quickText, setQuickText] = useState('');
   const [entryType, setEntryType] = useState('NOTE');
-  const canEdit = usePermission('projects', 'EDIT');
+  const canEdit = usePermission('projects.update');
   const { data, isLoading } = useProjectTimeline(projectId);
   const addEntry = useAddTimelineEntry(projectId);
 
@@ -164,7 +164,7 @@ function EquipmentTab({ projectId }: { projectId: string }) {
   const [receivedBy, setReceivedBy] = useState('');
   const [notes, setNotes] = useState('');
 
-  const canEdit = usePermission('projects', 'EDIT');
+  const canEdit = usePermission('projects.update');
   const { data: movements, isLoading } = useProjectMovements(projectId);
   const { data: assetData } = useAssets({ search: assetSearch });
   const createMovement = useCreateMovement(projectId);
@@ -350,7 +350,7 @@ function TeamTab({ projectId }: { projectId: string }) {
   const [newName, setNewName] = useState('');
   const [role, setRole] = useState('');
 
-  const canEdit = usePermission('projects', 'EDIT');
+  const canEdit = usePermission('projects.update');
   const { data: project } = useProject(projectId);
   const addMember = useAddMember(projectId);
   const removeMember = useRemoveMember(projectId);
@@ -478,7 +478,7 @@ function DeployedTab({ projectId }: { projectId: string }) {
   const [entityId, setEntityId] = useState<string | undefined>();
   const [search, setSearch] = useState('');
 
-  const canEdit = usePermission('projects', 'EDIT');
+  const canEdit = usePermission('projects.update');
   const { data: deployments, isLoading } = useProjectDeployments(projectId);
   const addDeployment = useAddDeployment(projectId);
   const removeDeployment = useRemoveDeployment(projectId);
@@ -644,7 +644,7 @@ const PHASE_TYPES = [
 ];
 
 function PhasesTab({ projectId }: { projectId: string }) {
-  const canEdit = usePermission('projects', 'EDIT');
+  const canEdit = usePermission('projects.update');
   const { data: phases, isLoading } = useProjectPhases(projectId);
   const createPhase = useCreatePhase(projectId);
   const [addOpen, setAddOpen] = useState(false);
@@ -798,7 +798,7 @@ export default function ProjectDetailPage() {
   const { data: project, isLoading } = useProject(id);
   const { data: phases } = useProjectPhases(id);
   const updateProject = useUpdateProject();
-  const canEdit = usePermission('projects', 'EDIT');
+  const canEdit = usePermission('projects.update');
   const [closeOpen, setCloseOpen] = useState(false);
 
   // Not every project sends a team to a site. A desktop survey — locations

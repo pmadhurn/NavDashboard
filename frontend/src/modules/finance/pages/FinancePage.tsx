@@ -100,8 +100,8 @@ export default function FinancePage() {
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const user = useAuthStore((s) => s.user);
-  const canEdit = usePermission('finance', 'EDIT');
-  const canManage = usePermission('finance', 'MANAGE');
+  const canEdit = usePermission('finance.update');
+  const canManage = usePermission('finance.settle');
 
   const { data, isLoading } = useExpenses({ page, projectId: projectFilter });
   const { data: projectData } = useProjects({});

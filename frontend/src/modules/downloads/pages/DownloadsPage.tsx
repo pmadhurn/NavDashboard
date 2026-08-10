@@ -49,7 +49,7 @@ function ItemCard({
 }) {
   const [showVersions, setShowVersions] = useState(false);
   const latest = item.versions[0];
-  const canEdit = usePermission('downloads', 'EDIT');
+  const canEdit = usePermission('downloads.update');
 
   return (
     <GlassCard padding="sm">
@@ -186,8 +186,8 @@ export default function DownloadsPage() {
   const [deleteItem, setDeleteItem] = useState<DownloadItem | null>(null);
 
   const user = useAuthStore((s) => s.user);
-  const canEdit = usePermission('downloads', 'EDIT');
-  const canManage = usePermission('downloads', 'MANAGE');
+  const canEdit = usePermission('downloads.update');
+  const canManage = usePermission('downloads.categories');
 
   const { data, isLoading } = useDownloadItems(search);
   const deleteMutation = useDeleteDownloadItem();

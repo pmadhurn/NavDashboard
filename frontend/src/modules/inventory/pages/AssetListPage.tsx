@@ -28,8 +28,8 @@ function AssetsTab() {
   const [source, setSource] = useState<string | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
-  const canEdit = usePermission('inventory', 'EDIT');
-  const canManage = usePermission('inventory', 'MANAGE');
+  const canEdit = usePermission('assets.update');
+  const canManage = usePermission('assets.delete');
   const backfillDevices = useBackfillDevices();
   const { data, isLoading } = useAssets({ page, search, categoryId, status, source });
   const { data: categories } = useAssetCategories();

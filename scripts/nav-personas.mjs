@@ -1,21 +1,4 @@
-// Render the nav as a NON-admin, for three personas, at two widths.
-//
-// Setup is the same as route-sweep.mjs (tok.txt + user.json); see its header.
-// Run:
-//   PLAYWRIGHT_MODULE=... PLAYWRIGHT_BROWSERS_PATH=... node scripts/nav-personas.mjs
-//
-// TWO interceptions are required and BOTH are load-bearing:
-//   1. localStorage.auth_user — what authStore hydrates `user` from.
-//   2. GET /auth/me           — Layout's useCurrentUser() writes the response
-//                               straight back into the store, so without this
-//                               the injected persona is replaced by the real
-//                               ADMIN a moment after load and every persona
-//                               renders 10 tabs. That looks like a permission
-//                               bug in the product; it is a bug in the harness.
-//
-// Read-only: no DB write, no form submitted.
-//
-// Original note: No DB write: the token stays the admin's
+// Render the nav as a NON-admin. No DB write: the token stays the admin's
 // (the backend still authorises it), but auth_user — the payload authStore
 // hydrates `user` from, and the only thing the client-side nav and route
 // guard read — carries a narrowed permission map.
@@ -29,26 +12,31 @@ const base = JSON.parse(fs.readFileSync('./user.json', 'utf8'));
 const PERSONAS = {
   technician: {
     role: 'TECHNICIAN',
-    permissions: {
-      devices: 'EDIT', inventory: 'EDIT', documents: 'EDIT',
-      troubleshooting: 'EDIT', downloads: 'EDIT', projects: 'EDIT',
-      personnel: 'VIEW', attendance: 'EDIT', updates: 'EDIT', exports: 'EDIT',
-    },
+    permissions: [
+      'dashboard.read', 'devices.read', 'devices.create', 'devices.update',
+      'troubleshooting.read', 'troubleshooting.create', 'troubleshooting.resolve',
+      'projects.read', 'projects.update', 'assets.read', 'assets.update',
+      'documents.read', 'documents.create', 'downloads.read',
+      'attendance.read', 'attendance.create', 'updates.read', 'updates.create',
+      'comparison.read', 'search.read', 'ai.read',
+    ],
   },
   viewer: {
     role: 'VIEWER',
-    permissions: {
-      devices: 'VIEW', inventory: 'VIEW', documents: 'VIEW',
-      troubleshooting: 'VIEW', downloads: 'VIEW', projects: 'VIEW',
-      attendance: 'VIEW', updates: 'VIEW',
-    },
+    permissions: [
+      'dashboard.read', 'devices.read', 'troubleshooting.read', 'projects.read',
+      'assets.read', 'documents.read', 'downloads.read', 'attendance.read',
+      'updates.read', 'comparison.read', 'search.read',
+    ],
   },
   boss: {
     role: 'VIEWER',
-    permissions: {
-      leadership: 'VIEW', updates: 'EDIT', attendance: 'VIEW',
-      projects: 'VIEW', finance: 'VIEW', devices: 'VIEW', personnel: 'VIEW',
-    },
+    permissions: [
+      'dashboard.read', 'leadership.read', 'updates.read', 'updates.comment',
+      'attendance.read', 'attendance.board', 'attendance.compoff',
+      'projects.read', 'finance.read', 'finance.summary', 'devices.read',
+      'personnel.read', 'reports.read', 'search.read',
+    ],
   },
 };
 

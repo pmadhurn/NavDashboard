@@ -37,7 +37,7 @@ export default function MyFinancePage() {
   const { data: advances } = useAdvances({ personId: summary?.person_id ?? undefined });
   const { data: claims } = useClaims({ mine: true });
   const createAdvance = useCreateAdvance();
-  const canEdit = usePermission('finance', 'EDIT');
+  const canEdit = usePermission('finance.create');
 
   const [addOpen, setAddOpen] = useState(false);
   const [personId, setPersonId] = useState<string | undefined>();

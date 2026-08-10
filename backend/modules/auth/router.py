@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, get_permission_map, require_role
+from core.dependencies import get_current_user, require_role
 from modules.auth.models import User
 from modules.auth.schemas import (
     LoginRequest,
@@ -26,8 +26,10 @@ router = APIRouter()
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
-    return await service.authenticate(db, body.email, body.password)
+async def login(
+    body: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)
+):
+    return await service.authenticate(db, body.email, body.password, request=request)
 
 
 @router.get("/clerk/config", response_model=ClerkConfigResponse)
@@ -46,16 +48,20 @@ async def clerk_config():
 
 
 @router.post("/clerk", response_model=ClerkAuthResponse)
-async def clerk_login(body: ClerkLoginRequest, db: AsyncSession = Depends(get_db)):
+async def clerk_login(
+    body: ClerkLoginRequest, request: Request, db: AsyncSession = Depends(get_db)
+):
     """Exchange a Clerk session for an app token. Roles stay in this app."""
     from modules.auth import clerk
 
-    return await clerk.clerk_authenticate(db, body.token)
+    return await clerk.clerk_authenticate(db, body.token, request=request)
 
 
 @router.post("/google", response_model=GoogleAuthResponse)
-async def google_login(body: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):
-    return await service.google_authenticate(db, body.credential)
+async def google_login(
+    body: GoogleLoginRequest, request: Request, db: AsyncSession = Depends(get_db)
+):
+    return await service.google_authenticate(db, body.credential, request=request)
 
 
 @router.get("/users/basic")
@@ -107,7 +113,7 @@ async def me(
     current_user: User = Depends(get_current_user),
 ):
     response = UserResponse.model_validate(current_user)
-    response.permissions = await get_permission_map(db, current_user)
+    response.permissions = await service.effective_permission_list(db, current_user)
     return response
 
 
@@ -164,10 +170,13 @@ async def update_user(
 async def get_user_permissions(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
+    """This user's roles, their per-user overrides, and the resulting set."""
+    from modules.authz import service as authz_service
+
     user = await service.get_profile(db, user_id)
-    return await service.get_permission_detail(db, user)
+    return await authz_service.user_access(db, user)
 
 
 @router.put("/users/{user_id}/permissions")
@@ -175,12 +184,14 @@ async def set_user_permissions(
     user_id: UUID,
     body: PermissionsUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
-    permissions = await service.update_permissions(
-        db, user_id, body.permissions, changed_by=current_user.id, scopes=body.scopes
+    from modules.authz import service as authz_service
+
+    user = await service.get_profile(db, user_id)
+    return await authz_service.set_user_access(
+        db, user, body.role_ids, body.overrides, changed_by=current_user.id
     )
-    return {"permissions": permissions}
 
 
 @router.delete("/users/{user_id}")

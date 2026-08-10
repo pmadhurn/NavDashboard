@@ -34,20 +34,22 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     custom_fields: Optional[dict] = None
-    permissions: Optional[dict[str, str]] = None
+    # Permission KEYS the caller holds. Replaces the old section -> level
+    # map: the frontend gates nav items and buttons on these directly.
+    permissions: Optional[list[str]] = None
 
     model_config = {"from_attributes": True}
 
 
 class PermissionsUpdate(BaseModel):
-    """Full section -> level map; replaces the user's permissions.
+    """Replaces a user's access: which roles they hold, plus per-user overrides.
 
-    `scopes` is optional and defaults per-section to ALL, so a client that has
-    not been updated for the scope dimension keeps its existing behaviour.
+    Roles carry the bulk of the grant; an override is how one capability is
+    added to or taken away from a single person without cloning a role for them.
     """
 
-    permissions: dict[str, str]
-    scopes: Optional[dict[str, str]] = None
+    role_ids: list[UUID] = []
+    overrides: list[dict] = []
 
 
 class LoginRequest(BaseModel):

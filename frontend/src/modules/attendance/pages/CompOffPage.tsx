@@ -91,7 +91,7 @@ export default function CompOffPage() {
   const { data: personnel, isLoading: loadingPeople } = usePersonnelList({ size: 200 });
   const [personId, setPersonId] = useState<string | undefined>();
   const [adjustOpen, setAdjustOpen] = useState(false);
-  const canManage = usePermission('attendance', 'MANAGE');
+  const canManage = usePermission('attendance.adjust');
 
   const people = personnel?.items ?? [];
   const selected = personId ?? people[0]?.id;

@@ -80,7 +80,7 @@ export default function ProjectListPage() {
   const [newType, setNewType] = useState<string>('POC');
   const [customer, setCustomer] = useState('');
 
-  const canEdit = usePermission('projects', 'EDIT');
+  const canEdit = usePermission('projects.create');
   const { data, isLoading } = useProjects({ search, type, status });
   const createProject = useCreateProject();
 

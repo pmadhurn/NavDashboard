@@ -14,7 +14,7 @@ import StatusOverview from '../components/StatusOverview'
 import PairStatusPie from '../components/PairStatusPie'
 import DeviceChart from '../components/DeviceChart'
 import ErrorTrendChart from '../components/ErrorTrendChart'
-import { useAuthStore, hasPermission } from '@/shared/stores/authStore'
+import { useAuthStore, can } from '@/shared/stores/authStore'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { useIsMobile } from '@/shared/hooks/useIsMobile'
 import {
@@ -34,7 +34,8 @@ interface Widget {
   icon: ReactNode
   accent: string
   to: string
-  section: string
+  /** Permission key that reveals this widget. */
+  permission: string
   showWhenZero?: boolean
 }
 
@@ -47,7 +48,7 @@ const WIDGETS: Widget[] = [
     icon: <ApiOutlined />,
     accent: '#5E8C86',
     to: '/devices',
-    section: 'devices',
+    permission: 'devices.read',
     showWhenZero: true,
   },
   {
@@ -58,7 +59,7 @@ const WIDGETS: Widget[] = [
     icon: <ToolOutlined />,
     accent: 'var(--status-faulty)',
     to: '/troubleshooting',
-    section: 'troubleshooting',
+    permission: 'troubleshooting.read',
     showWhenZero: true,
   },
   {
@@ -69,7 +70,7 @@ const WIDGETS: Widget[] = [
     icon: <ProjectOutlined />,
     accent: 'var(--status-not-working)',
     to: '/projects',
-    section: 'projects',
+    permission: 'projects.read',
     showWhenZero: true,
   },
   {
@@ -80,7 +81,7 @@ const WIDGETS: Widget[] = [
     icon: <DeploymentUnitOutlined />,
     accent: '#6F8CB6',
     to: '/inventory/assets',
-    section: 'inventory',
+    permission: 'assets.read',
     showWhenZero: true,
   },
   {
@@ -91,7 +92,7 @@ const WIDGETS: Widget[] = [
     icon: <WarningOutlined />,
     accent: '#8C5F5F',
     to: '/inventory/assets',
-    section: 'inventory',
+    permission: 'assets.read',
   },
   {
     key: 'myspend',
@@ -101,7 +102,7 @@ const WIDGETS: Widget[] = [
     icon: <DollarOutlined />,
     accent: 'var(--status-working)',
     to: '/finance',
-    section: 'finance',
+    permission: 'finance.read',
     showWhenZero: true,
   },
   {
@@ -112,7 +113,7 @@ const WIDGETS: Widget[] = [
     icon: <UserAddOutlined />,
     accent: 'var(--role-technician)',
     to: '/settings',
-    section: 'admin',
+    permission: 'users.read',
   },
 ]
 
@@ -160,7 +161,7 @@ export default function DashboardPage() {
   const isMobile = useIsMobile()
   const { data: summary } = useHomeSummary()
 
-  const canSeeDevices = hasPermission(user, 'devices')
+  const canSeeDevices = can(user, 'devices.read')
   const { data: distribution, isLoading: distLoading } = useStatusDistribution()
   const { data: deviceBreakdown, isLoading: deviceLoading } = useDeviceTypeBreakdown()
   const { data: errorTrends, isLoading: errorLoading } = useErrorTrends(30)
@@ -177,7 +178,7 @@ export default function DashboardPage() {
 
   const visibleWidgets = summary
     ? WIDGETS.filter((w) => {
-        if (!hasPermission(user, w.section)) return false
+        if (!can(user, w.permission)) return false
         const v = w.value(summary)
         const isZero = v === '0' || v === '₹0'
         return w.showWhenZero || !isZero
