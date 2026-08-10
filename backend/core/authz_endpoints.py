@@ -65,7 +65,10 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.auth.router.me": AUTHENTICATED,  # GET /api/v1/auth/me
     "modules.auth.router.update_me": AUTHENTICATED,  # PUT /api/v1/auth/me
     "modules.auth.router.change_password": AUTHENTICATED,  # PUT /api/v1/auth/me/password
-    "modules.auth.router.register": PUBLIC,  # POST /api/v1/auth/register
+    # Creating an account is an administrative act, not a sign-up: this endpoint
+    # was ADMIN-only before the migration and grouping it with the login flows
+    # would have opened self-registration.
+    "modules.auth.router.register": "users.create",  # POST /api/v1/auth/register
     "modules.auth.router.list_users": "users.read",  # GET /api/v1/auth/users
     "modules.auth.router.list_users_basic": "users.read",  # GET /api/v1/auth/users/basic
     "modules.auth.router.list_pending_users": "users.read",  # GET /api/v1/auth/users/pending

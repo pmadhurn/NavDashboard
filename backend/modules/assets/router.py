@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import require_permission
+from core.dependencies import require_permission, get_current_user
 from modules.auth.models import User
 from modules.assets import service
 from modules.assets.schemas import (
@@ -35,7 +35,7 @@ async def list_assets(
     project_id: Optional[UUID] = Query(None),
     source: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_assets(
         db,
@@ -51,7 +51,7 @@ async def list_assets(
 @router.get("/deployed", response_model=list[DeployedGroup])
 async def deployed(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.get_deployed(db)
 
@@ -59,7 +59,7 @@ async def deployed(
 @router.post("/backfill-devices")
 async def backfill_devices(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.backfill_device_assets(db)
 
@@ -68,7 +68,7 @@ async def backfill_devices(
 async def create_asset(
     body: AssetCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_asset(db, body, current_user.id)
 
@@ -76,7 +76,7 @@ async def create_asset(
 @router.get("/categories", response_model=list[AssetCategoryResponse])
 async def list_categories(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_categories(db)
 
@@ -85,7 +85,7 @@ async def list_categories(
 async def create_category(
     body: AssetCategoryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_category(db, body)
 
@@ -94,7 +94,7 @@ async def create_category(
 async def delete_category(
     category_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     await service.delete_category(db, category_id)
     return {"detail": "Category deleted"}
@@ -104,7 +104,7 @@ async def delete_category(
 async def lookup_by_code(
     code: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     """Resolve an asset from its code, serial number, or barcode/QR/RFID tag."""
     return await service.lookup_by_code(db, code)
@@ -115,7 +115,7 @@ async def list_reports(
     report_type: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_reports(db, report_type=report_type, status=status)
 
@@ -124,7 +124,7 @@ async def list_reports(
 async def create_report(
     body: AssetReportCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_report(db, body, current_user.id)
 
@@ -134,7 +134,7 @@ async def update_report(
     report_id: UUID,
     body: AssetReportUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_report(db, report_id, body, current_user.id)
 
@@ -143,7 +143,7 @@ async def update_report(
 async def get_asset(
     asset_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     asset = await service.get_asset(db, asset_id)
     return AssetResponse.model_validate(asset)
@@ -154,7 +154,7 @@ async def update_asset(
     asset_id: UUID,
     body: AssetUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_asset(db, asset_id, body, current_user.id)
 
@@ -163,7 +163,7 @@ async def update_asset(
 async def delete_asset(
     asset_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     await service.delete_asset(db, asset_id, current_user.id)
     return {"detail": "Asset deleted"}
@@ -173,6 +173,6 @@ async def delete_asset(
 async def get_asset_history(
     asset_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("inventory", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.get_asset_history(db, asset_id)

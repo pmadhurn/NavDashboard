@@ -60,7 +60,13 @@ for (const [name, persona] of Object.entries(PERSONAS)) {
     const errors = [];
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 90)); });
     await page.goto(BASE + '/', { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1200);
+    // Wait for the nav to actually render rather than guessing at a delay: a
+    // cold backend made this report 0 tabs once, which reads as a permission
+    // bug and is only slow rendering.
+    await page
+      .waitForSelector('.navos-tab, nav[aria-label="Workspaces"] button', { timeout: 15000 })
+      .catch(() => {});
+    await page.waitForTimeout(600);
 
     const tabs = await page.$$eval('.navos-tab, nav[aria-label="Workspaces"] button',
       (els) => els.map((e) => e.getAttribute('title') || e.textContent.trim()).filter(Boolean));

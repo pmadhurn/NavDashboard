@@ -21,7 +21,7 @@ BACKUP_DIR = "/backups"
 @router.post("/pg-dump")
 async def create_backup(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     try:
         return await service.create_backup_service(db, current_user.id)
@@ -39,7 +39,7 @@ async def backup_history(
 @router.get("/pg-dump/download/{filename}")
 async def download_backup(
     filename: str,
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     filepath = os.path.join(BACKUP_DIR, filename)
     if not os.path.exists(filepath):
@@ -57,7 +57,7 @@ async def download_backup(
 async def restore_backup(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     if not file.filename or not file.filename.endswith((".sql", ".dump")):
         raise BadRequestException("Only .sql or .dump files are accepted")
@@ -76,7 +76,7 @@ async def restore_backup(
 async def delete_backup_file(
     filename: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.delete_backup_service(db, filename, current_user.id)
 

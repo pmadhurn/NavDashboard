@@ -45,7 +45,7 @@ async def get_pair_stats(
 async def create_pair(
     pair_in: PairCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.create_pair(db, pair_in, current_user.id)
 
@@ -64,7 +64,7 @@ async def update_pair(
     pair_id: UUID,
     pair_in: PairUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.update_pair(db, pair_id, pair_in, current_user.id)
 
@@ -73,7 +73,7 @@ async def update_pair(
 async def delete_pair(
     pair_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.delete_pair(db, pair_id, current_user.id)
 
@@ -81,6 +81,6 @@ async def delete_pair(
 @router.post("/seed", response_model=list[PairResponse])
 async def seed_pairs(
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.seed_pairs(db, current_user.id)

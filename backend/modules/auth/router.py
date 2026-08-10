@@ -83,7 +83,7 @@ async def list_users_basic(
 @router.get("/users/pending", response_model=list[UserResponse])
 async def list_pending_users(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     from modules.auth import repository
     return await repository.get_multi(db, filters={"status": "PENDING"})
@@ -93,7 +93,7 @@ async def list_pending_users(
 async def approve_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.approve_user(db, user_id, approved_by=current_user.id)
 
@@ -102,7 +102,7 @@ async def approve_user(
 async def register(
     body: UserCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.register_user(db, body, current_user.role)
 
@@ -141,7 +141,7 @@ async def list_users(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     from modules.auth import repository
     return await repository.get_multi(db, skip=skip, limit=limit)
@@ -151,7 +151,7 @@ async def list_users(
 async def get_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.get_profile(db, user_id)
 
@@ -161,7 +161,7 @@ async def update_user(
     user_id: UUID,
     body: UserUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_profile(db, user_id, body)
 
@@ -198,7 +198,7 @@ async def set_user_permissions(
 async def delete_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     from modules.auth import repository
     user = await repository.soft_delete(db, user_id)

@@ -12,9 +12,8 @@ from core.dependencies import (
     assert_scope,
     get_current_person_id,
     get_current_user,
-    person_from_body,
-    person_from_path,
-    require_permission,
+    scoped_by_body,
+    scoped_by_path,
 )
 from core.exceptions import BadRequestException
 from modules.attendance import service
@@ -57,7 +56,7 @@ async def my_days(
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("attendance", "VIEW")),
+    user=Depends(get_current_user),
 ):
     person_id = await get_current_person_id(db, user)
     if person_id is None:
@@ -73,7 +72,7 @@ async def my_summary(
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("attendance", "VIEW")),
+    user=Depends(get_current_user),
 ):
     date_from, date_to = _default_range(date_from, date_to)
     person_id = await get_current_person_id(db, user)
@@ -97,7 +96,7 @@ async def my_summary(
 @router.get("/me/comp-off", response_model=CompOffBalance)
 async def my_comp_off(
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("attendance", "VIEW")),
+    user=Depends(get_current_user),
 ):
     person_id = await get_current_person_id(db, user)
     if person_id is None:
@@ -115,9 +114,7 @@ async def log_day(
     body: AttendanceDayCreate,
     db: AsyncSession = Depends(get_db),
     user=Depends(
-        require_permission(
-            "attendance", "EDIT", scope_owner=person_from_body("person_id")
-        )
+        scoped_by_body("attendance")
     ),
 ):
     return await service.log_day(db, body, user.id)
@@ -128,7 +125,7 @@ async def update_day(
     entry_id: UUID,
     body: AttendanceDayUpdate,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("attendance", "EDIT")),
+    user=Depends(get_current_user),
 ):
     # The target person is on the stored row, not in the request, so the scope
     # check happens here rather than in the dependency.
@@ -141,7 +138,7 @@ async def update_day(
 async def delete_day(
     entry_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("attendance", "EDIT")),
+    user=Depends(get_current_user),
 ):
     owner = await service.get_day_owner(db, entry_id)
     await assert_scope(db, user, "attendance", owner)
@@ -158,7 +155,7 @@ async def person_days(
     date_to: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
     user=Depends(
-        require_permission("attendance", "VIEW", scope_owner=person_from_path("person_id"))
+        scoped_by_path("attendance")
     ),
 ):
     date_from, date_to = _default_range(date_from, date_to)
@@ -174,7 +171,7 @@ async def person_summary(
     date_to: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
     user=Depends(
-        require_permission("attendance", "VIEW", scope_owner=person_from_path("person_id"))
+        scoped_by_path("attendance")
     ),
 ):
     date_from, date_to = _default_range(date_from, date_to)
@@ -186,7 +183,7 @@ async def team_board(
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("attendance", "VIEW")),
+    user=Depends(get_current_user),
 ):
     """Everyone's logged days in a range.
 
@@ -215,7 +212,7 @@ async def comp_off_balance(
     person_id: UUID,
     db: AsyncSession = Depends(get_db),
     user=Depends(
-        require_permission("attendance", "VIEW", scope_owner=person_from_path("person_id"))
+        scoped_by_path("attendance")
     ),
 ):
     return await service.comp_off_balance(db, person_id)
@@ -226,7 +223,7 @@ async def comp_off_ledger(
     person_id: UUID,
     db: AsyncSession = Depends(get_db),
     user=Depends(
-        require_permission("attendance", "VIEW", scope_owner=person_from_path("person_id"))
+        scoped_by_path("attendance")
     ),
 ):
     return await service.list_comp_off(db, person_id)
@@ -237,9 +234,7 @@ async def adjust_comp_off(
     body: CompOffAdjust,
     db: AsyncSession = Depends(get_db),
     user=Depends(
-        require_permission(
-            "attendance", "MANAGE", scope_owner=person_from_body("person_id")
-        )
+        scoped_by_body("attendance")
     ),
 ):
     """Manual correction. MANAGE, not EDIT — granting yourself days is not the

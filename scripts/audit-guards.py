@@ -1,68 +1,72 @@
-"""Guard on every operation, read from the live FastAPI app.
+"""Report the permission key protecting every API operation.
 
-This FastAPI version wraps include_router() results in _IncludedRouter, whose
-real routes hang off `.original_router` and whose prefix is on
-`.include_context.prefix`. A flat scan of app.routes finds exactly one route
-and would report "everything is fine".
+Run:
+    docker cp scripts/audit-guards.py navdashboard-backend-1:/tmp/ag.py
+    docker exec navdashboard-backend-1 python /tmp/ag.py
+
+Since 2026-08-11 authorization is a single app-level dependency
+(`core.authz.enforce_permissions`) plus the map in `core/authz_endpoints.py`,
+NOT a per-route dependency. An earlier version of this script looked for
+`permission_checker` in each route's dependants and, after the migration,
+reported 233 operations as "unguarded" — every one of which is in fact guarded.
+Measuring the wrong thing is worse than not measuring: it invites someone to
+"fix" a system that is working.
+
+What actually matters is: does every operation have a catalog entry, and is any
+operation reachable without one. `assert_full_coverage()` enforces that at
+startup; this script prints the same picture for a human.
 """
 import sys
+from collections import Counter, defaultdict
+
 sys.path.insert(0, "/app")
-from collections import Counter
-from main import app
 
-
-def collect(routes, prefix=""):
-    out = []
-    for r in routes:
-        if type(r).__name__ == "_IncludedRouter":
-            p = getattr(r.include_context, "prefix", "") or ""
-            out.extend(collect(r.original_router.routes, prefix + p))
-            continue
-        path = prefix + getattr(r, "path", "")
-        methods = getattr(r, "methods", None)
-        if methods and path.startswith("/api/v1"):
-            out.append((r, path, methods))
-    return out
-
-
-def guard_of(route):
-    guards = set()
-
-    def walk(d, depth=0):
-        if d is None or depth > 8:
-            return
-        for s in d.dependencies:
-            name = getattr(s.call, "__name__", "")
-            if name == "permission_checker":
-                guards.add("permission")
-            elif name == "role_checker":
-                guards.add("role")
-            elif name == "get_current_user":
-                guards.add("authonly")
-            walk(s, depth + 1)
-
-    walk(getattr(route, "dependant", None))
-    for k in ("permission", "role", "authonly"):
-        if k in guards:
-            return {"authonly": "AUTH-ONLY"}.get(k, k)
-    return "PUBLIC"
-
+from core.authz import iter_api_routes, permission_for_route  # noqa: E402
+from core.authz_catalog import AUTHENTICATED, PUBLIC  # noqa: E402
+from main import app  # noqa: E402
 
 rows = []
-for r, path, methods in collect(app.routes):
-    g = guard_of(r)
-    for m in methods:
+for route, path, methods in iter_api_routes(app):
+    key = permission_for_route(route)
+    for m in sorted(methods):
         if m in ("HEAD", "OPTIONS"):
             continue
-        rows.append((g, m, path))
+        rows.append((key, m, path))
 
-c = Counter(g for g, _, _ in rows)
+kinds = Counter(
+    "PUBLIC" if k == PUBLIC else "AUTHENTICATED" if k == AUTHENTICATED
+    else "unmapped" if k is None else "permission"
+    for k, _, _ in rows
+)
+
 print("=== totals ===")
-for k in ("permission", "role", "AUTH-ONLY", "PUBLIC"):
-    print(f"  {k:12} {c.get(k, 0)}")
-print(f"  {'TOTAL':12} {len(rows)}")
+for label in ("permission", "AUTHENTICATED", "PUBLIC", "unmapped"):
+    print(f"  {label:16} {kinds.get(label, 0)}")
+print(f"  {'TOTAL':16} {len(rows)}")
 
-print("\n=== NOT permission-guarded ===")
-for g, m, p in sorted(rows, key=lambda x: (x[2], x[1])):
-    if g != "permission":
-        print(f"  {g:10} {m:7} {p}")
+unmapped = [(m, p) for k, m, p in rows if k is None]
+if unmapped:
+    print("\n!!! UNMAPPED — these would be denied at runtime and block startup:")
+    for m, p in unmapped:
+        print(f"    {m:7} {p}")
+else:
+    print("\nEvery operation is mapped. Startup would not be blocked.")
+
+print("\n=== unauthenticated (public) ===")
+for k, m, p in sorted(rows, key=lambda r: r[2]):
+    if k == PUBLIC:
+        print(f"    {m:7} {p}")
+
+print("\n=== signed-in, self-service only (no permission required) ===")
+for k, m, p in sorted(rows, key=lambda r: r[2]):
+    if k == AUTHENTICATED:
+        print(f"    {m:7} {p}")
+
+by_key = defaultdict(list)
+for k, m, p in rows:
+    if k not in (PUBLIC, AUTHENTICATED) and k is not None:
+        by_key[k].append(f"{m} {p}")
+
+print(f"\n=== {len(by_key)} permission keys in use ===")
+for key in sorted(by_key):
+    print(f"  {key:32} {len(by_key[key])} operation(s)")

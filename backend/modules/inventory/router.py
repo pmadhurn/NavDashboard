@@ -165,6 +165,6 @@ async def delete_material(
 @router.post("/seed", response_model=dict)
 async def seed_inventory(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.seed_inventory(db, current_user.id)

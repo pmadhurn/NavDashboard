@@ -228,3 +228,37 @@ def require_permission(section: str, level: str = "VIEW", scope_owner=None):
         return current_user
 
     return permission_checker
+
+def scoped_by_body(section: str, field: str = "person_id"):
+    """Row-ownership check for a target named in the request body.
+
+    Separate from the permission key, which answers "may this user log
+    attendance at all". This answers "*whose* attendance" — an orthogonal axis
+    the key model does not carry.
+    """
+
+    async def checker(
+        request: Request,
+        current_user=Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ):
+        target = await person_from_body(field)(request)
+        await assert_scope(db, current_user, section, target)
+        return current_user
+
+    return checker
+
+
+def scoped_by_path(section: str, param: str = "person_id"):
+    """Row-ownership check for a target named in the path."""
+
+    async def checker(
+        request: Request,
+        current_user=Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ):
+        target = await person_from_path(param)(request)
+        await assert_scope(db, current_user, section, target)
+        return current_user
+
+    return checker

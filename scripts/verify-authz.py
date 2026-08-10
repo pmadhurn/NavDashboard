@@ -82,6 +82,10 @@ async def main():
             # so an unauthorized caller learns nothing about the parameter shape.
             check("GET /search/global", call("GET", "/search/global?q=ab", token), 403)
             check("GET /locations/history", call("GET", "/locations/history", token), 403)
+            # Creating accounts is an administrative act. This was briefly
+            # mapped PUBLIC during the migration, which would have opened
+            # self-registration; the check exists so it cannot regress.
+            check("POST /auth/register", call("POST", "/auth/register", token), 403)
 
             print("\n2. Grant the Viewer role -> reads open, writes stay shut")
             viewer = (

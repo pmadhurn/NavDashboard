@@ -251,7 +251,7 @@ async def get_errors_by_pair(
 @router.post("/seed", response_model=list[ErrorLogResponse])
 async def seed_errors(
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.seed_errors(db, current_user.id)
     

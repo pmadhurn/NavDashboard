@@ -103,7 +103,7 @@ async def get_audit_statistics(
 async def revert_audit_entry(
     audit_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """Revert an audit entry by restoring old_values to the entity. Admin only."""
     # Look up the audit entry

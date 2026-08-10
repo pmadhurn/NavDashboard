@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_permission_map, require_permission
+from core.dependencies import get_permission_map, require_permission, get_current_user
 from core.permissions import LEVEL_MANAGE, level_satisfies
 from modules.auth.models import User
 from modules.documents.storage import MinIOStorage, get_storage
@@ -41,7 +41,7 @@ async def list_items(
     page: int = Query(1, ge=1),
     size: int = Query(100, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_items(
         db,
@@ -57,7 +57,7 @@ async def list_items(
 @router.get("/categories", response_model=list[CategoryResponse])
 async def list_categories(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_categories(db)
 
@@ -66,7 +66,7 @@ async def list_categories(
 async def create_category(
     body: CategoryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     from modules.downloads import repository
 
@@ -80,7 +80,7 @@ async def create_category(
 async def delete_category(
     category_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     from core.exceptions import NotFoundException
     from modules.downloads import repository
@@ -104,7 +104,7 @@ async def upload(
     version_label: Optional[str] = Form(None),
     release_notes: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "EDIT")),
+    current_user: User = Depends(get_current_user),
     storage: MinIOStorage = Depends(get_storage),
 ):
     return await service.upload(
@@ -129,7 +129,7 @@ async def upload(
 async def get_item(
     item_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.get_item(
         db, item_id, current_user.id, await _is_manager(db, current_user)
@@ -141,7 +141,7 @@ async def update_item(
     item_id: UUID,
     body: ItemUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_item(
         db, item_id, body, current_user.id, await _is_manager(db, current_user)
@@ -152,7 +152,7 @@ async def update_item(
 async def delete_item(
     item_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "EDIT")),
+    current_user: User = Depends(get_current_user),
     storage: MinIOStorage = Depends(get_storage),
 ):
     await service.delete_item(
@@ -165,7 +165,7 @@ async def delete_item(
 async def download_version(
     version_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("downloads", "VIEW")),
+    current_user: User = Depends(get_current_user),
     storage: MinIOStorage = Depends(get_storage),
 ):
     version, file_bytes = await service.download_version(

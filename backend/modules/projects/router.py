@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import require_permission
+from core.dependencies import require_permission, get_current_user
 from modules.auth.models import User
 from modules.projects import service
 from modules.projects.schemas import (
@@ -43,7 +43,7 @@ async def list_projects(
     project_type: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_projects(
         db,
@@ -58,7 +58,7 @@ async def list_projects(
 async def create_project(
     body: ProjectCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_project(db, body, current_user.id)
 
@@ -67,7 +67,7 @@ async def create_project(
 async def get_project(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     project = await service.get_project(db, project_id)
     return ProjectResponse.model_validate(project)
@@ -78,7 +78,7 @@ async def update_project(
     project_id: UUID,
     body: ProjectUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_project(db, project_id, body, current_user.id)
 
@@ -87,7 +87,7 @@ async def update_project(
 async def delete_project(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     await service.delete_project(db, project_id, current_user.id)
     return {"detail": "Project deleted"}
@@ -97,7 +97,7 @@ async def delete_project(
 async def get_summary(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.get_summary(db, project_id)
 
@@ -109,7 +109,7 @@ async def add_member(
     project_id: UUID,
     body: MemberAdd,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.add_member(db, project_id, body, current_user.id)
 
@@ -119,7 +119,7 @@ async def remove_member(
     project_id: UUID,
     member_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     await service.remove_member(db, project_id, member_id, current_user.id)
     return {"detail": "Member removed"}
@@ -134,7 +134,7 @@ async def list_timeline(
     size: int = Query(50, ge=1, le=100),
     entry_type: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_timeline(
         db, project_id, PaginationParams(page=page, size=size), entry_type
@@ -146,7 +146,7 @@ async def create_timeline_entry(
     project_id: UUID,
     body: TimelineEntryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_timeline_entry(db, project_id, body, current_user.id)
 
@@ -158,7 +158,7 @@ async def outward_preview(
     project_id: UUID,
     body: OutwardRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.preview_outward(db, project_id, body.items)
 
@@ -168,7 +168,7 @@ async def outward_execute(
     project_id: UUID,
     body: OutwardRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.execute_outward(db, project_id, body, current_user.id)
 
@@ -179,7 +179,7 @@ async def outward_execute(
 async def list_phases(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_phases(db, project_id)
 
@@ -189,7 +189,7 @@ async def create_phase(
     project_id: UUID,
     body: PhaseCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_phase(db, project_id, body, current_user.id)
 
@@ -199,7 +199,7 @@ async def update_phase(
     phase_id: UUID,
     body: PhaseUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_phase(db, phase_id, body, current_user.id)
 
@@ -212,7 +212,7 @@ async def move_member(
     member_id: UUID,
     body: MemberMove,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.move_member(db, project_id, member_id, body, current_user.id)
 
@@ -222,7 +222,7 @@ async def close_project(
     project_id: UUID,
     body: ProjectCloseRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.close_project(db, project_id, body, current_user.id)
 
@@ -233,7 +233,7 @@ async def close_project(
 async def list_movements(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_movements(db, project_id)
 
@@ -243,7 +243,7 @@ async def create_movement(
     project_id: UUID,
     body: MovementCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_movement(db, project_id, body, current_user.id)
 
@@ -253,7 +253,7 @@ async def update_movement_item(
     item_id: UUID,
     body: ItemReturn,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_movement_item(db, item_id, body, current_user.id)
 
@@ -264,7 +264,7 @@ async def update_movement_item(
 async def list_deployments(
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_deployments(db, project_id)
 
@@ -274,7 +274,7 @@ async def add_deployment(
     project_id: UUID,
     body: DeploymentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.add_deployment(db, project_id, body, current_user.id)
 
@@ -284,7 +284,7 @@ async def remove_deployment(
     project_id: UUID,
     deployment_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     await service.remove_deployment(db, project_id, deployment_id, current_user.id)
     return {"detail": "Deployment removed"}
@@ -295,6 +295,6 @@ async def deployments_for_entity(
     entity_type: str,
     entity_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("projects", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.deployments_for_entity(db, entity_type, entity_id)

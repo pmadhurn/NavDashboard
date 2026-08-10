@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from core.dependencies import (
+    get_current_user,
     get_current_person_id,
     require_permission,
 )
@@ -32,13 +33,13 @@ async def list_updates(
     project_id: Optional[UUID] = Query(None),
     limit: int = Query(100, le=500),
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "VIEW")),
+    user=Depends(get_current_user),
 ):
     """The shared timeline.
 
     Deliberately not scope-filtered: the point of daily updates is that the
-    team can see what the team is doing. Who may *write* is scoped; who may
-    read is a VIEW grant.
+    team can see what the team is doing. Who may *write* is gated by
+    `updates.create`; who may read is gated by `updates.read`.
     """
     return await service.list_updates(
         db,
@@ -54,7 +55,7 @@ async def list_updates(
 async def my_updates(
     limit: int = Query(100, le=500),
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "VIEW")),
+    user=Depends(get_current_user),
 ):
     return await service.list_updates(db, author_id=user.id, limit=limit)
 
@@ -63,7 +64,7 @@ async def my_updates(
 async def get_update(
     update_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "VIEW")),
+    user=Depends(get_current_user),
 ):
     return await service.get_update(db, update_id)
 
@@ -72,7 +73,7 @@ async def get_update(
 async def create_update(
     body: UpdateCreate,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "EDIT")),
+    user=Depends(get_current_user),
 ):
     person_id = await get_current_person_id(db, user)
     return await service.create_update(db, body, user, person_id)
@@ -83,7 +84,7 @@ async def edit_update(
     update_id: UUID,
     body: UpdateEdit,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "EDIT")),
+    user=Depends(get_current_user),
 ):
     return await service.edit_update(db, update_id, body, user)
 
@@ -92,7 +93,7 @@ async def edit_update(
 async def delete_update(
     update_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "EDIT")),
+    user=Depends(get_current_user),
 ):
     await service.delete_update(db, update_id, user)
 
@@ -102,14 +103,12 @@ async def add_comment(
     update_id: UUID,
     body: CommentCreate,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "EDIT")),
+    user=Depends(get_current_user),
 ):
-    """Commenting needs EDIT on updates, not MANAGE.
-
-    Leadership's whole purpose here is to reply, and requiring MANAGE would
-    mean granting the power to delete other people's updates in order to say
-    "well done".
-    """
+    """Gated by `updates.comment`, which is deliberately separate from
+    `updates.delete`: leadership's whole purpose here is to reply, and they
+    should not need the power to delete other people's updates in order to say
+    "well done"."""
     return await service.add_comment(db, update_id, body, user)
 
 
@@ -117,7 +116,7 @@ async def add_comment(
 async def delete_comment(
     comment_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("updates", "EDIT")),
+    user=Depends(get_current_user),
 ):
     await service.delete_comment(db, comment_id, user)
 
@@ -130,6 +129,6 @@ leadership_router = APIRouter()
 @leadership_router.get("/summary", response_model=LeadershipSummary)
 async def leadership_summary(
     db: AsyncSession = Depends(get_db),
-    user=Depends(require_permission("leadership", "VIEW")),
+    user=Depends(get_current_user),
 ):
     return await service.leadership_summary(db)

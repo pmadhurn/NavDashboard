@@ -46,7 +46,7 @@ async def list_personnel(
 async def create_person(
     person_in: PersonCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_person(db, person_in, current_user.id)
 
@@ -66,7 +66,7 @@ async def search_personnel(
 @router.post("/backfill-links", response_model=BackfillResult)
 async def backfill_links(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """Auto-link personnel to login users by exact email match."""
     return await service.backfill_user_links(db, current_user.id)
@@ -77,7 +77,7 @@ async def link_user(
     person_id: UUID,
     body: LinkUserRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """Link a person to a login user (or unlink when user_id is null)."""
     return await service.link_user(db, person_id, body.user_id, current_user.id)
@@ -97,7 +97,7 @@ async def update_person(
     person_id: UUID,
     person_in: PersonUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_person(db, person_id, person_in, current_user.id)
 
@@ -106,7 +106,7 @@ async def update_person(
 async def delete_person(
     person_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.delete_person(db, person_id, current_user.id)
 
@@ -123,6 +123,6 @@ async def get_person_assignments(
 @router.post("/seed", response_model=list[PersonResponse])
 async def seed_personnel(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.seed_personnel(db, current_user.id)

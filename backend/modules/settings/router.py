@@ -42,7 +42,7 @@ async def update_setting(
     key: str,
     body: SettingUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """Update a system setting (admin only)."""
     return await service.update_setting(db, key, body.value, current_user.id)
@@ -54,7 +54,7 @@ async def update_setting(
 @router.get("/users", response_model=list[UserResponse])
 async def list_users(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """List all users (admin only)."""
     return await auth_repo.get_multi(db)
@@ -64,7 +64,7 @@ async def list_users(
 async def create_user(
     body: UserCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new user (admin only)."""
     return await auth_service.register_user(db, body, current_user.role)
@@ -75,7 +75,7 @@ async def update_user(
     user_id: UUID,
     body: UserUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """Update a user (admin only)."""
     return await auth_service.update_profile(db, user_id, body)
@@ -85,7 +85,7 @@ async def update_user(
 async def delete_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("ADMIN")),
+    current_user: User = Depends(get_current_user),
 ):
     """Deactivate a user (admin only)."""
     user = await auth_repo.soft_delete(db, user_id)

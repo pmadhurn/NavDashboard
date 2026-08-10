@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_permission_map, require_permission
+from core.dependencies import get_permission_map, require_permission, get_current_user
 from core.permissions import LEVEL_MANAGE, level_satisfies
 from modules.auth.models import User
 from modules.documents.storage import MinIOStorage, get_storage
@@ -52,7 +52,7 @@ async def list_expenses(
     date_from: Optional[datetime] = Query(None),
     date_to: Optional[datetime] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_expenses(
         db,
@@ -69,7 +69,7 @@ async def list_expenses(
 async def create_expense(
     body: ExpenseCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_expense(db, body, current_user.id)
 
@@ -77,7 +77,7 @@ async def create_expense(
 @router.get("/summary", response_model=ExpenseSummary)
 async def get_summary(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.get_summary(db)
 
@@ -87,7 +87,7 @@ async def get_summary(
 @router.get("/my", response_model=MyFinanceSummary)
 async def my_finance(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.my_finance(db, current_user.id)
 
@@ -97,7 +97,7 @@ async def my_finance(
 @router.get("/settlement", response_model=SettlementSummary)
 async def settlement(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.settlement_summary(db)
 
@@ -109,7 +109,7 @@ async def list_advances(
     person_id: Optional[UUID] = Query(None),
     project_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_advances(db, person_id=person_id, project_id=project_id)
 
@@ -118,7 +118,7 @@ async def list_advances(
 async def create_advance(
     body: AdvanceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_advance(db, body, current_user.id)
 
@@ -127,7 +127,7 @@ async def create_advance(
 async def delete_advance(
     advance_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     await service.delete_advance(db, advance_id, current_user.id)
     return {"detail": "Advance deleted"}
@@ -138,7 +138,7 @@ async def get_balance(
     person_id: UUID,
     project_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.get_balance(db, person_id, project_id)
 
@@ -151,7 +151,7 @@ async def list_claims(
     project_id: Optional[UUID] = Query(None),
     mine: bool = Query(False),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_claims(
         db,
@@ -165,7 +165,7 @@ async def list_claims(
 async def create_claim(
     body: ClaimCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_claim(db, body, current_user.id)
 
@@ -175,7 +175,7 @@ async def update_claim(
     claim_id: UUID,
     body: ClaimUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_claim(db, claim_id, body, current_user.id)
 
@@ -184,7 +184,7 @@ async def update_claim(
 async def submit_claim(
     claim_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.submit_claim(db, claim_id, current_user.id)
 
@@ -194,7 +194,7 @@ async def settle_claim(
     claim_id: UUID,
     body: ClaimSettle,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.settle_claim(db, claim_id, body, current_user.id)
 
@@ -202,7 +202,7 @@ async def settle_claim(
 @router.get("/batches", response_model=list[BatchResponse])
 async def list_batches(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.list_batches(db)
 
@@ -211,7 +211,7 @@ async def list_batches(
 async def create_batch(
     body: BatchCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.create_batch(db, body, current_user.id)
 
@@ -220,7 +220,7 @@ async def create_batch(
 async def import_sheet(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.import_sheet(db, file, current_user.id)
 
@@ -234,7 +234,7 @@ async def export_expenses(
     date_to: Optional[datetime] = Query(None),
     include_images: bool = Query(False),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
     storage: MinIOStorage = Depends(get_storage),
 ):
     """Multi-format bill export: itemised PDF (optionally with receipt images
@@ -262,7 +262,7 @@ async def generate_bill(
     date_from: Optional[datetime] = Query(None),
     date_to: Optional[datetime] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     pdf_bytes = await service.generate_bill_pdf(db, project_id, date_from, date_to)
     return StreamingResponse(
@@ -276,7 +276,7 @@ async def generate_bill(
 async def get_expense(
     expense_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "VIEW")),
+    current_user: User = Depends(get_current_user),
 ):
     expense = await service.get_expense(db, expense_id)
     return ExpenseResponse.model_validate(expense)
@@ -287,7 +287,7 @@ async def update_expense(
     expense_id: UUID,
     body: ExpenseUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     return await service.update_expense(
         db, expense_id, body, current_user.id, await _is_manager(db, current_user)
@@ -299,7 +299,7 @@ async def set_expense_status(
     expense_id: UUID,
     body: ExpenseStatusUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "MANAGE")),
+    current_user: User = Depends(get_current_user),
 ):
     """Finance person flags an individual expense paid / rejected / pending."""
     return await service.set_expense_status(db, expense_id, body.status, current_user.id)
@@ -309,7 +309,7 @@ async def set_expense_status(
 async def delete_expense(
     expense_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("finance", "EDIT")),
+    current_user: User = Depends(get_current_user),
 ):
     await service.delete_expense(
         db, expense_id, current_user.id, await _is_manager(db, current_user)

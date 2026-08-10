@@ -70,7 +70,7 @@ async def find_by_serial(
 async def create_device(
     device_in: DeviceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.create_device(db, device_in, current_user.id)
 
@@ -89,7 +89,7 @@ async def update_device(
     id: UUID,
     device_in: DeviceUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.update_device(db, id, device_in, current_user.id)
 
@@ -98,7 +98,7 @@ async def update_device(
 async def delete_device(
     id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.delete_device(db, id, current_user.id)
 
@@ -108,7 +108,7 @@ async def change_status(
     id: UUID,
     body: StatusChangeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN", "TECHNICIAN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.change_device_status(
         db, id, body.status, body.reason, current_user.id
@@ -127,6 +127,6 @@ async def get_status_history(
 @router.post("/seed", response_model=list[DeviceResponse])
 async def seed_devices(
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_role("ADMIN")),
+    current_user=Depends(get_current_user),
 ):
     return await service.seed_devices(db, current_user.id)
