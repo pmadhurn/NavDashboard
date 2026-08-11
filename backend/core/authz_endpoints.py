@@ -301,4 +301,5 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.dashboard.router.home_for_me": AUTHENTICATED,
     # Recording your own spending is the point of the module.
     "modules.finance.router.quick_expense": "finance.create",
+    "modules.projects.router.project_archive": "projects.read",
 }

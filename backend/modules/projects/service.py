@@ -37,7 +37,12 @@ from shared.audit import record_audit
 from shared.pagination import PaginatedResponse, PaginationParams, paginate
 
 VALID_TYPES = {"POC", "DEMO", "INSTALLATION", "OTHER"}
-VALID_STATUSES = {"ACTIVE", "ON_HOLD", "COMPLETED", "CLOSED"}
+# The whole life of a project, not just the middle of it. UPCOMING is work
+# already committed to but not started; ARCHIVED is finished work kept for
+# reference — the state that makes this an archive rather than a work queue.
+VALID_STATUSES = {
+    "UPCOMING", "ACTIVE", "ON_HOLD", "COMPLETED", "CLOSED", "ARCHIVED",
+}
 VALID_ENTRY_TYPES = {
     "VISIT", "CALL", "NOTE", "STATUS_CHANGE", "EQUIPMENT", "DOCUMENT", "ISSUE", "EXPENSE",
 }
@@ -809,3 +814,97 @@ async def update_movement_item(
 
     await db.refresh(movement)
     return MovementResponse.model_validate(movement)
+
+
+async def project_archive(db: AsyncSession, project_id: UUID) -> dict:
+    """Everything attached to a project, counted, in one request.
+
+    The point of an archive is that a project from a year ago can be
+    reconstructed from its own page. Counting it all here means the page can
+    show what exists before anyone opens a tab, so nothing is invisible just
+    because nobody thought to look.
+    """
+    from modules.assets.models import Asset
+    from modules.documents.models import Document
+    from modules.finance.models import Expense
+    from modules.projects.models import (
+        EquipmentMovement,
+        ProjectDeployment,
+        ProjectMember,
+        ProjectPhase,
+        ProjectTimelineEntry,
+    )
+    from modules.troubleshooting.models import ErrorLog
+    from modules.updates.models import DailyUpdate
+
+    async def count(model, *where):
+        return (
+            await db.execute(select(func.count()).select_from(model).where(*where))
+        ).scalar_one()
+
+    docs = (
+        await db.execute(
+            select(Document)
+            .where(
+                Document.entity_type == "project",
+                Document.entity_id == project_id,
+                Document.deleted_at.is_(None),
+            )
+            .order_by(Document.created_at.desc())
+        )
+    ).scalars().all()
+
+    photos = sum(1 for d in docs if (d.file_type or "").upper() in ("IMAGE", "PHOTO"))
+
+    return {
+        "documents_total": len(docs),
+        "photos": photos,
+        "other_files": len(docs) - photos,
+        "team_members": await count(
+            ProjectMember,
+            ProjectMember.project_id == project_id,
+            ProjectMember.deleted_at.is_(None),
+        ),
+        "phases": await count(
+            ProjectPhase,
+            ProjectPhase.project_id == project_id,
+            ProjectPhase.deleted_at.is_(None),
+        ),
+        "timeline_entries": await count(
+            ProjectTimelineEntry, ProjectTimelineEntry.project_id == project_id
+        ),
+        "updates": await count(
+            DailyUpdate,
+            DailyUpdate.project_id == project_id,
+            DailyUpdate.deleted_at.is_(None),
+        ),
+        "equipment_movements": await count(
+            EquipmentMovement, EquipmentMovement.project_id == project_id
+        ),
+        "still_out": await count(
+            Asset,
+            Asset.custody_type == "PROJECT",
+            Asset.custody_id == project_id,
+            Asset.deleted_at.is_(None),
+        ),
+        "deployments": await count(
+            ProjectDeployment, ProjectDeployment.project_id == project_id
+        ),
+        "issues": await count(
+            ErrorLog, ErrorLog.project_id == project_id, ErrorLog.deleted_at.is_(None)
+        )
+        if hasattr(ErrorLog, "project_id")
+        else 0,
+        "expenses": await count(
+            Expense, Expense.project_id == project_id, Expense.deleted_at.is_(None)
+        ),
+        "spend": float(
+            (
+                await db.execute(
+                    select(func.coalesce(func.sum(Expense.amount), 0)).where(
+                        Expense.project_id == project_id, Expense.deleted_at.is_(None)
+                    )
+                )
+            ).scalar_one()
+        ),
+    }

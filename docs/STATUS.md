@@ -11,17 +11,16 @@
 
 ## Current phase
 
-> **Phase 6 — Finance on a phone. DONE.**
+> **Phase 7 — Project archive. DONE.**
 
-`POST /finance/quick` takes the expense and its receipt in ONE multipart
-request. `has_receipt` is computed from attached documents, so a missing
-receipt is flagged rather than refused.
+Lifecycle is UPCOMING / ACTIVE / ON_HOLD / COMPLETED / CLOSED / ARCHIVED.
+`GET /projects/{id}/archive` counts everything attached in one request;
+the detail page opens on Overview and has a Files & photos tab.
 
 ### Next action
-**Phase 7 — Project archive.** Ongoing / upcoming / completed / archived, with
-everything in one place: team, head, updates, site visits, photos, videos,
-documents, reports, equipment out and back, customer, testing, troubleshooting.
-Compulsory updates surface as tasks (Phase 4 already carries `update.today`).
+**Phase 8 — Developer system-health dashboard.** Plain-language status for
+database, storage (MinIO), AI service, migrations, authz coverage and recent
+errors. Each problem states what happened, why, and what to do.
 
 ---
 
@@ -36,8 +35,8 @@ Compulsory updates surface as tasks (Phase 4 already carries `update.today`).
 | 4 | Tasks, notifications, engineer home | **done** |
 | 5 | Role dashboards + Admin "View as" | **done** |
 | 6 | Finance, built for a phone | **done** |
-| 7 | Project archive | **next** |
-| 8 | Developer system-health dashboard | not started |
+| 7 | Project archive | **done** |
+| 8 | Developer system-health dashboard | **next** |
 | 9 | WhatsApp sharing that carries content | not started |
 | 10 | Mobile, polish and the sweep | not started |
 | 11 | Deployment | not started |
@@ -68,7 +67,7 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
 | `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
 | `scripts/verify-tasks.py` | tasks derive and self-clear | 18/18 |
-| `scripts/audit-guards.py` | every operation is mapped | 266 ops, **0 unmapped** |
+| `scripts/audit-guards.py` | every operation is mapped | 267 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 

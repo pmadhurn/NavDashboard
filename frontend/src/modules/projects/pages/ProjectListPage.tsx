@@ -136,7 +136,7 @@ export default function ProjectListPage() {
           allowClear
           value={status}
           onChange={setStatus}
-          options={['ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'].map((s) => ({
+          options={['UPCOMING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED', 'ARCHIVED'].map((s) => ({
             value: s,
             label: s.replace('_', ' '),
           }))}

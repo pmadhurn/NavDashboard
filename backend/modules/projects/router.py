@@ -63,6 +63,16 @@ async def create_project(
     return await service.create_project(db, body, current_user.id)
 
 
+@router.get("/{project_id}/archive")
+async def project_archive(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """What exists on this project, counted — so nothing is invisible."""
+    return await service.project_archive(db, project_id)
+
+
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: UUID,

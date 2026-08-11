@@ -46,6 +46,7 @@ import {
   useCloseProject,
 } from '../hooks/useProjects';
 import OutwardForm from '../components/OutwardForm';
+import { ProjectFilesTab, ProjectOverviewTab } from '../components/ProjectArchive';
 
 const ENTRY_ICONS: Record<string, React.ReactNode> = {
   VISIT: <CarOutlined />,
@@ -853,7 +854,7 @@ export default function ProjectDetailPage() {
                 value={project.status}
                 style={{ width: 130 }}
                 onChange={(status) => updateProject.mutate({ id, data: { status } })}
-                options={['ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'].map((s) => ({
+                options={['UPCOMING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED', 'ARCHIVED'].map((s) => ({
                   value: s,
                   label: s.replace('_', ' '),
                 }))}
@@ -904,13 +905,17 @@ export default function ProjectDetailPage() {
       )}
 
       <Tabs
-        defaultActiveKey="timeline"
+        defaultActiveKey="overview"
         items={[
+          // Overview first: what exists on this project, before any one part
+          // of it. An archive nobody can survey is a filing cabinet.
+          { key: 'overview', label: 'Overview', children: <ProjectOverviewTab projectId={id} /> },
           { key: 'timeline', label: 'Timeline', children: <TimelineTab projectId={id} /> },
           { key: 'phases', label: 'Phases', children: <PhasesTab projectId={id} /> },
           ...(deskOnly
             ? []
             : [{ key: 'equipment', label: 'Equipment', children: <EquipmentTab projectId={id} /> }]),
+          { key: 'files', label: 'Files & photos', children: <ProjectFilesTab projectId={id} /> },
           { key: 'deployed', label: 'Deployed', children: <DeployedTab projectId={id} /> },
           ...(deskOnly
             ? []
