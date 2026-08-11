@@ -11,17 +11,15 @@
 
 ## Current phase
 
-> **Phase 3 — Device Management ↔ Inventory. DONE.**
+> **Phase 4 — Tasks, notifications, engineer home. DONE.**
 
 ### Next action
-**Phase 4 — Tasks, notifications, engineer home.** A `notifications` table and
-a derived task list: attendance not submitted, project update pending, expense
-pending, equipment overdue, handover awaiting acceptance. Then make the
-engineer/rigger home BE that list — open, see what is owed, clear it.
-
-> `assets.status` still exists but is now written only by
-> `custody_service._legacy_status()` and read by nothing that makes a decision.
-> Drop the column in Phase 10 once a release has passed.
+**Phase 5 — Role dashboards + Admin "View as".** A home screen per role, each
+answering that role's one question (PLAN.md §2). Route `/` by role: engineers
+and riggers land on `/me`, the boss on `/leadership`, the inventory manager on
+an inventory overview. Then View As, which changes what is *shown* and never
+what is *permitted* — the server keeps enforcing the real identity, so a
+preview can never become an escalation.
 
 ---
 
@@ -33,8 +31,8 @@ engineer/rigger home BE that list — open, see what is owed, clear it.
 | 1 | Inventory core: custody, locations, condition | **done** |
 | 2 | Movement: outward, inward, handover, bundles | **done** |
 | 3 | Device Management ↔ Inventory, one identity | **done** |
-| 4 | Tasks, notifications, engineer home | **next** |
-| 5 | Role dashboards + Admin "View as" | not started |
+| 4 | Tasks, notifications, engineer home | **done** |
+| 5 | Role dashboards + Admin "View as" | **next** |
 | 6 | Finance, built for a phone | not started |
 | 7 | Project archive | not started |
 | 8 | Developer system-health dashboard | not started |
@@ -67,7 +65,8 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-attendance.py` | comp-off accrual rules | 16/16 |
 | `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
 | `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
-| `scripts/audit-guards.py` | every operation is mapped | 260 ops, **0 unmapped** |
+| `scripts/verify-tasks.py` | tasks derive and self-clear | 18/18 |
+| `scripts/audit-guards.py` | every operation is mapped | 264 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 

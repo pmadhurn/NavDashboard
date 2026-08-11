@@ -290,4 +290,11 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.assets.router.report_damage": "assets.condition",
     "modules.assets.router.send_for_repair": "assets.repairs",
     "modules.assets.router.complete_repair": "assets.repairs",
+    # --- tasks & notifications (Phase 4) -----------------------------------
+    # AUTHENTICATED: these are strictly the caller's own. A permission to see
+    # your own to-do list would be a permission to be an employee.
+    "modules.tasks.router.my_tasks": AUTHENTICATED,
+    "modules.tasks.router.my_notifications": AUTHENTICATED,
+    "modules.tasks.router.mark_all_read": AUTHENTICATED,
+    "modules.tasks.router.mark_one_read": AUTHENTICATED,
 }

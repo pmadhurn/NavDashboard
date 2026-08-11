@@ -41,6 +41,7 @@ from modules.finance.router import router as finance_router
 from modules.attendance.router import router as attendance_router
 from modules.updates.router import router as updates_router, leadership_router
 from modules.authz.router import router as authz_router
+from modules.tasks.router import router as tasks_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -167,6 +168,7 @@ app.include_router(attendance_router, prefix=settings.API_V1_PREFIX + "/attendan
 app.include_router(updates_router, prefix=settings.API_V1_PREFIX + "/updates", tags=["updates"])
 app.include_router(leadership_router, prefix=settings.API_V1_PREFIX + "/leadership", tags=["leadership"])
 app.include_router(authz_router, prefix=settings.API_V1_PREFIX + "/authz", tags=["access control"])
+app.include_router(tasks_router, prefix=settings.API_V1_PREFIX + "/tasks", tags=["tasks"])
 
 
 @app.get(settings.API_V1_PREFIX + "/health", tags=["health"])

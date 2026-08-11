@@ -29,6 +29,7 @@ import {
   SearchOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  CheckCircleOutlined,
   InboxOutlined,
   AppstoreAddOutlined,
   MessageOutlined,
@@ -99,6 +100,8 @@ export const WORKSPACES: Workspace[] = [
     accent: '#6F8CB6',
     icon: <CalendarOutlined />,
     items: [
+      // No permission: your own to-do list is not a privilege.
+      { key: '/me', icon: <CheckCircleOutlined />, label: 'My Day' },
       { key: '/me/attendance', icon: <CalendarOutlined />, label: 'My Attendance', permission: 'attendance.read' },
       { key: '/finance/my', icon: <WalletOutlined />, label: 'My Finance', permission: 'finance.read' },
       { key: '/updates', icon: <MessageOutlined />, label: 'Daily Updates', permission: 'updates.read' },

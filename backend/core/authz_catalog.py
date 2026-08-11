@@ -128,6 +128,9 @@ GROUPS: list[PermissionGroup] = [
         PermissionDef("assets.returns", "Record what came back from a site", "assets"),
         PermissionDef("assets.repairs", "Manage the repair workflow", "assets"),
     ]),
+    PermissionGroup("tasks", "My work", "Your own task list and notifications", [
+        PermissionDef("tasks.read", "See your tasks and notifications", "tasks"),
+    ]),
     PermissionGroup("stock", "Stock places & parties",
                     "Where things are kept, and who we hand them to", [
         PermissionDef("stock.read", "View locations, customers and vendors", "stock"),
