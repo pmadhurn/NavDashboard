@@ -40,6 +40,12 @@ from modules.finance.models import (
     ExpenseMember,
     FundAllocation,
 )
+from modules.assets.custody_models import (
+    AssetMovement,
+    Customer,
+    StockLocation,
+    Vendor,
+)
 from modules.assets.models import Asset, AssetCategory, AssetHistory, AssetReport
 from modules.documents.models import Document
 from modules.attendance.models import AttendanceDay, CompOffLedger
@@ -193,6 +199,41 @@ def _get_export_tables() -> list[dict]:
             "model": UserPermissionOverride,
             "columns": ["id", "user_id", "permission_key", "effect", "created_at"],
         },
+        # --- Inventory custody (Phase 1) ------------------------------------
+        {
+            "name": "StockLocations",
+            "key": "stock_locations",
+            "model": StockLocation,
+            "columns": ["id", "name", "kind", "address", "notes", "sort_order",
+                        "is_default", "created_at", "updated_at"],
+        },
+        {
+            "name": "Customers",
+            "key": "customers",
+            "model": Customer,
+            "columns": ["id", "name", "contact_name", "contact_phone",
+                        "contact_email", "notes", "created_at", "updated_at"],
+        },
+        {
+            "name": "Vendors",
+            "key": "vendors",
+            "model": Vendor,
+            "columns": ["id", "name", "contact_name", "contact_phone",
+                        "contact_email", "notes", "created_at", "updated_at"],
+        },
+        {
+            # The ledger is the record; the columns on assets are a cache of it.
+            # A restore without this would keep every item's position and lose
+            # every explanation of how it got there.
+            "name": "AssetMovements",
+            "key": "asset_movements",
+            "model": AssetMovement,
+            "columns": ["id", "asset_id", "event_type", "from_custody_type",
+                        "from_custody_id", "to_custody_type", "to_custody_id",
+                        "from_condition", "to_condition", "quantity", "reason",
+                        "source_type", "source_id", "performed_by",
+                        "occurred_at", "created_at"],
+        },
         # --- Attendance ---------------------------------------------------
         {
             # Added with the module rather than deferred: a restore that silently
@@ -336,6 +377,7 @@ def _get_export_tables() -> list[dict]:
             "model": Asset,
             "columns": [
                 "id", "asset_code", "name", "category_id", "item_kind",
+                "custody_type", "custody_id", "condition", "expected_return_date",
                 "serial_number", "quantity", "status", "current_project_id",
                 "current_person_id", "device_id", "purchase_date", "purchase_price",
                 "notes", "tags", "tag_identifiers", "custom_fields",

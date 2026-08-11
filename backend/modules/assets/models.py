@@ -50,6 +50,27 @@ class Asset(Base, SoftDeleteMixin, CustomFieldsMixin):
     tags: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     tag_identifiers: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
+    # --- custody, condition (Phase 1) --------------------------------------
+    # Three independent facts, replacing the single `status` enum. `status` is
+    # still written for one release so anything still reading it keeps working;
+    # Phase 2 drops it.
+    custody_type: Mapped[str] = mapped_column(
+        String(20), default="LOCATION", nullable=False, index=True
+    )
+    # Points into stock_locations / personnel / projects / customers / vendors
+    # depending on custody_type. Unconstrained by necessity — a foreign key
+    # cannot target five tables — so custody_type is what makes it meaningful.
+    custody_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True, index=True
+    )
+    condition: Mapped[str] = mapped_column(
+        String(20), default="OK", nullable=False, index=True
+    )
+    # Set when something is out and expected back, so "overdue" is answerable.
+    expected_return_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     category = relationship("AssetCategory", lazy="selectin")
     current_person = relationship("Person", lazy="selectin")
 

@@ -11,15 +11,23 @@
 
 ## Current phase
 
-> **Phase 0 — Foundation, branding, cleanup. DONE.**
+> **Phase 1 — Inventory core.** Data model DONE, surfaces NOT started.
+
+Done: `stock_locations` / `customers` / `vendors`; `assets.custody_type` +
+`custody_id` + `condition` + `expected_return_date`; the `asset_movements`
+ledger with an opening-balance row per asset; existing rows migrated; backup
+covers all four new tables.
 
 ### Next action
-**Phase 1 — Inventory core.** Write `docs/phases/PHASE-1.md` first, then:
-`stock_locations` / `customers` / `vendors`; `assets.custody_type` +
-`custody_id` + `condition`, migrated from the old `status`; the
-`asset_movements` ledger; item detail with full timeline; list filters by
-location, custody, condition, person, project. See PLAN.md §3 for the model
-decision and what it rejected.
+**Phase 1 surfaces.** Backend: a custody service (`move_custody`,
+`set_condition`) that writes the ledger on every change, plus endpoints for
+locations/customers/vendors CRUD, `GET /assets/{id}/movements`, and asset list
+filters by custody/condition/location. Then the item-detail timeline and the
+list filters in the UI.
+
+> New keys will need catalog entries (`locations.*` already exists for device
+> locations — use a distinct group such as `stock.*` for stock locations, or
+> the startup assertion will pass while the labels mislead).
 
 ---
 
@@ -28,7 +36,7 @@ decision and what it rejected.
 | Phase | Title | State |
 |---|---|---|
 | 0 | Foundation, branding, cleanup | **done** |
-| 1 | Inventory core: custody, locations, condition | **next** |
+| 1 | Inventory core: custody, locations, condition | **model done**, surfaces next |
 | 2 | Movement: outward, inward, handover, bundles | not started |
 | 3 | Device Management ↔ Inventory, one identity | not started |
 | 4 | Tasks, notifications, engineer home | not started |
