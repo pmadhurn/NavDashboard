@@ -9,39 +9,46 @@ from modules.ai_assistant.embeddings import embed_text, EMBED_DIM
 
 logger = logging.getLogger(__name__)
 
-# Which permission section governs each embedded source_type. Anything not
-# listed is treated as requiring 'devices' (the legacy default scope).
-SECTION_BY_SOURCE_TYPE: dict[str, str] = {
-    "device": "devices",
-    "couple": "devices",
-    "pair": "devices",
-    "location": "devices",
-    "error_log": "troubleshooting",
-    "troubleshoot": "troubleshooting",
-    "personnel": "personnel",
-    "material": "inventory",
-    "asset": "inventory",
-    "asset_report": "inventory",
-    "project": "projects",
-    "project_timeline": "projects",
-    "expense": "finance",
-    "download_item": "downloads",
-    "document": "documents",
+# The permission key that governs each embedded source_type. A source type not
+# listed here is never retrievable — an unknown kind of data must not inherit
+# somebody else's grant by defaulting to it.
+PERMISSION_BY_SOURCE_TYPE: dict[str, str] = {
+    "device": "devices.read",
+    "couple": "couples.read",
+    "pair": "pairs.read",
+    "location": "locations.read",
+    "error_log": "troubleshooting.read",
+    "troubleshoot": "troubleshooting.read",
+    "personnel": "personnel.read",
+    "material": "materials.read",
+    "asset": "assets.read",
+    "asset_report": "assets.reports",
+    "project": "projects.read",
+    "project_timeline": "projects.read",
+    "expense": "finance.read",
+    "download_item": "downloads.read",
+    "document": "documents.read",
 }
 
 
-def allowed_source_types(perm_map: dict[str, str]) -> list[str]:
-    """Source types the user may retrieve, based on their section permissions.
+def allowed_source_types(granted: set[str] | frozenset[str] | list[str]) -> list[str]:
+    """Source types this user may retrieve, given their permission keys.
 
-    Filtering happens at retrieval (SQL), not in the prompt — data from
-    sections the user can't see never reaches the model context.
+    Filtering happens at retrieval (SQL), not in the prompt: rows the user
+    cannot see never reach the model's context, so no amount of prompting can
+    make it disclose them. Never hand the model the whole database and ask it
+    to be discreet.
+
+    Takes permission KEYS. It previously took the retired section -> level map,
+    which after the authorization migration resolved through a stale legacy
+    fallback — so a non-admin's AI context was computed from permissions they
+    may never have held.
     """
-    from core.permissions import level_satisfies
-
+    granted_set = set(granted)
     return [
         source_type
-        for source_type, section in SECTION_BY_SOURCE_TYPE.items()
-        if level_satisfies(perm_map.get(section, "NONE"), "VIEW")
+        for source_type, key in PERMISSION_BY_SOURCE_TYPE.items()
+        if key in granted_set
     ]
 
 

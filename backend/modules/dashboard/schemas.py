@@ -54,7 +54,7 @@ class PairStatusData(BaseModel):
 
 
 class HomeSummary(BaseModel):
-    """Cross-module KPIs for the NavOS landing page. Widgets are permission-gated
+    """Cross-module KPIs for the NavDashboard landing page. Widgets are permission-gated
     on the frontend; this returns whatever is cheap to compute for everyone."""
 
     devices_working: int = 0

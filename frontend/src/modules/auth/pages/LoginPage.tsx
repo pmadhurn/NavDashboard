@@ -204,6 +204,32 @@ export default function LoginPage() {
             <GoogleSignInButton onCredential={handleGoogleCredential} />
           </>
         )}
+
+        {/* Whose software this is, on the one screen every user sees. */}
+        <div
+          style={{
+            marginTop: 28,
+            paddingTop: 16,
+            borderTop: '1px solid var(--overlay-subtle)',
+            textAlign: 'center',
+            fontSize: 11,
+            color: 'var(--text-muted)',
+            lineHeight: 1.7,
+          }}
+        >
+          <div>
+            An internal tool of{' '}
+            <a
+              href="https://www.navwireless.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Nav Wireless Technologies Pvt Ltd
+            </a>
+          </div>
+          <div>Built by Raj Patel · Head of Operations</div>
+        </div>
       </GlassCard>
     </div>
   );

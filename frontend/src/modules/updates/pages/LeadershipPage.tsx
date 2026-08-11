@@ -101,7 +101,7 @@ export default function LeadershipPage() {
         title="Leadership"
         icon={<CrownOutlined />}
         subtitle={`Everything at a glance · updated ${dayjs(data.generated_at).fromNow()}`}
-        actions={<ShareButton title="NavOS leadership summary" url="/leadership" />}
+        actions={<ShareButton title="NavDashboard leadership summary" url="/leadership" />}
       />
 
       {/* People today */}

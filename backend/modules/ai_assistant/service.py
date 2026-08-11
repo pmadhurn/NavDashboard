@@ -21,8 +21,14 @@ logger = logging.getLogger(__name__)
 
 
 async def _allowed_types_for_user(db: AsyncSession, user_id: UUID) -> Optional[list[str]]:
-    """Source types this user may retrieve; None = unrestricted (admin)."""
-    from core.dependencies import get_permission_map
+    """Source types this user may retrieve; None = unrestricted (admin).
+
+    Resolved from the caller's live permission keys, so the assistant's context
+    is exactly as wide as the person asking. An engineer asking for everyone's
+    expenses gets nothing about them, because the expense rows are never
+    retrieved — not because the model declined to answer.
+    """
+    from core.authz import effective_permissions
     from modules.ai_assistant.retriever import allowed_source_types
     from modules.auth import repository as auth_repository
 
@@ -31,7 +37,7 @@ async def _allowed_types_for_user(db: AsyncSession, user_id: UUID) -> Optional[l
         return []
     if user.role == "ADMIN":
         return None
-    return allowed_source_types(await get_permission_map(db, user))
+    return allowed_source_types(await effective_permissions(db, user))
 
 
 async def send_message(

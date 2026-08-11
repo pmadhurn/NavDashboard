@@ -293,16 +293,6 @@ async def update_permissions(
     return {row.section: row.level for row in rows}
 
 
-async def get_permission_detail(db: AsyncSession, user) -> dict:
-    """Level map and scope map together, for the admin permission editor."""
-    from core.dependencies import get_permission_map, get_scope_map
-
-    return {
-        "permissions": await get_permission_map(db, user),
-        "scopes": await get_scope_map(db, user),
-    }
-
-
 async def ensure_default_admin(db: AsyncSession) -> None:
     count = await repository.count_users(db)
     if count == 0:

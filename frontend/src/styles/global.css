@@ -422,24 +422,24 @@ body {
   background: rgba(255, 255, 255, 0.1) !important;
   color: var(--text-primary) !important;
 }
-/* ─── NavOS motion & polish ────────────────────────────────
+/* ─── NavDashboard motion & polish ────────────────────────────────
    Subtle microinteractions that make the app feel alive without
    getting in the way. All of it is disabled for users who ask for
    reduced motion. */
 
-@keyframes navos-fade-in {
+@keyframes navdash-fade-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
 
-@keyframes navos-shimmer {
+@keyframes navdash-shimmer {
   0%   { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
 
 /* Page content eases in on route change */
 .ant-layout-content > * {
-  animation: navos-fade-in 0.28s ease-out;
+  animation: navdash-fade-in 0.28s ease-out;
 }
 
 /* Cards lift slightly on hover; clickable ones lift more */
@@ -460,10 +460,10 @@ body {
 .ant-btn { transition: transform 0.1s ease, background 0.2s ease, border-color 0.2s ease; }
 
 /* Skeleton shimmer for loading placeholders */
-.navos-skeleton {
+.navdash-skeleton {
   background: linear-gradient(90deg, var(--bg-card) 25%, #1e1e1e 37%, var(--bg-card) 63%);
   background-size: 800px 100%;
-  animation: navos-shimmer 1.4s infinite linear;
+  animation: navdash-shimmer 1.4s infinite linear;
   border-radius: 8px;
 }
 
@@ -481,7 +481,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .ant-layout-content > *,
-  .navos-skeleton { animation: none !important; }
+  .navdash-skeleton { animation: none !important; }
   .glass-card,
   .glass-card:hover,
   .ant-btn,
@@ -885,7 +885,7 @@ body {
    workspace's pages. The strip scrolls horizontally rather than wrapping, so
    the bar keeps a fixed height at every width. */
 
-.navos-tabs {
+.navdash-tabs {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -894,9 +894,9 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-.navos-tabs::-webkit-scrollbar { display: none; }
+.navdash-tabs::-webkit-scrollbar { display: none; }
 
-.navos-tab {
+.navdash-tab {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -915,18 +915,18 @@ body {
   transition: color 0.18s ease, background 0.18s ease;
 }
 
-.navos-tab:hover {
+.navdash-tab:hover {
   color: var(--text-primary);
   background: var(--overlay-subtle);
 }
 
-.navos-tab.is-active {
+.navdash-tab.is-active {
   color: var(--tab-accent, var(--text-primary));
   background: var(--overlay-subtle);
 }
 
 /* Accent underline on the active tab, tied to the workspace colour. */
-.navos-tab.is-active::after {
+.navdash-tab.is-active::after {
   content: '';
   position: absolute;
   left: 12px;
@@ -942,11 +942,11 @@ body {
    rounder 1100px, because eight full labels plus the brand, search box, theme
    toggle and user chip measure ~1405px — at 1440 the last tab was clipped. */
 @media (max-width: 1500px) {
-  .navos-tab > span:last-child { display: none; }
-  .navos-tab.is-active > span:last-child { display: inline; }
-  .navos-tab { padding: 7px 10px; }
+  .navdash-tab > span:last-child { display: none; }
+  .navdash-tab.is-active > span:last-child { display: inline; }
+  .navdash-tab { padding: 7px 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .navos-tab { transition: none; }
+  .navdash-tab { transition: none; }
 }

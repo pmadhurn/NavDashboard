@@ -20,7 +20,7 @@ import urllib.request
 
 sys.path.insert(0, "/app")
 
-from sqlalchemy import delete, select  # noqa: E402
+from sqlalchemy import delete, select, text  # noqa: E402
 
 from core.database import async_session_factory  # noqa: E402
 from core.security import hash_password  # noqa: E402
@@ -60,8 +60,30 @@ def call(method, path, token=None, body=None):
         return f"ERR:{e}", None
 
 
+
+async def _purge(db):
+    """Remove any leftover probe rows. Safe to call when there are none."""
+    from modules.auth.models import User as _U
+
+    ids = (
+        await db.execute(select(_U.id).where(_U.email == EMAIL))
+    ).scalars().all()
+    if not ids:
+        return
+    for table in ("user_sessions", "user_roles", "user_permission_overrides"):
+        await db.execute(
+            text(f"DELETE FROM {table} WHERE user_id = ANY(:ids)"), {"ids": ids}
+        )
+    await db.execute(text("DELETE FROM users WHERE id = ANY(:ids)"), {"ids": ids})
+    await db.commit()
+
+
 async def main():
     async with async_session_factory() as db:
+        # Re-runnable: clear any probe row a previously-failed run left
+        # behind, or the unique email blocks every future run.
+        await _purge(db)
+
         user = User(
             email=EMAIL,
             username="session_probe",
@@ -75,13 +97,16 @@ async def main():
         await db.commit()
         await db.refresh(user)
 
-        viewer = (
-            await db.execute(select(Role).where(Role.name == "Viewer"))
-        ).scalar_one()
-        db.add(UserRole(user_id=user.id, role_id=viewer.id))
-        await db.commit()
-
+        # Inside the try: anything that can raise after the user exists must be
+        # covered by the cleanup, or a failed run strands a row that blocks
+        # every subsequent run on the unique email.
         try:
+            rigger = (
+                await db.execute(select(Role).where(Role.name == "Rigger"))
+            ).scalar_one()
+            db.add(UserRole(user_id=user.id, role_id=rigger.id))
+            await db.commit()
+
             print("\n1. Signing in mints a session and returns permission keys")
             status, payload = call(
                 "POST", "/auth/login", body={"email": EMAIL, "password": PASSWORD}
@@ -91,7 +116,7 @@ async def main():
             check("token returned", bool(token), True)
             perms = ((payload or {}).get("user") or {}).get("permissions") or []
             check("permissions are keys, not a level map", isinstance(perms, list), True)
-            check("devices.read granted by the Viewer role", "devices.read" in perms, True)
+            check("devices.read granted by the Rigger role", "devices.read" in perms, True)
             check("devices.delete NOT granted", "devices.delete" in perms, False)
 
             rows = (

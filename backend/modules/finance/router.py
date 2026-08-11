@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_permission_map, require_permission, get_current_user
+from core.dependencies import get_current_user
 from core.permissions import LEVEL_MANAGE, level_satisfies
 from modules.auth.models import User
 from modules.documents.storage import MinIOStorage, get_storage
@@ -38,8 +38,10 @@ router = APIRouter()
 
 
 async def _is_manager(db: AsyncSession, user: User) -> bool:
-    perm_map = await get_permission_map(db, user)
-    return level_satisfies(perm_map.get("finance", "NONE"), LEVEL_MANAGE)
+    """Seeing and acting on everyone's money rather than only your own."""
+    from core.authz import user_has
+
+    return await user_has(db, user, "finance.settle")
 
 
 @router.get("/", response_model=PaginatedResponse[ExpenseResponse])

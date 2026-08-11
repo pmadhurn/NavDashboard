@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_permission_map, require_permission, get_current_user
+from core.dependencies import get_current_user
 from core.permissions import LEVEL_MANAGE, level_satisfies
 from modules.auth.models import User
 from modules.documents.storage import MinIOStorage, get_storage
@@ -24,8 +24,10 @@ router = APIRouter()
 
 
 async def _is_manager(db: AsyncSession, user: User) -> bool:
-    perm_map = await get_permission_map(db, user)
-    return level_satisfies(perm_map.get("downloads", "NONE"), LEVEL_MANAGE)
+    """Managing the archive (categories, per-item access) rather than downloading from it."""
+    from core.authz import user_has
+
+    return await user_has(db, user, "downloads.categories")
 
 
 def _parse_uuid_list(raw: Optional[str]) -> list[UUID]:

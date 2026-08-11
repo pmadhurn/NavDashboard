@@ -53,8 +53,30 @@ def call(method, path, token):
         return f"ERR:{e}"
 
 
+
+async def _purge(db):
+    """Remove any leftover probe rows. Safe to call when there are none."""
+    from modules.auth.models import User as _U
+
+    ids = (
+        await db.execute(select(_U.id).where(_U.email == PROBE_EMAIL))
+    ).scalars().all()
+    if not ids:
+        return
+    for table in ("user_sessions", "user_roles", "user_permission_overrides"):
+        await db.execute(
+            text(f"DELETE FROM {table} WHERE user_id = ANY(:ids)"), {"ids": ids}
+        )
+    await db.execute(text("DELETE FROM users WHERE id = ANY(:ids)"), {"ids": ids})
+    await db.commit()
+
+
 async def main():
     async with async_session_factory() as db:
+        # Re-runnable: clear any probe row a previously-failed run left
+        # behind, or the unique email blocks every future run.
+        await _purge(db)
+
         user = User(
             email=PROBE_EMAIL,
             username="authz_probe",
@@ -87,11 +109,11 @@ async def main():
             # self-registration; the check exists so it cannot regress.
             check("POST /auth/register", call("POST", "/auth/register", token), 403)
 
-            print("\n2. Grant the Viewer role -> reads open, writes stay shut")
-            viewer = (
-                await db.execute(select(Role).where(Role.name == "Viewer"))
+            print("\n2. Grant the Rigger role -> reads open, writes stay shut")
+            rigger = (
+                await db.execute(select(Role).where(Role.name == "Rigger"))
             ).scalar_one()
-            db.add(UserRole(user_id=user.id, role_id=viewer.id))
+            db.add(UserRole(user_id=user.id, role_id=rigger.id))
             await db.commit()
             # The effective-permission cache is per-process in the API server,
             # so wait it out rather than pretending the grant is instant.

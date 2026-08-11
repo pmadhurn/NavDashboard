@@ -82,7 +82,7 @@ export default function TopNav() {
 
   return (
     <header
-      className="navos-topnav"
+      className="navdash-topnav"
       style={{
         position: 'fixed',
         top: 0,
@@ -133,12 +133,12 @@ export default function TopNav() {
           userSelect: 'none',
         }}
       >
-        Nav<span style={{ color: 'var(--secondary)' }}>OS</span>
+        Nav<span style={{ color: 'var(--secondary)' }}>Dashboard</span>
       </div>
 
       {/* Workspace tabs — desktop only; mobile uses the bottom bar */}
       {!isMobile && (
-        <nav className="navos-tabs" aria-label="Workspaces">
+        <nav className="navdash-tabs" aria-label="Workspaces">
           {workspaces.map((ws) => {
             const active = ws.key === activeWorkspace;
             return (
@@ -151,7 +151,7 @@ export default function TopNav() {
                 // so the accessible name has to come from somewhere.
                 title={ws.label}
                 aria-label={ws.label}
-                className={`navos-tab${active ? ' is-active' : ''}`}
+                className={`navdash-tab${active ? ' is-active' : ''}`}
                 style={{
                   ['--tab-accent' as string]: ws.accent,
                 }}

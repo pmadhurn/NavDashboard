@@ -87,7 +87,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
               textOverflow: 'ellipsis',
             }}
           >
-            {workspace?.label ?? 'NavOS'}
+            {workspace?.label ?? 'NavDashboard'}
           </div>
         )}
       </div>

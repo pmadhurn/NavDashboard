@@ -190,7 +190,7 @@ export default function DashboardPage() {
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ color: 'var(--text-primary)', fontSize: 24, fontWeight: 700, margin: 0 }}>{greeting}</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
-          Here's what's happening across NavOS today.
+          Here's what's happening across NavDashboard today.
         </p>
       </div>
 
