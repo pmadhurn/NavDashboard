@@ -11,14 +11,16 @@
 
 ## Current phase
 
-> **Phase 1 — Inventory core. DONE.**
+> **Phase 2 — Movement.** Backend DONE, UI next.
+
+Done: handover with explicit accept (chain preserved, no double-promising, no
+handing on what you do not hold); per-item return outcomes so 10-out-7-back is
+never "3 missing"; kits; the full repair workflow. 13 endpoints, 260/260 mapped.
 
 ### Next action
-**Phase 2 — Movement.** Outward from the app; inward with a per-item outcome
-(RETURNED / LEFT_AT_SITE / HANDED_TO_CUSTOMER / DAMAGED / LOST) so 10 out and 7
-back is never "3 missing"; handover between engineers with an explicit accept
-step; bundles/kits that expand to individually-tracked items; the repair
-workflow. Then drop `assets.status`.
+**Phase 2 UI.** Screens for: my pending handovers (accept/decline), start a
+handover, the returns screen (one row per issued item with an outcome picker),
+kits management, and the repair board. Then drop `assets.status`.
 
 ---
 
@@ -28,7 +30,7 @@ workflow. Then drop `assets.status`.
 |---|---|---|
 | 0 | Foundation, branding, cleanup | **done** |
 | 1 | Inventory core: custody, locations, condition | **done** |
-| 2 | Movement: outward, inward, handover, bundles | **next** |
+| 2 | Movement: outward, inward, handover, bundles | **backend done**, UI next |
 | 3 | Device Management ↔ Inventory, one identity | not started |
 | 4 | Tasks, notifications, engineer home | not started |
 | 5 | Role dashboards + Admin "View as" | not started |
@@ -63,7 +65,8 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-scope.py` | SELF/TEAM/ALL row ownership | 14/14 |
 | `scripts/verify-attendance.py` | comp-off accrual rules | 16/16 |
 | `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
-| `scripts/audit-guards.py` | every operation is mapped | 247 ops, **0 unmapped** |
+| `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
+| `scripts/audit-guards.py` | every operation is mapped | 260 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 
