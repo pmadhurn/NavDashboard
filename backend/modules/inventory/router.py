@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from modules.auth.models import User
 from shared.pagination import PaginatedResponse, PaginationParams
 
@@ -160,11 +160,3 @@ async def delete_material(
     current_user: User = Depends(get_current_user),
 ):
     return await service.delete_material(db, material_id, current_user.id)
-
-
-@router.post("/seed", response_model=dict)
-async def seed_inventory(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return await service.seed_inventory(db, current_user.id)

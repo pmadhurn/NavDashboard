@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from shared.pagination import PaginatedResponse, PaginationParams
 
 from .schemas import PairCreate, PairResponse, PairStatsResponse, PairUpdate
@@ -76,11 +76,3 @@ async def delete_pair(
     current_user=Depends(get_current_user),
 ):
     return await service.delete_pair(db, pair_id, current_user.id)
-
-
-@router.post("/seed", response_model=list[PairResponse])
-async def seed_pairs(
-    db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return await service.seed_pairs(db, current_user.id)

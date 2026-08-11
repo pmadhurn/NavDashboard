@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from core.exceptions import BadRequestException, NotFoundException
 from modules.auth.models import User
 from modules.backup import service

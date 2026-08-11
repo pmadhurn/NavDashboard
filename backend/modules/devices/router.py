@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from modules.devices import service
 from modules.devices.schemas import (
     DeviceCreate,
@@ -122,11 +122,3 @@ async def get_status_history(
     current_user=Depends(get_current_user),
 ):
     return await service.get_device_status_history(db, id)
-
-
-@router.post("/seed", response_model=list[DeviceResponse])
-async def seed_devices(
-    db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return await service.seed_devices(db, current_user.id)

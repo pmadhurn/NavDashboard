@@ -51,33 +51,6 @@ async def get_current_user(
     return user
 
 
-def require_role(*roles: str):
-    async def role_checker(current_user=Depends(get_current_user)):
-        if current_user.role not in roles:
-            raise ForbiddenException("Insufficient permissions")
-        return current_user
-
-    return role_checker
-
-
-async def get_permission_map(db: AsyncSession, user) -> dict[str, str]:
-    """Resolve a user's section -> level map.
-
-    ADMIN role gets full access. Users without explicit rows fall back to
-    their legacy role's default map.
-    """
-    from core.permissions import ROLE_DEFAULT_PERMISSIONS, full_access_map
-    from modules.auth.repository import get_permissions
-
-    if user.role == "ADMIN":
-        return full_access_map()
-
-    rows = await get_permissions(db, user.id)
-    if rows:
-        return {row.section: row.level for row in rows}
-    return dict(ROLE_DEFAULT_PERMISSIONS.get(user.role, {}))
-
-
 async def get_scope_map(db: AsyncSession, user) -> dict[str, str]:
     """Resolve a user's section -> scope map (SELF | TEAM | ALL).
 
@@ -86,26 +59,27 @@ async def get_scope_map(db: AsyncSession, user) -> dict[str, str]:
     `hasPermission` hydrates from and is read by six call sites, so widening its
     return type would ripple through all of them for no gain.
     """
-    from core.permissions import (
-        DEFAULT_SCOPE,
-        ROLE_DEFAULT_PERMISSIONS,
-        ROLE_DEFAULT_SCOPES,
-        full_scope_map,
-    )
-    from modules.auth.repository import get_permissions
+    from sqlalchemy import select
 
+    from core.scopes import ROLE_DEFAULT_SCOPES
+    from modules.auth.models import UserScope
+
+    # ADMIN reaches every row, matching effective_permissions().
     if user.role == "ADMIN":
-        return full_scope_map()
+        return {}
 
-    rows = await get_permissions(db, user.id)
-    if rows:
-        return {row.section: getattr(row, "scope", DEFAULT_SCOPE) for row in rows}
-
-    role_scopes = ROLE_DEFAULT_SCOPES.get(user.role, {})
-    return {
-        section: role_scopes.get(section, DEFAULT_SCOPE)
-        for section in ROLE_DEFAULT_PERMISSIONS.get(user.role, {})
-    }
+    # Explicit rows win over the role default, so one person can be narrowed to
+    # TEAM without cloning a role or widening everyone who shares theirs.
+    resolved = dict(ROLE_DEFAULT_SCOPES.get(user.role, {}))
+    rows = (
+        await db.execute(
+            select(UserScope.section, UserScope.scope).where(
+                UserScope.user_id == user.id, UserScope.deleted_at.is_(None)
+            )
+        )
+    ).all()
+    resolved.update({section: scope for section, scope in rows})
+    return resolved
 
 
 async def get_current_person_id(db: AsyncSession, user):
@@ -136,7 +110,7 @@ async def assert_scope(db: AsyncSession, user, section: str, target_person_id) -
     can reach nobody: there is no identity to compare against, and falling open
     there would make an unlinked login the most privileged kind.
     """
-    from core.permissions import DEFAULT_SCOPE, SCOPE_ALL, SCOPE_SELF, SCOPE_TEAM
+    from core.scopes import DEFAULT_SCOPE, SCOPE_ALL, SCOPE_SELF, SCOPE_TEAM
 
     scope_map = await get_scope_map(db, user)
     scope = scope_map.get(section, DEFAULT_SCOPE)
@@ -200,34 +174,6 @@ def person_from_body(field: str = "person_id"):
 
     return resolver
 
-
-def require_permission(section: str, level: str = "VIEW", scope_owner=None):
-    """Route dependency: current user must have at least `level` on `section`.
-
-    When `scope_owner` is supplied it resolves the *target* person from the
-    request, and the caller's scope on `section` must reach them. Without it the
-    check is level-only, which is what every pre-existing call site expects.
-    """
-
-    async def permission_checker(
-        request: Request,
-        current_user=Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
-    ):
-        from core.permissions import LEVEL_NONE, level_satisfies
-
-        perm_map = await get_permission_map(db, current_user)
-        user_level = perm_map.get(section, LEVEL_NONE)
-        if not level_satisfies(user_level, level):
-            raise ForbiddenException("Insufficient permissions")
-
-        if scope_owner is not None:
-            target = await scope_owner(request)
-            await assert_scope(db, current_user, section, target)
-
-        return current_user
-
-    return permission_checker
 
 def scoped_by_body(section: str, field: str = "person_id"):
     """Row-ownership check for a target named in the request body.

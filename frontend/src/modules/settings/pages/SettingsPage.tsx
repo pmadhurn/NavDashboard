@@ -1,9 +1,8 @@
 import { Tabs } from 'antd';
-import { DatabaseOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
+import { SettingOutlined, TeamOutlined } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
 import GeneralSettings from '../components/GeneralSettings';
 import UserManagement from '../components/UserManagement';
-import DemoDataSettings from '../components/DemoDataSettings';
 import { useAuthStore } from '@/shared/stores/authStore';
 
 export default function SettingsPage() {
@@ -32,16 +31,6 @@ export default function SettingsPage() {
               </span>
             ),
             children: <UserManagement />,
-          },
-          {
-            key: 'demo-data',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <DatabaseOutlined />
-                Demo Data
-              </span>
-            ),
-            children: <DemoDataSettings />,
           },
         ]
       : []),

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from modules.locations.schemas import LocationHistoryResponse, MapDataPoint
 from shared.pagination import PaginatedResponse, PaginationParams
 
@@ -112,11 +112,3 @@ async def get_location_history(
 ):
     params = PaginationParams(page=page, size=size)
     return await service.get_couple_location_history(db, id, params)
-
-
-@router.post("/seed", response_model=list[CoupleResponse])
-async def seed_couples(
-    db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return await service.seed_couples(db, current_user.id)

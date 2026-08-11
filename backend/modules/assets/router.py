@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import require_permission, get_current_user
+from core.dependencies import get_current_user
 from modules.auth.models import User
 from modules.assets import service
 from modules.assets.schemas import (

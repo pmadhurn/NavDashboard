@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from modules.auth.models import User
 from shared.pagination import PaginatedResponse, PaginationParams
 
@@ -118,11 +118,3 @@ async def get_person_assignments(
     current_user: User = Depends(get_current_user),
 ):
     return await service.get_person_assignments(db, person_id)
-
-
-@router.post("/seed", response_model=list[PersonResponse])
-async def seed_personnel(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return await service.seed_personnel(db, current_user.id)

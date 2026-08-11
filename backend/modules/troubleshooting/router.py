@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from shared.pagination import PaginatedResponse, PaginationParams
 
 from .schemas import (
@@ -246,12 +246,3 @@ async def get_errors_by_pair(
 ):
     params = PaginationParams(page=page, size=size)
     return await service.get_errors_by_entity(db, "pair", pair_id, params)
-
-
-@router.post("/seed", response_model=list[ErrorLogResponse])
-async def seed_errors(
-    db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return await service.seed_errors(db, current_user.id)
-    

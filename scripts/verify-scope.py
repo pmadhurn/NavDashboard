@@ -19,9 +19,9 @@ sys.path.insert(0, "/app")
 from sqlalchemy import select  # noqa: E402
 
 from core.database import async_session_factory  # noqa: E402
-from core.dependencies import assert_scope, get_permission_map, get_scope_map  # noqa: E402
+from core.dependencies import assert_scope, get_scope_map  # noqa: E402
 from core.exceptions import ForbiddenException  # noqa: E402
-from modules.auth.models import User, UserPermission  # noqa: E402
+from modules.auth.models import User, UserScope  # noqa: E402
 from modules.personnel.models import Person  # noqa: E402
 
 PASS, FAIL = "PASS", "FAIL"
@@ -85,12 +85,11 @@ async def main():
         await db.flush()
 
         print("\n1. TECHNICIAN with NO explicit rows -> role defaults")
-        pmap = await get_permission_map(db, tech)
         smap = await get_scope_map(db, tech)
-        check("attendance level", pmap.get("attendance"), "EDIT")
         check("attendance scope", smap.get("attendance"), "SELF")
-        check("devices scope stays wide", smap.get("devices"), "ALL")
         check("updates scope", smap.get("updates"), "SELF")
+        # Absent from the map entirely, which assert_scope reads as ALL.
+        check("devices not narrowed", smap.get("devices"), None)
 
         print("\n2. scope=SELF reaches only the caller")
         await expect_allowed(
@@ -110,10 +109,8 @@ async def main():
 
         print("\n4. explicit rows override role defaults; TEAM reaches reports")
         db.add_all([
-            UserPermission(user_id=lead.id, section="attendance",
-                           level="MANAGE", scope="TEAM"),
-            UserPermission(user_id=lead.id, section="finance",
-                           level="EDIT", scope="SELF"),
+            UserScope(user_id=lead.id, section="attendance", scope="TEAM"),
+            UserScope(user_id=lead.id, section="finance", scope="SELF"),
         ])
         await db.flush()
         smap_lead = await get_scope_map(db, lead)

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.dependencies import get_current_user, require_role
+from core.dependencies import get_current_user
 from core.exceptions import BadRequestException, NotFoundException
 from modules.auth.models import User
 from modules.audit_trail.schemas import AuditStatsResponse

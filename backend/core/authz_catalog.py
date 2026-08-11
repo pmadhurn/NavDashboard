@@ -85,22 +85,18 @@ GROUPS: list[PermissionGroup] = [
     ]),
     PermissionGroup("devices", "Devices", "Devices, couples, pairs and their status", [
         *_crud("devices", "devices"),
-        PermissionDef("devices.seed", "Seed demo devices", "devices", dangerous=True),
         PermissionDef("devices.status", "Change device status", "devices"),
     ]),
     PermissionGroup("couples", "Couples", "", [
         *_crud("couples", "couples"),
-        PermissionDef("couples.seed", "Seed demo couples", "couples", dangerous=True),
     ]),
     PermissionGroup("pairs", "Pairs", "", [
         *_crud("pairs", "pairs"),
-        PermissionDef("pairs.seed", "Seed demo pairs", "pairs", dangerous=True),
     ]),
     PermissionGroup("locations", "Locations", "Sites and location history", _crud("locations", "locations")),
     PermissionGroup("troubleshooting", "Troubleshooting", "Error logs and resolution steps", [
         *_crud("troubleshooting", "error logs"),
         PermissionDef("troubleshooting.resolve", "Resolve an error", "troubleshooting"),
-        PermissionDef("troubleshooting.seed", "Seed demo error logs", "troubleshooting", dangerous=True),
     ]),
     PermissionGroup("comparison", "Comparison", "", [
         PermissionDef("comparison.read", "Compare devices, couples and pairs", "comparison"),
@@ -129,7 +125,6 @@ GROUPS: list[PermissionGroup] = [
     PermissionGroup("materials", "Fitting materials", "Per-couple consumables (backend 'inventory')", [
         *_crud("materials", "fitting materials"),
         PermissionDef("materials.templates", "Manage material templates", "materials"),
-        PermissionDef("materials.seed", "Seed demo materials", "materials", dangerous=True),
     ]),
     PermissionGroup("documents", "Documents", "Files attached to devices, couples and projects", [
         *_crud("documents", "documents"),
@@ -162,7 +157,6 @@ GROUPS: list[PermissionGroup] = [
     PermissionGroup("personnel", "Personnel", "Field staff records", [
         *_crud("personnel", "personnel"),
         PermissionDef("personnel.link", "Link a person to a login", "personnel", dangerous=True),
-        PermissionDef("personnel.seed", "Seed demo personnel", "personnel", dangerous=True),
     ]),
     PermissionGroup("ai", "AI assistant", "", [
         PermissionDef("ai.read", "View chat sessions", "ai"),
@@ -197,11 +191,6 @@ GROUPS: list[PermissionGroup] = [
         PermissionDef("backup.create", "Create a database backup", "backup"),
         PermissionDef("backup.restore", "Restore the database", "backup", dangerous=True),
         PermissionDef("backup.delete", "Delete a backup file", "backup", dangerous=True),
-    ]),
-    PermissionGroup("seeding", "Demo data", "", [
-        PermissionDef("seeding.read", "View demo-data status", "seeding"),
-        PermissionDef("seeding.run", "Seed demo data", "seeding", dangerous=True),
-        PermissionDef("seeding.remove", "Remove demo data", "seeding", dangerous=True),
     ]),
     PermissionGroup("status", "Status changes", "", [
         PermissionDef("status.read", "View status history", "status"),

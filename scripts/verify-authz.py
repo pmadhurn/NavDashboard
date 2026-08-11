@@ -127,7 +127,9 @@ async def main():
             check("DELETE /devices/{id} (devices.delete)", call("DELETE", "/devices/00000000-0000-0000-0000-000000000000", token), 403)
             check("GET /auth/users (users.read, excluded)", call("GET", "/auth/users", token), 403)
             check("GET /backup/table-counts (excluded)", call("GET", "/backup/table-counts", token), 403)
-            check("POST /seeding/run (dangerous, excluded)", call("POST", "/seeding/run", token), 403)
+            # Seeding was deleted in Phase 0.2. 404, not 403: the route must be
+            # gone, not merely forbidden — a forbidden route still exists.
+            check("POST /seeding/run is GONE", call("POST", "/seeding/run", token), 404)
             check("GET /audit/ (excluded)", call("GET", "/audit/", token), 403)
 
             print("\n3. Public routes need no token at all")

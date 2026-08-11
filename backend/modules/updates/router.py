@@ -11,7 +11,6 @@ from core.database import get_db
 from core.dependencies import (
     get_current_user,
     get_current_person_id,
-    require_permission,
 )
 from modules.updates import service
 from modules.updates.schemas import (

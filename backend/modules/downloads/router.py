@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from core.dependencies import get_current_user
-from core.permissions import LEVEL_MANAGE, level_satisfies
 from modules.auth.models import User
 from modules.documents.storage import MinIOStorage, get_storage
 from modules.downloads import service

@@ -2,7 +2,7 @@
 
 **Read this first.** One screen, always current. Update it at the end of every working block.
 
-**Last updated:** 2026-08-11 (Phase 0 part done)
+**Last updated:** 2026-08-11 (Phase 0 done)
 **Branch:** `navos/step-1-route-test`
 **Live:** https://nav.madhur.dev (loopback `127.0.0.1:8085`)
 **Plan:** [`PLAN.md`](./PLAN.md)
@@ -11,21 +11,15 @@
 
 ## Current phase
 
-> **Phase 0 — Foundation, branding, cleanup.** PART DONE.
-
-Done: 0.1 branding (zero `navos` strings left, wordmark, page title, login credit),
-0.3 eight roles, 0.4 the AI permission-filter fix, and the stale-map cleanup in
-downloads/finance/auth.
+> **Phase 0 — Foundation, branding, cleanup. DONE.**
 
 ### Next action
-**Phase 0.2 — remove seeding.** Delete `modules/seeding/` and its 5 endpoints, the
-6 per-module `/seed` endpoints (devices, couples, pairs, personnel, inventory,
-troubleshooting), Settings → Demo Data, and the `seed_records` table; add
-`scripts/purge-demo-data.py`. Then remove `core/permissions.py` + the
-`user_permissions` table (0.5) and close the phase.
-
-> Note: `verify-authz.py` asserts `POST /seeding/run` returns 403. When seeding
-> is deleted that check must become a 404 assertion, not be dropped.
+**Phase 1 — Inventory core.** Write `docs/phases/PHASE-1.md` first, then:
+`stock_locations` / `customers` / `vendors`; `assets.custody_type` +
+`custody_id` + `condition`, migrated from the old `status`; the
+`asset_movements` ledger; item detail with full timeline; list filters by
+location, custody, condition, person, project. See PLAN.md §3 for the model
+decision and what it rejected.
 
 ---
 
@@ -33,8 +27,8 @@ troubleshooting), Settings → Demo Data, and the `seed_records` table; add
 
 | Phase | Title | State |
 |---|---|---|
-| 0 | Foundation, branding, cleanup | **part done** — 0.2 and 0.5 remain |
-| 1 | Inventory core: custody, locations, condition | not started |
+| 0 | Foundation, branding, cleanup | **done** |
+| 1 | Inventory core: custody, locations, condition | **next** |
 | 2 | Movement: outward, inward, handover, bundles | not started |
 | 3 | Device Management ↔ Inventory, one identity | not started |
 | 4 | Tasks, notifications, engineer home | not started |
@@ -67,9 +61,9 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-authz.py` | permission enforcement, non-admin, over HTTP | 21/21 |
 | — | *both probe scripts self-clean on start, so a failed run never blocks the next* | |
 | `scripts/verify-sessions.py` | revocation is immediate | 14/14 |
-| `scripts/verify-scope.py` | SELF/TEAM/ALL row ownership | 15/15 |
+| `scripts/verify-scope.py` | SELF/TEAM/ALL row ownership | 14/14 |
 | `scripts/verify-attendance.py` | comp-off accrual rules | 16/16 |
-| `scripts/audit-guards.py` | every operation is mapped | 232 keyed / 9 self / 6 public / **0 unmapped** |
+| `scripts/audit-guards.py` | every operation is mapped | 236 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 
@@ -99,3 +93,14 @@ curl -s http://127.0.0.1:8085/api/v1/auth/me -H "Authorization: Bearer $(cat tok
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.tunnel.yml build backend frontend && docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d backend frontend
 ```
+
+---
+
+## Deployment tooling
+
+`scripts/purge-demo-data.py` empties every operational table so a deploy starts
+clean. Dry-run by default; `--confirm` to act. It deliberately never touches
+users, roles, role assignments, permission overrides or sessions — emptying
+those would lock everyone out of the system it is preparing.
+
+**Not yet run.** That is a Phase 11 step, not a cleanup step.

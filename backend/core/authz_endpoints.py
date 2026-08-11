@@ -223,11 +223,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.reports.router.list_templates": "reports.read",  # GET /api/v1/reports/templates
     "modules.search.router.search_global": "search.read",  # GET /api/v1/search/global
     "modules.search.router.search_suggestions": "search.read",  # GET /api/v1/search/suggestions
-    "modules.seeding.router.remove_seeded": "seeding.remove",  # DELETE /api/v1/seeding/
-    "modules.seeding.router.adopt_existing": "seeding.run",  # POST /api/v1/seeding/adopt
-    "modules.seeding.router.preview_adopt": "seeding.read",  # GET /api/v1/seeding/adopt/preview
-    "modules.seeding.router.run_seed": "seeding.run",  # POST /api/v1/seeding/run
-    "modules.seeding.router.get_seed_status": "seeding.read",  # GET /api/v1/seeding/status
     "modules.settings.router.list_settings": "settings.read",  # GET /api/v1/settings/
     "modules.settings.router.system_info": "settings.read",  # GET /api/v1/settings/system-info
     "modules.settings.router.list_users": "users.read",  # GET /api/v1/settings/users
