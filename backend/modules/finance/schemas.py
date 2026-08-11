@@ -75,6 +75,10 @@ class ExpenseResponse(BaseModel):
     paid_by: Optional[UUID] = None
     paid_at: Optional[datetime] = None
     members: list[ExpenseMemberResponse] = []
+    # Whether a receipt is attached. An expense without one is allowed — a
+    # blocked expense is an unrecorded expense — but it is never silently
+    # equivalent to one that has proof.
+    has_receipt: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

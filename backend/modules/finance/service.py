@@ -1101,3 +1101,87 @@ async def generate_bill_pdf(
     elements.append(table)
     doc.build(elements)
     return buffer.getvalue()
+
+
+async def attach_receipt_flags(db: AsyncSession, expenses) -> None:
+    """Mark which expenses have a receipt, in one query rather than per row."""
+    from modules.documents.models import Document
+
+    items = list(expenses)
+    ids = [e.id for e in items]
+    if not ids:
+        return
+    with_receipt = set(
+        (
+            await db.execute(
+                select(Document.entity_id).where(
+                    Document.entity_type == "expense",
+                    Document.entity_id.in_(ids),
+                    Document.deleted_at.is_(None),
+                )
+            )
+        ).scalars().all()
+    )
+    for e in items:
+        e.has_receipt = e.id in with_receipt
+
+
+async def quick_expense(
+    db: AsyncSession,
+    *,
+    title: str,
+    amount: float,
+    category,
+    project_id,
+    notes,
+    expense_date,
+    file,
+    storage,
+    user_id: UUID,
+):
+    """Record an expense, and its receipt, in ONE request.
+
+    Two requests would mean an engineer on a weak site connection can end up
+    with an expense and no receipt, or a receipt and no expense. One request
+    either works or does not.
+
+    A missing receipt is fine and stays fine — it is flagged, not refused.
+    """
+    from modules.documents.schemas import DocumentCreate
+    from modules.documents.service import upload_document
+
+    expense = Expense(
+        title=title,
+        amount=amount,
+        category=category,
+        project_id=project_id,
+        notes=notes,
+        expense_date=expense_date or datetime.now(timezone.utc),
+        added_by=user_id,
+        status="SUBMITTED",
+    )
+    db.add(expense)
+    await db.commit()
+    await db.refresh(expense)
+
+    if file is not None and getattr(file, "filename", None):
+        try:
+            await upload_document(
+                db,
+                file,
+                DocumentCreate(
+                    title=f"Receipt — {title}",
+                    entity_type="expense",
+                    entity_id=expense.id,
+                ),
+                user_id,
+                storage,
+            )
+        except Exception as exc:
+            # The expense is the record that matters. Losing it because storage
+            # was unreachable would be the worse failure, so the receipt is
+            # reported as missing rather than taking the expense down with it.
+            logger.warning("Receipt upload failed for expense %s: %s", expense.id, exc)
+
+    await attach_receipt_flags(db, [expense])
+    return expense

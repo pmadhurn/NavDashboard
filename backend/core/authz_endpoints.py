@@ -299,4 +299,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.tasks.router.mark_one_read": AUTHENTICATED,
     # Which home to show is a fact about the caller, like /auth/me.
     "modules.dashboard.router.home_for_me": AUTHENTICATED,
+    # Recording your own spending is the point of the module.
+    "modules.finance.router.quick_expense": "finance.create",
 }

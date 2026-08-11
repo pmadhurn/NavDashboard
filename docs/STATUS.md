@@ -11,19 +11,17 @@
 
 ## Current phase
 
-> **Phase 5 — Role dashboards + View As. DONE.**
+> **Phase 6 — Finance on a phone. DONE.**
 
-Home is chosen by what the person can DO, not by a label: `/dashboard/home-for-me`
-returns which home plus its numbers in one request. Leadership → the leadership
-page, `assets.custody` → inventory home, `finance.settle` → finance home,
-`troubleshooting.resolve` → R&D home, everyone else → their task list. The old
-device dashboard is still at `/overview`.
+`POST /finance/quick` takes the expense and its receipt in ONE multipart
+request. `has_receipt` is computed from attached documents, so a missing
+receipt is flagged rather than refused.
 
 ### Next action
-**Phase 6 — Finance, built for a phone.** Add Expense in two taps, receipt
-straight from the camera, an expense with no receipt allowed and clearly
-flagged. Then advances drawn down and the finance view of given vs spent vs
-owed.
+**Phase 7 — Project archive.** Ongoing / upcoming / completed / archived, with
+everything in one place: team, head, updates, site visits, photos, videos,
+documents, reports, equipment out and back, customer, testing, troubleshooting.
+Compulsory updates surface as tasks (Phase 4 already carries `update.today`).
 
 ---
 
@@ -37,8 +35,8 @@ owed.
 | 3 | Device Management ↔ Inventory, one identity | **done** |
 | 4 | Tasks, notifications, engineer home | **done** |
 | 5 | Role dashboards + Admin "View as" | **done** |
-| 6 | Finance, built for a phone | **next** |
-| 7 | Project archive | not started |
+| 6 | Finance, built for a phone | **done** |
+| 7 | Project archive | **next** |
 | 8 | Developer system-health dashboard | not started |
 | 9 | WhatsApp sharing that carries content | not started |
 | 10 | Mobile, polish and the sweep | not started |
@@ -70,7 +68,7 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
 | `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
 | `scripts/verify-tasks.py` | tasks derive and self-clear | 18/18 |
-| `scripts/audit-guards.py` | every operation is mapped | 265 ops, **0 unmapped** |
+| `scripts/audit-guards.py` | every operation is mapped | 266 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 

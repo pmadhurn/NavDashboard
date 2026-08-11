@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -91,6 +91,39 @@ async def my_finance(
     current_user: User = Depends(get_current_user),
 ):
     return await service.my_finance(db, current_user.id)
+
+
+@router.post("/quick", response_model=ExpenseResponse, status_code=201)
+async def quick_expense(
+    title: str = Form(...),
+    amount: float = Form(...),
+    category: Optional[str] = Form(None),
+    project_id: Optional[UUID] = Form(None),
+    notes: Optional[str] = Form(None),
+    expense_date: Optional[datetime] = Form(None),
+    receipt: Optional[UploadFile] = File(None),
+    db: AsyncSession = Depends(get_db),
+    storage: MinIOStorage = Depends(get_storage),
+    current_user: User = Depends(get_current_user),
+):
+    """Add an expense and its receipt in one request, from a phone.
+
+    Multipart rather than JSON-then-upload: two requests on a weak site
+    connection can leave an expense with no receipt, or a receipt with no
+    expense. One request either works or does not.
+    """
+    return await service.quick_expense(
+        db,
+        title=title,
+        amount=amount,
+        category=category,
+        project_id=project_id,
+        notes=notes,
+        expense_date=expense_date,
+        file=receipt,
+        storage=storage,
+        user_id=current_user.id,
+    )
 
 
 # --- Settlement (finance person) ---

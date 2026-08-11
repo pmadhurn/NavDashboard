@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { PlusOutlined, WalletOutlined } from '@ant-design/icons';
+import { PlusOutlined, WalletOutlined, DollarOutlined } from '@ant-design/icons';
+import QuickExpense from '../components/QuickExpense';
 import PageHeader from '@/shared/components/PageHeader';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
@@ -40,6 +41,7 @@ export default function MyFinancePage() {
   const canEdit = usePermission('finance.create');
 
   const [addOpen, setAddOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
   const [personId, setPersonId] = useState<string | undefined>();
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -65,6 +67,7 @@ export default function MyFinancePage() {
 
   return (
     <div>
+      <QuickExpense open={expenseOpen} onClose={() => setExpenseOpen(false)} />
       <PageHeader
         title="My Finance"
         subtitle="Your advances, expenses, and what's still owed"
@@ -72,9 +75,24 @@ export default function MyFinancePage() {
           <div style={{ display: 'flex', gap: 8 }}>
             <ShareButton title="My finance summary" url="/finance/my" />
             {canEdit && (
-              <GlassButton variant="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
-                Log Advance
-              </GlassButton>
+              <>
+                {/* Primary action: recording spending is what people open this
+                    page to do; logging an advance happens once a trip. */}
+                <GlassButton
+                  variant="primary"
+                  icon={<DollarOutlined />}
+                  onClick={() => setExpenseOpen(true)}
+                >
+                  Add expense
+                </GlassButton>
+                <GlassButton
+                  variant="ghost"
+                  icon={<PlusOutlined />}
+                  onClick={() => setAddOpen(true)}
+                >
+                  Log Advance
+                </GlassButton>
+              </>
             )}
           </div>
         }
