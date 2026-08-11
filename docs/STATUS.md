@@ -11,16 +11,15 @@
 
 ## Current phase
 
-> **Phase 2 — Movement.** Backend DONE, UI next.
-
-Done: handover with explicit accept (chain preserved, no double-promising, no
-handing on what you do not hold); per-item return outcomes so 10-out-7-back is
-never "3 missing"; kits; the full repair workflow. 13 endpoints, 260/260 mapped.
+> **Phase 2 — Movement. DONE.**
 
 ### Next action
-**Phase 2 UI.** Screens for: my pending handovers (accept/decline), start a
-handover, the returns screen (one row per issued item with an outcome picker),
-kits management, and the repair board. Then drop `assets.status`.
+**Phase 3 — Device Management ↔ Inventory, one identity.** A device creates or
+links exactly one asset automatically (there is already
+`POST /assets/backfill-devices` and `sync_device_asset`); make it automatic on
+device create, and make custody changes visible in the device view. No device
+should exist in one system and not the other. Then drop `assets.status`, which
+Phase 1 kept for one release and nothing but `_legacy_status()` now writes.
 
 ---
 
@@ -30,8 +29,8 @@ kits management, and the repair board. Then drop `assets.status`.
 |---|---|---|
 | 0 | Foundation, branding, cleanup | **done** |
 | 1 | Inventory core: custody, locations, condition | **done** |
-| 2 | Movement: outward, inward, handover, bundles | **backend done**, UI next |
-| 3 | Device Management ↔ Inventory, one identity | not started |
+| 2 | Movement: outward, inward, handover, bundles | **done** |
+| 3 | Device Management ↔ Inventory, one identity | **next** |
 | 4 | Tasks, notifications, engineer home | not started |
 | 5 | Role dashboards + Admin "View as" | not started |
 | 6 | Finance, built for a phone | not started |

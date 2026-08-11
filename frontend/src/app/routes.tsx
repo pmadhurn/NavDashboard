@@ -35,6 +35,10 @@ const DownloadsPage = lazy(() => import('@/modules/downloads/pages/DownloadsPage
 const AssetListPage = lazy(() => import('@/modules/inventory/pages/AssetListPage'));
 const AssetDetailPage = lazy(() => import('@/modules/inventory/pages/AssetDetailPage'));
 const DeployedPage = lazy(() => import('@/modules/inventory/pages/DeployedPage'));
+const HandoversPage = lazy(() => import('@/modules/inventory/pages/HandoversPage'));
+const ReturnsPage = lazy(() => import('@/modules/inventory/pages/ReturnsPage'));
+const KitsPage = lazy(() => import('@/modules/inventory/pages/KitsPage'));
+const RepairsPage = lazy(() => import('@/modules/inventory/pages/RepairsPage'));
 const ProjectListPage = lazy(() => import('@/modules/projects/pages/ProjectListPage'));
 const ProjectDetailPage = lazy(() => import('@/modules/projects/pages/ProjectDetailPage'));
 const FinancePage = lazy(() => import('@/modules/finance/pages/FinancePage'));
@@ -106,6 +110,10 @@ export function AppRoutes() {
           <Route path="downloads" element={<RequirePermission permission="downloads.read"><DownloadsPage /></RequirePermission>} />
           <Route path="inventory/assets" element={<RequirePermission permission="assets.read"><AssetListPage /></RequirePermission>} />
           <Route path="inventory/assets/:id" element={<RequirePermission permission="assets.read"><AssetDetailPage /></RequirePermission>} />
+          <Route path="inventory/handovers" element={<RequirePermission permission="assets.read"><HandoversPage /></RequirePermission>} />
+          <Route path="inventory/returns" element={<RequirePermission permission="assets.returns"><ReturnsPage /></RequirePermission>} />
+          <Route path="inventory/kits" element={<RequirePermission permission="assets.read"><KitsPage /></RequirePermission>} />
+          <Route path="inventory/repairs" element={<RequirePermission permission="assets.read"><RepairsPage /></RequirePermission>} />
           <Route path="inventory/deployed" element={<RequirePermission permission="assets.read"><DeployedPage /></RequirePermission>} />
           <Route path="projects" element={<RequirePermission permission="projects.read"><ProjectListPage /></RequirePermission>} />
           <Route path="projects/:id" element={<RequirePermission permission="projects.read"><ProjectDetailPage /></RequirePermission>} />
