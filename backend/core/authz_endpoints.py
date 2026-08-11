@@ -276,4 +276,18 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.assets.router.asset_movements": "assets.read",
     "modules.assets.router.move_asset_custody": "assets.custody",
     "modules.assets.router.set_asset_condition": "assets.condition",
+    # --- inventory movement (Phase 2) --------------------------------------
+    "modules.assets.router.list_handovers": "assets.read",
+    "modules.assets.router.create_handover": "assets.handover",
+    "modules.assets.router.respond_to_handover": "assets.handover",
+    "modules.assets.router.cancel_handover": "assets.handover",
+    "modules.assets.router.list_bundles": "assets.read",
+    "modules.assets.router.create_bundle": "assets.bundles",
+    "modules.assets.router.update_bundle": "assets.bundles",
+    "modules.assets.router.delete_bundle": "assets.bundles",
+    "modules.assets.router.resolve_returns": "assets.returns",
+    "modules.assets.router.list_repairs": "assets.read",
+    "modules.assets.router.report_damage": "assets.condition",
+    "modules.assets.router.send_for_repair": "assets.repairs",
+    "modules.assets.router.complete_repair": "assets.repairs",
 }

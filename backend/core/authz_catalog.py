@@ -123,6 +123,10 @@ GROUPS: list[PermissionGroup] = [
         PermissionDef("assets.reports", "Asset reports", "assets"),
         PermissionDef("assets.custody", "Move an item, or change who holds it", "assets"),
         PermissionDef("assets.condition", "Report damage, repair or loss", "assets"),
+        PermissionDef("assets.handover", "Hand items to another person", "assets"),
+        PermissionDef("assets.bundles", "Create and edit kits", "assets"),
+        PermissionDef("assets.returns", "Record what came back from a site", "assets"),
+        PermissionDef("assets.repairs", "Manage the repair workflow", "assets"),
     ]),
     PermissionGroup("stock", "Stock places & parties",
                     "Where things are kept, and who we hand them to", [

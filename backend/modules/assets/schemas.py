@@ -248,3 +248,129 @@ class CustodySummary(BaseModel):
     by_custody: dict[str, int]
     by_condition: dict[str, int]
     by_location: list[LocationCount]
+
+
+# --- movement: handover, kits, returns, repairs (Phase 2) -------------------
+
+
+class HandoverCreate(BaseModel):
+    from_person_id: UUID
+    to_person_id: UUID
+    asset_ids: list[UUID]
+    note: Optional[str] = None
+
+
+class HandoverRespond(BaseModel):
+    accept: bool
+    note: Optional[str] = None
+
+
+class HandoverItemBrief(BaseModel):
+    id: UUID
+    asset_code: str
+    name: str
+
+
+class HandoverResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    from_person_id: UUID
+    from_name: Optional[str] = None
+    to_person_id: UUID
+    to_name: Optional[str] = None
+    status: str
+    note: Optional[str] = None
+    response_note: Optional[str] = None
+    responded_at: Optional[datetime] = None
+    created_at: datetime
+    items: list[HandoverItemBrief] = []
+
+
+class BundleCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    asset_ids: list[UUID] = []
+
+
+class BundleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    asset_ids: Optional[list[UUID]] = None
+
+
+class BundleItemBrief(BaseModel):
+    id: UUID
+    asset_code: str
+    name: str
+    quantity: int
+    available: bool
+
+
+class BundleResponse(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    items: list[BundleItemBrief] = []
+
+
+class ResolveItemRequest(BaseModel):
+    """What happened to one item that went out."""
+
+    asset_id: UUID
+    outcome: str
+    note: Optional[str] = None
+    project_id: Optional[UUID] = None
+    customer_id: Optional[UUID] = None
+    site_location_id: Optional[UUID] = None
+    responsible_person_id: Optional[UUID] = None
+    expected_return_date: Optional[datetime] = None
+
+
+class ResolveBatchRequest(BaseModel):
+    items: list[ResolveItemRequest]
+
+
+class DamageReport(BaseModel):
+    asset_id: UUID
+    details: str
+    damage_location: Optional[str] = None
+    responsible_person_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
+    damaged_at: Optional[datetime] = None
+
+
+class SendForRepair(BaseModel):
+    vendor_id: Optional[UUID] = None
+    cost: Optional[float] = None
+    note: Optional[str] = None
+
+
+class CompleteRepair(BaseModel):
+    repaired: bool = True
+    cost: Optional[float] = None
+    note: Optional[str] = None
+    return_location_id: Optional[UUID] = None
+
+
+class RepairResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    asset_id: UUID
+    asset_code: Optional[str] = None
+    asset_name: Optional[str] = None
+    status: str
+    damage_details: str
+    damaged_at: Optional[datetime] = None
+    damage_location: Optional[str] = None
+    responsible_person_id: Optional[UUID] = None
+    responsible_name: Optional[str] = None
+    project_id: Optional[UUID] = None
+    is_repairable: Optional[bool] = None
+    vendor_id: Optional[UUID] = None
+    cost: Optional[float] = None
+    sent_at: Optional[datetime] = None
+    received_at: Optional[datetime] = None
+    outcome_note: Optional[str] = None
+    created_at: datetime

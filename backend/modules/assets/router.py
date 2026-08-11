@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.dependencies import get_current_user
 from modules.auth.models import User
-from modules.assets import custody_service, service
+from modules.assets import custody_service, movement_service, service
 from modules.assets.schemas import (
     AssetCategoryCreate,
     AssetCategoryResponse,
@@ -19,11 +19,22 @@ from modules.assets.schemas import (
     AssetReportUpdate,
     AssetResponse,
     AssetUpdate,
+    BundleCreate,
+    BundleResponse,
+    BundleUpdate,
+    CompleteRepair,
     CustodySummary,
+    DamageReport,
     DeployedGroup,
+    HandoverCreate,
+    HandoverRespond,
+    HandoverResponse,
     MoveCustodyRequest,
     PartyCreate,
     PartyResponse,
+    RepairResponse,
+    ResolveBatchRequest,
+    SendForRepair,
     SetConditionRequest,
     StockLocationCreate,
     StockLocationResponse,
@@ -275,6 +286,179 @@ async def set_asset_condition(
     )
     await custody_service.enrich(db, [asset])
     return AssetResponse.model_validate(asset)
+
+
+# --- movement: handover, kits, returns, repairs (Phase 2) -------------------
+
+
+@router.get("/handovers", response_model=list[HandoverResponse])
+async def list_handovers(
+    person_id: Optional[UUID] = Query(None),
+    status: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return await movement_service.list_handovers(db, person_id=person_id, status=status)
+
+
+@router.post("/handovers", response_model=HandoverResponse, status_code=201)
+async def create_handover(
+    body: HandoverCreate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Offer items to someone. Custody does NOT move until they accept."""
+    h = await movement_service.create_handover(
+        db, from_person_id=body.from_person_id, to_person_id=body.to_person_id,
+        asset_ids=body.asset_ids, note=body.note, user_id=user.id,
+    )
+    rows = await movement_service.list_handovers(db, person_id=body.to_person_id)
+    return next(r for r in rows if r["id"] == h.id)
+
+
+@router.post("/handovers/{handover_id}/respond", response_model=HandoverResponse)
+async def respond_to_handover(
+    handover_id: UUID,
+    body: HandoverRespond,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    h = await movement_service.respond_to_handover(
+        db, handover_id, accept=body.accept, note=body.note, user_id=user.id
+    )
+    rows = await movement_service.list_handovers(db, person_id=h.to_person_id)
+    return next(r for r in rows if r["id"] == h.id)
+
+
+@router.post("/handovers/{handover_id}/cancel", response_model=HandoverResponse)
+async def cancel_handover(
+    handover_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    h = await movement_service.cancel_handover(db, handover_id, user.id)
+    rows = await movement_service.list_handovers(db, person_id=h.from_person_id)
+    return next(r for r in rows if r["id"] == h.id)
+
+
+@router.get("/bundles", response_model=list[BundleResponse])
+async def list_bundles(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return await movement_service.list_bundles(db)
+
+
+@router.post("/bundles", response_model=BundleResponse, status_code=201)
+async def create_bundle(
+    body: BundleCreate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    b = await movement_service.create_bundle(
+        db, name=body.name, description=body.description,
+        asset_ids=body.asset_ids, user_id=user.id,
+    )
+    return next(x for x in await movement_service.list_bundles(db) if x["id"] == b.id)
+
+
+@router.put("/bundles/{bundle_id}", response_model=BundleResponse)
+async def update_bundle(
+    bundle_id: UUID,
+    body: BundleUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    await movement_service.update_bundle(
+        db, bundle_id, name=body.name, description=body.description,
+        asset_ids=body.asset_ids, user_id=user.id,
+    )
+    return next(x for x in await movement_service.list_bundles(db) if x["id"] == bundle_id)
+
+
+@router.delete("/bundles/{bundle_id}", status_code=204)
+async def delete_bundle(
+    bundle_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    await movement_service.delete_bundle(db, bundle_id, user.id)
+
+
+@router.post("/returns/resolve")
+async def resolve_returns(
+    body: ResolveBatchRequest,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Say what happened to each item that went out.
+
+    Ten out and seven back is never "three missing" — every item is resolved
+    explicitly, and every outcome puts it somewhere real.
+    """
+    for item in body.items:
+        await movement_service.resolve_item(
+            db, asset_id=item.asset_id, outcome=item.outcome, note=item.note,
+            project_id=item.project_id, customer_id=item.customer_id,
+            site_location_id=item.site_location_id,
+            responsible_person_id=item.responsible_person_id,
+            expected_return_date=item.expected_return_date,
+            user_id=user.id, commit=False,
+        )
+    await db.commit()
+    return {"resolved": len(body.items)}
+
+
+@router.get("/repairs", response_model=list[RepairResponse])
+async def list_repairs(
+    status: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return await movement_service.list_repairs(db, status=status)
+
+
+@router.post("/repairs", response_model=RepairResponse, status_code=201)
+async def report_damage(
+    body: DamageReport,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    r = await movement_service.report_damage(
+        db, asset_id=body.asset_id, details=body.details,
+        damage_location=body.damage_location,
+        responsible_person_id=body.responsible_person_id,
+        project_id=body.project_id, damaged_at=body.damaged_at, user_id=user.id,
+    )
+    return next(x for x in await movement_service.list_repairs(db) if x["id"] == r.id)
+
+
+@router.post("/repairs/{repair_id}/send", response_model=RepairResponse)
+async def send_for_repair(
+    repair_id: UUID,
+    body: SendForRepair,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    r = await movement_service.send_for_repair(
+        db, repair_id, vendor_id=body.vendor_id, cost=body.cost,
+        note=body.note, user_id=user.id,
+    )
+    return next(x for x in await movement_service.list_repairs(db) if x["id"] == r.id)
+
+
+@router.post("/repairs/{repair_id}/complete", response_model=RepairResponse)
+async def complete_repair(
+    repair_id: UUID,
+    body: CompleteRepair,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    r = await movement_service.complete_repair(
+        db, repair_id, repaired=body.repaired, cost=body.cost, note=body.note,
+        return_location_id=body.return_location_id, user_id=user.id,
+    )
+    return next(x for x in await movement_service.list_repairs(db) if x["id"] == r.id)
 
 
 @router.get("/{asset_id}", response_model=AssetResponse)

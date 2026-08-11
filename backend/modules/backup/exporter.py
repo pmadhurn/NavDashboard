@@ -40,6 +40,13 @@ from modules.finance.models import (
     ExpenseMember,
     FundAllocation,
 )
+from modules.assets.movement_models import (
+    AssetBundle,
+    AssetBundleItem,
+    AssetHandover,
+    AssetHandoverItem,
+    AssetRepair,
+)
 from modules.assets.custody_models import (
     AssetMovement,
     Customer,
@@ -233,6 +240,41 @@ def _get_export_tables() -> list[dict]:
                         "from_condition", "to_condition", "quantity", "reason",
                         "source_type", "source_id", "performed_by",
                         "occurred_at", "created_at"],
+        },
+        {
+            "name": "AssetHandovers",
+            "key": "asset_handovers",
+            "model": AssetHandover,
+            "columns": ["id", "from_person_id", "to_person_id", "status", "note",
+                        "response_note", "initiated_by", "responded_by",
+                        "responded_at", "created_at"],
+        },
+        {
+            "name": "AssetHandoverItems",
+            "key": "asset_handover_items",
+            "model": AssetHandoverItem,
+            "columns": ["id", "handover_id", "asset_id", "quantity", "created_at"],
+        },
+        {
+            "name": "AssetBundles",
+            "key": "asset_bundles",
+            "model": AssetBundle,
+            "columns": ["id", "name", "description", "created_at", "updated_at"],
+        },
+        {
+            "name": "AssetBundleItems",
+            "key": "asset_bundle_items",
+            "model": AssetBundleItem,
+            "columns": ["id", "bundle_id", "asset_id", "quantity", "created_at"],
+        },
+        {
+            "name": "AssetRepairs",
+            "key": "asset_repairs",
+            "model": AssetRepair,
+            "columns": ["id", "asset_id", "status", "damage_details", "damaged_at",
+                        "damage_location", "responsible_person_id", "project_id",
+                        "is_repairable", "vendor_id", "cost", "sent_at",
+                        "received_at", "outcome_note", "reported_by", "created_at"],
         },
         # --- Attendance ---------------------------------------------------
         {

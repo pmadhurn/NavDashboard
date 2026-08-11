@@ -139,6 +139,13 @@ class EquipmentMovementItem(Base):
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     condition_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # For outward items: RETURNED | WITH_CLIENT | DAMAGED | LOST (updated on inward)
+    # How this line was resolved when the team came back. Distinct from
+    # item_status: "not returned" is never the same as "missing".
+    return_outcome: Mapped[Optional[str]] = mapped_column(String(25), nullable=True)
+    outcome_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     item_status: Mapped[str] = mapped_column(String(20), default="WITH_CLIENT", nullable=False)
 
     movement = relationship("EquipmentMovement", back_populates="items")
