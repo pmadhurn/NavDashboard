@@ -6,10 +6,14 @@ import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import EmptyState from '@/shared/components/EmptyState';
-import StatusBadge from '@/shared/components/StatusBadge';
 import ShareButton from '@/shared/components/ShareButton';
 import { formatDateTime } from '@/shared/utils/formatters';
-import { useAsset, useAssetHistory } from '../hooks/useAssets';
+import { useAsset } from '../hooks/useAssets';
+import {
+  AssetTimeline,
+  CustodyActions,
+  CustodyBadges,
+} from '../components/CustodyControls';
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -24,7 +28,6 @@ export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: asset, isLoading } = useAsset(id);
-  const { data: history } = useAssetHistory(id);
 
   // `isLoading` and "no data" are distinct states: a 404 ends the load with
   // `asset` still undefined, so folding them together spins forever.
@@ -52,7 +55,12 @@ export default function AssetDetailPage() {
         title={asset.name}
         subtitle={asset.asset_code}
         actions={
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <CustodyActions
+              assetId={asset.id}
+              assetName={asset.name}
+              condition={asset.condition}
+            />
             <ShareButton
               title={`Asset: ${asset.name} (${asset.asset_code})`}
               url={`/inventory/assets/${asset.id}`}
@@ -80,7 +88,36 @@ export default function AssetDetailPage() {
             Details
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <InfoRow label="Status" value={<StatusBadge status={asset.status} />} />
+            <InfoRow
+              label="Where it is"
+              value={
+                <CustodyBadges
+                  custodyType={asset.custody_type}
+                  custodyLabel={asset.custody_label}
+                  condition={asset.condition}
+                />
+              }
+            />
+            <InfoRow
+              label="Available"
+              value={
+                <span
+                  style={{
+                    color: asset.is_available
+                      ? 'var(--status-working)'
+                      : 'var(--text-muted)',
+                  }}
+                >
+                  {asset.is_available ? 'Yes' : 'No'}
+                </span>
+              }
+            />
+            {asset.expected_return_date && (
+              <InfoRow
+                label="Expected back"
+                value={formatDateTime(asset.expected_return_date)}
+              />
+            )}
             <InfoRow label="Category" value={asset.category?.name} />
             <InfoRow
               label="Kind"
@@ -111,39 +148,9 @@ export default function AssetDetailPage() {
               gap: 6,
             }}
           >
-            <HistoryOutlined /> Trail
+            <HistoryOutlined /> History
           </div>
-          {!history || history.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>No events recorded yet.</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {history.map((event) => (
-                <div
-                  key={event.id}
-                  style={{
-                    borderLeft: '2px solid rgba(139,195,74,0.35)',
-                    paddingLeft: 12,
-                  }}
-                >
-                  <div style={{ color: 'var(--primary)', fontSize: 13 }}>
-                    {event.event_type.replace(/_/g, ' ')}
-                    {event.old_status && event.new_status && (
-                      <span style={{ color: 'var(--text-muted)' }}>
-                        {' '}
-                        · {event.old_status} → {event.new_status}
-                      </span>
-                    )}
-                  </div>
-                  {event.note && (
-                    <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{event.note}</div>
-                  )}
-                  <div style={{ color: 'var(--chart4)', fontSize: 11 }}>
-                    {formatDateTime(event.occurred_at)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <AssetTimeline assetId={asset.id} />
         </GlassCard>
       </div>
     </div>

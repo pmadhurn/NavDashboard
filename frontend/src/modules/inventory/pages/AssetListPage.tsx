@@ -12,10 +12,16 @@ import PageHeader from '@/shared/components/PageHeader';
 import GlassButton from '@/shared/components/GlassButton';
 import GlassInput from '@/shared/components/GlassInput';
 import DataTable from '@/shared/components/DataTable';
-import StatusBadge from '@/shared/components/StatusBadge';
 import ShareButton from '@/shared/components/ShareButton';
 import { usePermission } from '@/shared/stores/authStore';
-import { useAssets, useAssetCategories, useBackfillDevices, Asset, ASSET_STATUSES } from '../hooks/useAssets';
+import { CustodyBadges } from '../components/CustodyControls';
+import {
+  CONDITION_LABEL,
+  CUSTODY_LABEL,
+  useCustodySummary,
+  useStockLocations,
+} from '../hooks/useCustody';
+import { useAssets, useAssetCategories, useBackfillDevices, Asset } from '../hooks/useAssets';
 import AssetFormModal from '../components/AssetFormModal';
 import AssetReportsPanel from '../components/AssetReportsPanel';
 
@@ -24,14 +30,26 @@ function AssetsTab() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | undefined>();
-  const [status, setStatus] = useState<string | undefined>();
+  const [custodyType, setCustodyType] = useState<string | undefined>();
+  const [condition, setCondition] = useState<string | undefined>();
+  const [locationId, setLocationId] = useState<string | undefined>();
   const [source, setSource] = useState<string | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
   const canEdit = usePermission('assets.update');
   const canManage = usePermission('assets.delete');
   const backfillDevices = useBackfillDevices();
-  const { data, isLoading } = useAssets({ page, search, categoryId, status, source });
+  const { data, isLoading } = useAssets({
+    page,
+    search,
+    categoryId,
+    source,
+    custodyType,
+    condition,
+    locationId,
+  });
+  const { data: locations } = useStockLocations();
+  const { data: summary } = useCustodySummary();
   const { data: categories } = useAssetCategories();
 
   const columns = [
@@ -85,26 +103,66 @@ function AssetsTab() {
       ),
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (value: string) => <StatusBadge status={value} />,
-    },
-    {
-      title: 'With',
+      title: 'Where it is',
       key: 'custody',
-      className: 'hide-on-mobile',
       render: (_: unknown, record: Asset) => (
-        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
-          {record.current_person?.full_name ??
-            (record.status === 'WITH_PROJECT' ? 'Project' : 'Office')}
-        </span>
+        <CustodyBadges
+          custodyType={record.custody_type}
+          custodyLabel={record.custody_label}
+          condition={record.condition}
+          size="sm"
+        />
       ),
     },
   ];
 
+  const tiles = summary
+    ? [
+        { label: 'Total', value: summary.total, onClick: () => { setCustodyType(undefined); setCondition(undefined); setLocationId(undefined); } },
+        { label: 'Available', value: summary.available, color: 'var(--status-working)', onClick: () => { setCustodyType('LOCATION'); setCondition('OK'); } },
+        { label: 'Damaged', value: summary.by_condition?.DAMAGED ?? 0, color: '#B0413E', onClick: () => { setCondition('DAMAGED'); setCustodyType(undefined); } },
+        { label: 'With people', value: summary.by_custody?.PERSON ?? 0, color: '#6F8CB6', onClick: () => { setCustodyType('PERSON'); setCondition(undefined); } },
+        { label: 'Overdue', value: summary.overdue, color: 'var(--status-not-working)' },
+        { label: 'Unknown', value: summary.needs_reconciliation, color: '#B0413E', onClick: () => { setCustodyType('UNKNOWN'); setCondition(undefined); } },
+      ]
+    : [];
+
   return (
     <div>
+      {tiles.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
+          {tiles.map((t) => (
+            <button
+              key={t.label}
+              type="button"
+              onClick={() => { t.onClick?.(); setPage(1); }}
+              style={{
+                textAlign: 'left',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid var(--overlay-subtle)',
+                background: 'var(--overlay-subtle)',
+                cursor: t.onClick ? 'pointer' : 'default',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <div style={{ fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                {t.label}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: t.color ?? 'var(--text-primary)' }}>
+                {t.value}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
       <div
         style={{
           display: 'flex',
@@ -139,15 +197,40 @@ function AssetsTab() {
         />
         <Select
           className="dl-select"
-          style={{ minWidth: 140 }}
-          placeholder="Status"
+          style={{ minWidth: 150 }}
+          placeholder="Where"
           allowClear
-          value={status}
+          value={custodyType}
           onChange={(v) => {
-            setStatus(v);
+            setCustodyType(v);
             setPage(1);
           }}
-          options={ASSET_STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+          options={Object.entries(CUSTODY_LABEL).map(([value, label]) => ({ value, label }))}
+        />
+        <Select
+          className="dl-select"
+          style={{ minWidth: 140 }}
+          placeholder="Condition"
+          allowClear
+          value={condition}
+          onChange={(v) => {
+            setCondition(v);
+            setPage(1);
+          }}
+          options={Object.entries(CONDITION_LABEL).map(([value, label]) => ({ value, label }))}
+        />
+        <Select
+          className="dl-select"
+          style={{ minWidth: 150 }}
+          placeholder="Location"
+          allowClear
+          value={locationId}
+          onChange={(v) => {
+            setLocationId(v);
+            setCustodyType(v ? 'LOCATION' : undefined);
+            setPage(1);
+          }}
+          options={(locations ?? []).map((l) => ({ value: l.id, label: l.name }))}
         />
         <Select
           className="dl-select"

@@ -31,6 +31,14 @@ export interface Asset {
   notes: string | null;
   tags: Record<string, unknown> | null;
   tag_identifiers: Record<string, string> | null;
+  // --- custody (Phase 1) ---
+  custody_type: import('./useCustody').CustodyType;
+  custody_id: string | null;
+  custody_label: string | null;
+  condition: import('./useCustody').Condition;
+  expected_return_date: string | null;
+  /** Derived server-side: in a stock location and in working order. */
+  is_available: boolean;
   created_at: string;
 }
 
@@ -81,8 +89,13 @@ export function useAssets(params: {
   page?: number;
   search?: string;
   categoryId?: string;
-  status?: string;
   source?: string;
+  /** Custody filters (Phase 1) — the ones that mean something. */
+  custodyType?: string;
+  condition?: string;
+  locationId?: string;
+  personId?: string;
+  available?: boolean;
 }) {
   return useQuery({
     queryKey: ['assets', params],
@@ -92,8 +105,12 @@ export function useAssets(params: {
         size: 50,
         search: params.search || undefined,
         category_id: params.categoryId || undefined,
-        status: params.status || undefined,
         source: params.source || undefined,
+        custody_type: params.custodyType || undefined,
+        condition: params.condition || undefined,
+        location_id: params.locationId || undefined,
+        person_id: params.personId || undefined,
+        available: params.available,
       }),
   });
 }

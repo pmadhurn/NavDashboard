@@ -42,6 +42,11 @@ async def list_assets(
     status: Optional[str] = Query(None),
     project_id: Optional[UUID] = Query(None),
     source: Optional[str] = Query(None),
+    custody_type: Optional[str] = Query(None),
+    condition: Optional[str] = Query(None),
+    location_id: Optional[UUID] = Query(None),
+    person_id: Optional[UUID] = Query(None),
+    available: Optional[bool] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -53,6 +58,11 @@ async def list_assets(
         status=status,
         project_id=project_id,
         source=source,
+        custody_type=custody_type,
+        condition=condition,
+        location_id=location_id,
+        person_id=person_id,
+        available=available,
     )
 
 
@@ -246,6 +256,7 @@ async def move_asset_custody(
         expected_return_date=body.expected_return_date,
         user_id=user.id,
     )
+    await custody_service.enrich(db, [asset])
     return AssetResponse.model_validate(asset)
 
 
@@ -262,6 +273,7 @@ async def set_asset_condition(
     await custody_service.set_condition(
         db, asset, condition=body.condition, reason=body.reason, user_id=user.id
     )
+    await custody_service.enrich(db, [asset])
     return AssetResponse.model_validate(asset)
 
 
@@ -272,6 +284,7 @@ async def get_asset(
     current_user: User = Depends(get_current_user),
 ):
     asset = await service.get_asset(db, asset_id)
+    await custody_service.enrich(db, [asset])
     return AssetResponse.model_validate(asset)
 
 

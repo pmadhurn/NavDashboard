@@ -11,23 +11,14 @@
 
 ## Current phase
 
-> **Phase 1 — Inventory core.** Data model DONE, surfaces NOT started.
-
-Done: `stock_locations` / `customers` / `vendors`; `assets.custody_type` +
-`custody_id` + `condition` + `expected_return_date`; the `asset_movements`
-ledger with an opening-balance row per asset; existing rows migrated; backup
-covers all four new tables.
+> **Phase 1 — Inventory core. DONE.**
 
 ### Next action
-**Phase 1 surfaces.** Backend: a custody service (`move_custody`,
-`set_condition`) that writes the ledger on every change, plus endpoints for
-locations/customers/vendors CRUD, `GET /assets/{id}/movements`, and asset list
-filters by custody/condition/location. Then the item-detail timeline and the
-list filters in the UI.
-
-> New keys will need catalog entries (`locations.*` already exists for device
-> locations — use a distinct group such as `stock.*` for stock locations, or
-> the startup assertion will pass while the labels mislead).
+**Phase 2 — Movement.** Outward from the app; inward with a per-item outcome
+(RETURNED / LEFT_AT_SITE / HANDED_TO_CUSTOMER / DAMAGED / LOST) so 10 out and 7
+back is never "3 missing"; handover between engineers with an explicit accept
+step; bundles/kits that expand to individually-tracked items; the repair
+workflow. Then drop `assets.status`.
 
 ---
 
@@ -36,8 +27,8 @@ list filters in the UI.
 | Phase | Title | State |
 |---|---|---|
 | 0 | Foundation, branding, cleanup | **done** |
-| 1 | Inventory core: custody, locations, condition | **model done**, surfaces next |
-| 2 | Movement: outward, inward, handover, bundles | not started |
+| 1 | Inventory core: custody, locations, condition | **done** |
+| 2 | Movement: outward, inward, handover, bundles | **next** |
 | 3 | Device Management ↔ Inventory, one identity | not started |
 | 4 | Tasks, notifications, engineer home | not started |
 | 5 | Role dashboards + Admin "View as" | not started |
@@ -71,7 +62,8 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-sessions.py` | revocation is immediate | 14/14 |
 | `scripts/verify-scope.py` | SELF/TEAM/ALL row ownership | 14/14 |
 | `scripts/verify-attendance.py` | comp-off accrual rules | 16/16 |
-| `scripts/audit-guards.py` | every operation is mapped | 236 ops, **0 unmapped** |
+| `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
+| `scripts/audit-guards.py` | every operation is mapped | 247 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 

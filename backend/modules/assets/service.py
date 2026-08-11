@@ -199,6 +199,11 @@ async def list_assets(
     status: Optional[str] = None,
     project_id: Optional[UUID] = None,
     source: Optional[str] = None,  # 'device' | 'equipment' (non-device)
+    custody_type: Optional[str] = None,
+    condition: Optional[str] = None,
+    location_id: Optional[UUID] = None,
+    person_id: Optional[UUID] = None,
+    available: Optional[bool] = None,
 ) -> PaginatedResponse[AssetResponse]:
     stmt = select(Asset).where(Asset.deleted_at.is_(None))
     if search:
@@ -221,7 +226,33 @@ async def list_assets(
     elif source == "equipment":
         stmt = stmt.where(Asset.device_id.is_(None))
     stmt = stmt.order_by(Asset.created_at.desc())
-    return await paginate(db, stmt, params, AssetResponse)
+
+    # Custody / condition filters (Phase 1). `status` is kept for one release
+    # but these are the ones that mean anything.
+    if custody_type:
+        stmt = stmt.where(Asset.custody_type == custody_type)
+    if condition:
+        stmt = stmt.where(Asset.condition == condition)
+    if location_id:
+        stmt = stmt.where(
+            Asset.custody_type == "LOCATION", Asset.custody_id == location_id
+        )
+    if person_id:
+        stmt = stmt.where(
+            Asset.custody_type == "PERSON", Asset.custody_id == person_id
+        )
+    if available is True:
+        stmt = stmt.where(Asset.custody_type == "LOCATION", Asset.condition == "OK")
+    elif available is False:
+        stmt = stmt.where(
+            or_(Asset.custody_type != "LOCATION", Asset.condition != "OK")
+        )
+
+    from modules.assets import custody_service
+
+    page = await paginate(db, stmt, params, AssetResponse)
+    await custody_service.enrich(db, page.items)
+    return page
 
 
 async def get_deployed(db: AsyncSession) -> list:

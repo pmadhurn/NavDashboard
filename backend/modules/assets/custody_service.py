@@ -392,3 +392,39 @@ async def create_party(db: AsyncSession, kind: str, body, user_id: UUID):
     await db.commit()
     await db.refresh(row)
     return row
+
+
+async def enrich(db: AsyncSession, assets) -> None:
+    """Fill the two derived fields the ORM cannot: who holds it, and whether
+    it is available.
+
+    Holder names live in five different tables, so they are looked up in one
+    batch per custody type rather than per asset — a 50-row inventory page was
+    otherwise 50 queries.
+    """
+    from sqlalchemy import text
+
+    items = list(assets)
+    if not items:
+        return
+
+    wanted: dict[str, set] = {}
+    for a in items:
+        if a.custody_id and a.custody_type in _HOLDER_TABLES:
+            wanted.setdefault(a.custody_type, set()).add(str(a.custody_id))
+
+    labels: dict[str, str] = {}
+    for custody_type, ids in wanted.items():
+        table, column = _HOLDER_TABLES[custody_type]
+        rows = (
+            await db.execute(
+                text(f"SELECT id, {column} FROM {table} WHERE id = ANY(:ids)"),
+                {"ids": list(ids)},
+            )
+        ).all()
+        for row_id, label in rows:
+            labels[str(row_id)] = label
+
+    for a in items:
+        a.custody_label = labels.get(str(a.custody_id)) if a.custody_id else None
+        a.is_available = is_available(a)
