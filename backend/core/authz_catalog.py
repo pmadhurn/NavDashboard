@@ -121,6 +121,13 @@ GROUPS: list[PermissionGroup] = [
         PermissionDef("assets.categories", "Manage asset categories", "assets"),
         PermissionDef("assets.backfill", "Backfill assets from devices", "assets", dangerous=True),
         PermissionDef("assets.reports", "Asset reports", "assets"),
+        PermissionDef("assets.custody", "Move an item, or change who holds it", "assets"),
+        PermissionDef("assets.condition", "Report damage, repair or loss", "assets"),
+    ]),
+    PermissionGroup("stock", "Stock places & parties",
+                    "Where things are kept, and who we hand them to", [
+        PermissionDef("stock.read", "View locations, customers and vendors", "stock"),
+        PermissionDef("stock.manage", "Add and remove them", "stock", dangerous=True),
     ]),
     PermissionGroup("materials", "Fitting materials", "Per-couple consumables (backend 'inventory')", [
         *_crud("materials", "fitting materials"),

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AssetCategoryCreate(BaseModel):
@@ -84,7 +84,17 @@ class AssetResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
+    # --- custody (Phase 1) ---
+    custody_type: str = "LOCATION"
+    custody_id: Optional[UUID] = None
+    custody_label: Optional[str] = None
+    condition: str = "OK"
+    expected_return_date: Optional[datetime] = None
+    # Derived, never stored: in a stock location and in working order.
+    is_available: bool = False
+
     model_config = {"from_attributes": True}
+
 
 
 class AssetHistoryResponse(BaseModel):
@@ -143,3 +153,98 @@ class AssetReportResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# --- custody, locations, parties (Phase 1) ---------------------------------
+
+
+class StockLocationCreate(BaseModel):
+    name: str
+    kind: str = "OFFICE"
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    sort_order: int = 0
+    is_default: bool = False
+
+
+class StockLocationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    kind: str
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    sort_order: int
+    is_default: bool
+
+
+class PartyCreate(BaseModel):
+    name: str
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PartyResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class MoveCustodyRequest(BaseModel):
+    """Where an item is going, and why."""
+
+    to_custody_type: str
+    to_custody_id: Optional[UUID] = None
+    reason: Optional[str] = None
+    event_type: str = "MOVED"
+    expected_return_date: Optional[datetime] = None
+
+
+class SetConditionRequest(BaseModel):
+    condition: str
+    reason: Optional[str] = None
+
+
+class AssetMovementResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    asset_id: UUID
+    event_type: str
+    from_custody_type: Optional[str] = None
+    from_custody_id: Optional[UUID] = None
+    from_label: Optional[str] = None
+    to_custody_type: Optional[str] = None
+    to_custody_id: Optional[UUID] = None
+    to_label: Optional[str] = None
+    from_condition: Optional[str] = None
+    to_condition: Optional[str] = None
+    quantity: int
+    reason: Optional[str] = None
+    source_type: Optional[str] = None
+    source_id: Optional[UUID] = None
+    performed_by: Optional[UUID] = None
+    occurred_at: datetime
+
+
+class LocationCount(BaseModel):
+    location: str
+    count: int
+
+
+class CustodySummary(BaseModel):
+    total: int
+    available: int
+    overdue: int
+    needs_reconciliation: int
+    by_custody: dict[str, int]
+    by_condition: dict[str, int]
+    by_location: list[LocationCount]

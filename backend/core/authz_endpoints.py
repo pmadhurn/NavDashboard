@@ -264,4 +264,16 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.authz.router.list_sessions": "users.sessions.read",  # GET /api/v1/authz/sessions
     "modules.authz.router.revoke_session": "users.sessions.revoke",  # DELETE /api/v1/authz/sessions/{session_id}
     "modules.authz.router.revoke_user_sessions": "users.sessions.revoke",  # POST /api/v1/authz/sessions/revoke-user/{id}
+    # --- inventory custody (Phase 1) ---------------------------------------
+    "modules.assets.router.custody_summary": "assets.read",
+    "modules.assets.router.list_locations": "stock.read",
+    "modules.assets.router.create_location": "stock.manage",
+    "modules.assets.router.delete_location": "stock.manage",
+    "modules.assets.router.list_customers": "stock.read",
+    "modules.assets.router.create_customer": "stock.manage",
+    "modules.assets.router.list_vendors": "stock.read",
+    "modules.assets.router.create_vendor": "stock.manage",
+    "modules.assets.router.asset_movements": "assets.read",
+    "modules.assets.router.move_asset_custody": "assets.custody",
+    "modules.assets.router.set_asset_condition": "assets.condition",
 }
