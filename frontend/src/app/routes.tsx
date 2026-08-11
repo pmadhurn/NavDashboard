@@ -50,6 +50,7 @@ const MyDayPage = lazy(() => import('@/modules/tasks/pages/MyDayPage'));
 const MyAttendancePage = lazy(() => import('@/modules/attendance/pages/MyAttendancePage'));
 const AttendanceBoardPage = lazy(() => import('@/modules/attendance/pages/AttendanceBoardPage'));
 const CompOffPage = lazy(() => import('@/modules/attendance/pages/CompOffPage'));
+const SystemHealthPage = lazy(() => import('@/modules/system/pages/SystemHealthPage'));
 const AccessControlPage = lazy(() => import('@/modules/access/pages/AccessControlPage'));
 const UpdatesPage = lazy(() => import('@/modules/updates/pages/UpdatesPage'));
 const LeadershipPage = lazy(() => import('@/modules/updates/pages/LeadershipPage'));
@@ -137,6 +138,7 @@ export function AppRoutes() {
           <Route path="backup" element={<RequirePermission permission="settings.read"><BackupPage /></RequirePermission>} />
           <Route path="reports" element={<RequirePermission permission="reports.read"><ReportsPage /></RequirePermission>} />
           <Route path="ai" element={<RequirePermission permission="ai.read"><AIChatPage /></RequirePermission>} />
+          <Route path="system" element={<RequirePermission permission="system.health"><SystemHealthPage /></RequirePermission>} />
           <Route path="settings/access" element={<RequirePermission permission="users.read"><AccessControlPage /></RequirePermission>} />
           <Route path="settings" element={<RequirePermission permission="settings.read"><SettingsPage /></RequirePermission>} />
         </Route>

@@ -190,6 +190,10 @@ GROUPS: list[PermissionGroup] = [
         PermissionDef("users.sessions.revoke", "Sign a user out everywhere", "users", dangerous=True),
         PermissionDef("users.roles.manage", "Create and edit roles", "users", dangerous=True),
     ]),
+    PermissionGroup("system", "System health",
+                    "Platform diagnostics — the Developer surface", [
+        PermissionDef("system.health", "See platform health and diagnostics", "system"),
+    ]),
     PermissionGroup("settings", "System settings", "", [
         PermissionDef("settings.read", "View system settings", "settings"),
         PermissionDef("settings.update", "Change system settings", "settings", dangerous=True),

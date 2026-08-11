@@ -11,16 +11,19 @@
 
 ## Current phase
 
-> **Phase 7 — Project archive. DONE.**
+> **Phase 8 — Developer system-health dashboard. DONE.**
 
-Lifecycle is UPCOMING / ACTIVE / ON_HOLD / COMPLETED / CLOSED / ARCHIVED.
-`GET /projects/{id}/archive` counts everything attached in one request;
-the detail page opens on Overview and has a Files & photos tab.
+`/system`, gated on `system.health` (Developer only). Eight checks: database,
+schema revision, file storage, AI service, authorization coverage, disk,
+activity, data consistency. Failures sort to the top; each states what
+happened, why it matters and what to do.
 
 ### Next action
-**Phase 8 — Developer system-health dashboard.** Plain-language status for
-database, storage (MinIO), AI service, migrations, authz coverage and recent
-errors. Each problem states what happened, why, and what to do.
+**Phase 9 — WhatsApp sharing that carries content.** `ShareButton` currently
+sends a title and a link. Give each page a builder that produces a readable
+summary — finance figures, device status, project update, inventory position —
+footed with "Shared via NavDashboard.com", and built from data the sharer is
+permitted to see.
 
 ---
 
@@ -36,8 +39,8 @@ errors. Each problem states what happened, why, and what to do.
 | 5 | Role dashboards + Admin "View as" | **done** |
 | 6 | Finance, built for a phone | **done** |
 | 7 | Project archive | **done** |
-| 8 | Developer system-health dashboard | **next** |
-| 9 | WhatsApp sharing that carries content | not started |
+| 8 | Developer system-health dashboard | **done** |
+| 9 | WhatsApp sharing that carries content | **next** |
 | 10 | Mobile, polish and the sweep | not started |
 | 11 | Deployment | not started |
 
@@ -67,7 +70,7 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
 | `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
 | `scripts/verify-tasks.py` | tasks derive and self-clear | 18/18 |
-| `scripts/audit-guards.py` | every operation is mapped | 267 ops, **0 unmapped** |
+| `scripts/audit-guards.py` | every operation is mapped | 268 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 

@@ -29,6 +29,7 @@ import {
   SearchOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  HeartOutlined,
   CheckCircleOutlined,
   InboxOutlined,
   AppstoreAddOutlined,
@@ -201,6 +202,8 @@ export const WORKSPACES: Workspace[] = [
     icon: <SafetyOutlined />,
     items: [
       { key: '/settings/access', icon: <SafetyOutlined />, label: 'Access Control', permission: 'users.read' },
+      // Developer surface: diagnostics do not travel with the Admin account.
+      { key: '/system', icon: <HeartOutlined />, label: 'System Health', permission: 'system.health' },
       { key: '/settings', icon: <SettingOutlined />, label: 'Users & Settings', permission: 'settings.read' },
       { key: '/audit', icon: <AuditOutlined />, label: 'Audit Trail', permission: 'audit.read' },
       { key: '/backup', icon: <CloudDownloadOutlined />, label: 'Backup', permission: 'backup.read' },
