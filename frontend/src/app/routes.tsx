@@ -12,7 +12,7 @@ import { useAuthStore, can } from '@/shared/stores/authStore';
 // This is what keeps leaflet (map, location-history) and recharts (dashboard,
 // troubleshooting) out of the initial bundle; they are the two heaviest deps
 // and most sessions never open those routes.
-const DashboardPage = lazy(() => import('@/modules/dashboard/pages/DashboardPage'));
+const RoleHomePage = lazy(() => import('@/modules/dashboard/pages/RoleHomePage'));
 const DeviceListPage = lazy(() => import('@/modules/devices/pages/DeviceListPage'));
 const DeviceDetailPage = lazy(() => import('@/modules/devices/pages/DeviceDetailPage'));
 const CoupleListPage = lazy(() => import('@/modules/couples/pages/CoupleListPage'));
@@ -45,6 +45,7 @@ const FinancePage = lazy(() => import('@/modules/finance/pages/FinancePage'));
 const MyFinancePage = lazy(() => import('@/modules/finance/pages/MyFinancePage'));
 const ClaimsPage = lazy(() => import('@/modules/finance/pages/ClaimsPage'));
 const SettlementPage = lazy(() => import('@/modules/finance/pages/SettlementPage'));
+const DashboardPage = lazy(() => import('@/modules/dashboard/pages/DashboardPage'));
 const MyDayPage = lazy(() => import('@/modules/tasks/pages/MyDayPage'));
 const MyAttendancePage = lazy(() => import('@/modules/attendance/pages/MyAttendancePage'));
 const AttendanceBoardPage = lazy(() => import('@/modules/attendance/pages/AttendanceBoardPage'));
@@ -96,7 +97,8 @@ export function AppRoutes() {
     <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<DashboardPage />} />
+          <Route index element={<RoleHomePage />} />
+          <Route path="overview" element={<DashboardPage />} />
           <Route path="devices" element={<DeviceListPage />} />
           <Route path="devices/:id" element={<DeviceDetailPage />} />
           <Route path="couples" element={<CoupleListPage />} />

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useViewAsStore } from './viewAsStore'
 
 /**
  * A permission key from the backend catalog, e.g. 'devices.read',
@@ -88,8 +89,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
  */
 export function can(user: User | null, key: PermissionKey): boolean {
   if (!user) return false
+
+  // While previewing another role, answer as that role would. This narrows the
+  // UI only — every request still carries the real identity and the server
+  // still enforces it, so a preview can never grant anything.
+  const preview = viewAsPermissions()
+  if (preview) return preview.includes(key)
+
   if (user.role === 'ADMIN') return true
   return Array.isArray(user.permissions) && user.permissions.includes(key)
+}
+
+/** The active preview, or null. Direct import: viewAsStore imports nothing
+ *  from here, so there is no cycle to work around. */
+function viewAsPermissions(): string[] | null {
+  return useViewAsStore.getState().permissions
 }
 
 /** True if the user holds every one of `keys`. */

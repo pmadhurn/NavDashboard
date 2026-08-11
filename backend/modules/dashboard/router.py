@@ -73,3 +73,29 @@ async def pair_status(
     current_user=Depends(get_current_user),
 ):
     return await service.get_pair_status_data(db)
+
+
+# --- role homes (Phase 5) ---------------------------------------------------
+
+
+@router.get("/home-for-me")
+async def home_for_me(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Which home this person should land on, and its numbers.
+
+    One request, because the client cannot know which home to ask for until the
+    server tells it — and two round-trips would show the wrong page first.
+    """
+    from modules.dashboard import role_service
+
+    home = await role_service.resolve_home(db, current_user)
+    data = {}
+    if home == "inventory":
+        data = await role_service.inventory_home(db)
+    elif home == "finance":
+        data = await role_service.finance_home(db)
+    elif home == "rnd":
+        data = await role_service.rnd_home(db)
+    return {"home": home, "data": data}

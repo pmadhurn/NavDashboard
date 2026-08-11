@@ -297,4 +297,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.tasks.router.my_notifications": AUTHENTICATED,
     "modules.tasks.router.mark_all_read": AUTHENTICATED,
     "modules.tasks.router.mark_one_read": AUTHENTICATED,
+    # Which home to show is a fact about the caller, like /auth/me.
+    "modules.dashboard.router.home_for_me": AUTHENTICATED,
 }

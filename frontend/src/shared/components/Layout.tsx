@@ -5,6 +5,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopNav, { TOPNAV_HEIGHT } from './TopNav';
 import MobileTabBar, { TABBAR_HEIGHT } from './MobileTabBar';
+import ViewAsBar from './ViewAsBar';
 import { useUiStore } from '@/shared/stores/uiStore';
 import { useAuthStore } from '@/shared/stores/authStore';
 import { useCurrentUser } from '@/modules/auth/hooks/useAuth';
@@ -129,6 +130,7 @@ export default function Layout() {
       </AntLayout>
 
       {isMobile && <MobileTabBar />}
+      <ViewAsBar />
     </AntLayout>
   );
 }
