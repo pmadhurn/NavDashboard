@@ -43,6 +43,17 @@ class DeviceResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
+    # --- inventory custody (Phase 3) ---
+    # The same physical thing, seen from the other side. Device Management owns
+    # the technical identity; Inventory owns where it is and who has it. These
+    # are read from the linked asset so there is one answer, not two.
+    asset_id: Optional[UUID] = None
+    asset_code: Optional[str] = None
+    custody_type: Optional[str] = None
+    custody_label: Optional[str] = None
+    condition: Optional[str] = None
+    is_available: Optional[bool] = None
+
     model_config = {"from_attributes": True}
 
     @model_validator(mode="after")

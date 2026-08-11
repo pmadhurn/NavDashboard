@@ -111,6 +111,20 @@ async def sync_device_asset(db: AsyncSession, device) -> None:
         )
         if clash.scalar_one_or_none():
             code = await _next_asset_code(db)
+        # A new device lands in the default stock location, not in limbo. The
+        # custody column defaults to LOCATION but the id does not default to
+        # anything, so without this the item reads as "in stock" — nowhere.
+        from modules.assets.custody_models import AssetMovement, StockLocation
+
+        location_id = (
+            await db.execute(
+                select(StockLocation.id)
+                .where(StockLocation.deleted_at.is_(None))
+                .order_by(StockLocation.is_default.desc(), StockLocation.sort_order)
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+
         asset = Asset(
             asset_code=code,
             name=name,
@@ -120,8 +134,26 @@ async def sync_device_asset(db: AsyncSession, device) -> None:
             quantity=1,
             status="IN_OFFICE",
             device_id=device.id,
+            custody_type="LOCATION",
+            custody_id=location_id,
+            condition="OK",
         )
         db.add(asset)
+        await db.flush()
+        # Opening row, so a device's item has a history from the moment it exists.
+        db.add(
+            AssetMovement(
+                asset_id=asset.id,
+                event_type="RECEIVED",
+                to_custody_type="LOCATION",
+                to_custody_id=location_id,
+                to_condition="OK",
+                quantity=1,
+                reason=f"Added with device {device.serial_number}",
+                source_type="device",
+                source_id=device.id,
+            )
+        )
         await db.commit()
     else:
         if asset.deleted_at is not None:
@@ -196,7 +228,6 @@ async def list_assets(
     params: PaginationParams,
     search: Optional[str] = None,
     category_id: Optional[UUID] = None,
-    status: Optional[str] = None,
     project_id: Optional[UUID] = None,
     source: Optional[str] = None,  # 'device' | 'equipment' (non-device)
     custody_type: Optional[str] = None,
@@ -217,10 +248,10 @@ async def list_assets(
         )
     if category_id:
         stmt = stmt.where(Asset.category_id == category_id)
-    if status:
-        stmt = stmt.where(Asset.status == status)
     if project_id:
-        stmt = stmt.where(Asset.current_project_id == project_id)
+        stmt = stmt.where(
+            Asset.custody_type == "PROJECT", Asset.custody_id == project_id
+        )
     if source == "device":
         stmt = stmt.where(Asset.device_id.isnot(None))
     elif source == "equipment":
@@ -270,13 +301,14 @@ async def get_deployed(db: AsyncSession) -> list:
             groups[key] = {"project_id": pid, "project_name": name or "Unassigned", "items": []}
         return groups[key]
 
-    # Assets currently WITH_PROJECT
+    # Assets whose custody is a project — the custody column is the record now,
+    # not `status`.
     stmt = select(Asset).where(
-        Asset.deleted_at.is_(None), Asset.status == "WITH_PROJECT"
+        Asset.deleted_at.is_(None), Asset.custody_type == "PROJECT"
     )
     for a in (await db.execute(stmt)).scalars().all():
-        project = await db.get(Project, a.current_project_id) if a.current_project_id else None
-        g = _ensure(a.current_project_id, project.name if project else None)
+        project = await db.get(Project, a.custody_id) if a.custody_id else None
+        g = _ensure(a.custody_id, project.name if project else None)
         g["items"].append(
             DeployedItem(
                 type="device" if a.device_id else "asset",
@@ -332,10 +364,12 @@ async def quick_create_asset(
 async def available_quantity(db: AsyncSession, asset: Asset) -> int:
     """How many of this asset are currently free to issue.
 
-    Serialized: 1 if in the office, else 0. Bulk: total owned minus the quantity
-    currently out with clients (open outward movement items)."""
+    Serialized: 1 if it is in a stock location and in working order, else 0.
+    Bulk: total owned minus the quantity currently out with clients."""
+    from modules.assets.custody_service import is_available
+
     if asset.item_kind == "SERIALIZED":
-        return 1 if asset.status == "IN_OFFICE" else 0
+        return 1 if is_available(asset) else 0
     from modules.projects.models import EquipmentMovementItem
 
     stmt = select(func.coalesce(func.sum(EquipmentMovementItem.quantity), 0)).where(
@@ -426,7 +460,7 @@ async def create_asset(db: AsyncSession, body: AssetCreate, user_id: UUID) -> As
     await db.refresh(asset)
 
     await record_asset_event(
-        db, asset.id, "CREATED", user_id, new_status=asset.status, commit=False
+        db, asset.id, "CREATED", user_id, new_status=asset.condition, commit=False
     )
     await record_audit(
         db,
@@ -444,32 +478,15 @@ async def update_asset(
 ) -> AssetResponse:
     asset = await get_asset(db, asset_id)
 
-    if body.status and body.status not in VALID_STATUSES:
-        raise BadRequestException(f"status must be one of {sorted(VALID_STATUSES)}")
     if body.item_kind and body.item_kind not in VALID_KINDS:
         raise BadRequestException(f"item_kind must be one of {sorted(VALID_KINDS)}")
 
-    old_status = asset.status
-    status_note = body.status_note
-    update_data = body.model_dump(exclude_unset=True, exclude={"status_note"})
+    update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(asset, field, value)
     asset.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(asset)
-
-    if body.status and body.status != old_status:
-        await record_asset_event(
-            db,
-            asset.id,
-            "STATUS_CHANGE",
-            user_id,
-            old_status=old_status,
-            new_status=body.status,
-            project_id=asset.current_project_id,
-            person_id=asset.current_person_id,
-            note=status_note,
-        )
 
     await record_audit(
         db,
@@ -477,7 +494,7 @@ async def update_asset(
         entity_type="asset",
         entity_id=asset.id,
         user_id=user_id,
-        new_values={k: str(v) for k, v in update_data.items()},
+        new_values=update_data,
     )
     return AssetResponse.model_validate(asset)
 
@@ -542,13 +559,19 @@ async def create_report(
     await db.commit()
     await db.refresh(report)
 
-    # A damage report flips the asset status and records history
+    # A damage report sets the item's condition, through the ledger so the
+    # change appears in its history like every other one.
     if body.report_type == "DAMAGED" and body.asset_id:
+        from modules.assets import custody_service
+
         asset = await get_asset(db, body.asset_id)
-        if asset.status != "DAMAGED":
-            old_status = asset.status
-            asset.status = "DAMAGED"
-            await db.commit()
+        if asset.condition != "DAMAGED":
+            old_status = asset.condition
+            await custody_service.set_condition(
+                db, asset, condition="DAMAGED",
+                reason=body.title, source_type="asset_report",
+                user_id=user_id,
+            )
             await record_asset_event(
                 db,
                 asset.id,

@@ -65,6 +65,24 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Default admin creation failed: {e}")
 
+    # A device with no inventory record is invisible to whoever is responsible
+    # for the physical thing. The mirror is created on device write, but rows
+    # predating that — or created while the mirror was failing — would stay
+    # missing forever. Reconciling at startup makes the guarantee hold rather
+    # than depend on someone remembering to press a button.
+    try:
+        async with async_session_factory() as db:
+            from modules.assets.service import backfill_device_assets
+
+            result = await backfill_device_assets(db)
+            if result["synced"]:
+                logger.info(
+                    "Linked %d device(s) into inventory that had no record.",
+                    result["synced"],
+                )
+    except Exception as e:
+        logger.error(f"Device/inventory reconciliation failed: {e}")
+
     # Refuse to serve if any operation lacks a permission mapping. This is what
     # makes the central map in core/authz_endpoints.py safe: an endpoint added
     # without a permission stops the app rather than shipping unguarded.

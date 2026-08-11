@@ -11,15 +11,17 @@
 
 ## Current phase
 
-> **Phase 2 — Movement. DONE.**
+> **Phase 3 — Device Management ↔ Inventory. DONE.**
 
 ### Next action
-**Phase 3 — Device Management ↔ Inventory, one identity.** A device creates or
-links exactly one asset automatically (there is already
-`POST /assets/backfill-devices` and `sync_device_asset`); make it automatic on
-device create, and make custody changes visible in the device view. No device
-should exist in one system and not the other. Then drop `assets.status`, which
-Phase 1 kept for one release and nothing but `_legacy_status()` now writes.
+**Phase 4 — Tasks, notifications, engineer home.** A `notifications` table and
+a derived task list: attendance not submitted, project update pending, expense
+pending, equipment overdue, handover awaiting acceptance. Then make the
+engineer/rigger home BE that list — open, see what is owed, clear it.
+
+> `assets.status` still exists but is now written only by
+> `custody_service._legacy_status()` and read by nothing that makes a decision.
+> Drop the column in Phase 10 once a release has passed.
 
 ---
 
@@ -30,8 +32,8 @@ Phase 1 kept for one release and nothing but `_legacy_status()` now writes.
 | 0 | Foundation, branding, cleanup | **done** |
 | 1 | Inventory core: custody, locations, condition | **done** |
 | 2 | Movement: outward, inward, handover, bundles | **done** |
-| 3 | Device Management ↔ Inventory, one identity | **next** |
-| 4 | Tasks, notifications, engineer home | not started |
+| 3 | Device Management ↔ Inventory, one identity | **done** |
+| 4 | Tasks, notifications, engineer home | **next** |
 | 5 | Role dashboards + Admin "View as" | not started |
 | 6 | Finance, built for a phone | not started |
 | 7 | Project archive | not started |

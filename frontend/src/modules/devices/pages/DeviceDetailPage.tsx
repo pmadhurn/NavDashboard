@@ -105,6 +105,18 @@ export default function DeviceDetailPage() {
     { label: 'Device Type', value: device.device_type },
     { label: 'Status', value: device.status },
     { label: 'Couple', value: device.couple_id || 'Unassigned' },
+    // Where the physical thing is, read from its inventory record. Device
+    // Management owns the technical identity; Inventory owns custody. Showing
+    // it here means nobody has to check two screens to answer one question.
+    {
+      label: 'Where it is',
+      value: device.custody_label ?? (device.custody_type === 'UNKNOWN' ? 'Unknown' : '—'),
+    },
+    {
+      label: 'Condition',
+      value: device.condition ?? '—',
+    },
+    { label: 'Inventory code', value: device.asset_code ?? '—' },
     { label: 'Handling Person', value: device.handling_person_id || 'None' },
     { label: 'Created', value: formatDateTime(device.created_at) },
     { label: 'Updated', value: device.updated_at ? formatDateTime(device.updated_at) : '—' },

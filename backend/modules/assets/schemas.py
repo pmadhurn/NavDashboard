@@ -45,13 +45,19 @@ class AssetCreate(BaseModel):
 
 
 class AssetUpdate(BaseModel):
+    """Descriptive fields only.
+
+    Custody and condition are changed through their own endpoints, which write
+    the movement ledger. A settable `status` that nothing reads is how two
+    sources of truth come back.
+    """
+
     name: Optional[str] = None
     asset_code: Optional[str] = None
     category_id: Optional[UUID] = None
     item_kind: Optional[str] = None
     serial_number: Optional[str] = None
     quantity: Optional[int] = None
-    status: Optional[str] = None
     current_project_id: Optional[UUID] = None
     current_person_id: Optional[UUID] = None
     purchase_date: Optional[datetime] = None
@@ -60,7 +66,6 @@ class AssetUpdate(BaseModel):
     tags: Optional[dict] = None
     tag_identifiers: Optional[dict] = None
     custom_fields: Optional[dict] = None
-    status_note: Optional[str] = None  # recorded in history when status changes
 
 
 class AssetResponse(BaseModel):

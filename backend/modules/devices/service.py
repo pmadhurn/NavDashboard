@@ -29,6 +29,40 @@ def _to_response(device: Device) -> DeviceResponse:
     return DeviceResponse.model_validate(device, from_attributes=True)
 
 
+async def attach_custody(db: AsyncSession, responses) -> None:
+    """Fill each device's custody from its linked asset.
+
+    One physical thing, one answer. Reading it here rather than duplicating
+    custody onto `devices` is what stops the two systems disagreeing.
+    """
+    from modules.assets import custody_service
+    from modules.assets.models import Asset
+
+    items = list(responses)
+    ids = [r.id for r in items]
+    if not ids:
+        return
+
+    rows = (
+        await db.execute(
+            select(Asset).where(Asset.device_id.in_(ids), Asset.deleted_at.is_(None))
+        )
+    ).scalars().all()
+    await custody_service.enrich(db, rows)
+    by_device = {str(a.device_id): a for a in rows}
+
+    for r in items:
+        a = by_device.get(str(r.id))
+        if not a:
+            continue
+        r.asset_id = a.id
+        r.asset_code = a.asset_code
+        r.custody_type = a.custody_type
+        r.custody_label = getattr(a, "custody_label", None)
+        r.condition = a.condition
+        r.is_available = getattr(a, "is_available", None)
+
+
 async def _mirror_device_asset(db: AsyncSession, device: Device | None) -> None:
     """Best-effort: keep the unified-inventory mirror asset in sync. Never let a
     mirror failure break a device operation."""
@@ -51,14 +85,18 @@ async def list_devices(
     if filters:
         query = apply_filters(query, Device, filters)
     query = query.order_by(Device.created_at.desc())
-    return await paginate(db, query, params, DeviceResponse)
+    page = await paginate(db, query, params, DeviceResponse)
+    await attach_custody(db, page.items)
+    return page
 
 
 async def get_device(db: AsyncSession, device_id: UUID) -> DeviceResponse:
     device = await repository.get_by_id(db, device_id)
     if not device:
         raise NotFoundException("Device not found")
-    return _to_response(device)
+    response = _to_response(device)
+    await attach_custody(db, [response])
+    return response
 
 
 async def create_device(
