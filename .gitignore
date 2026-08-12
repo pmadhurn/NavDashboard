@@ -43,3 +43,8 @@ venv
 temperate
 frontend/.env
 frontend/.env
+
+# Browser-test scratch: a minted admin JWT and an /auth/me dump.
+# Never committable — see docs/STATUS.md for how they are generated.
+tok.txt
+user.json
