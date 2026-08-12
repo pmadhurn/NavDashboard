@@ -2,7 +2,7 @@
 
 **Read this first.** One screen, always current. Update it at the end of every working block.
 
-**Last updated:** 2026-08-11 (Phase 0 done)
+**Last updated:** 2026-08-12 — all phases done
 **Branch:** `navos/step-1-route-test`
 **Live:** https://nav.madhur.dev (loopback `127.0.0.1:8085`)
 **Plan:** [`PLAN.md`](./PLAN.md)
@@ -11,17 +11,15 @@
 
 ## Current phase
 
-> **Phase 10 — Mobile, polish, the sweep. DONE.**
+> **All 12 phases DONE.** See [`DEPLOYMENT.md`](./DEPLOYMENT.md) before going live.
 
-Tables become cards below 768px. `assets.status` is dropped — custody is the
-only answer. `scripts/polish-sweep.mjs` walks 42 routes x 2 themes at 390px and
-checks for horizontal overflow, stuck spinners, blank pages and console errors:
-**84 checks, 0 problems.**
-
-### Next action
-**Phase 11 — Deployment.** Purge demo data (`scripts/purge-demo-data.py
---confirm`), confirm backup covers every table, re-check secrets, then push to
-GitHub.
+### Next action — for the humans, not the code
+1. **Revoke the old Cloudflare tunnel token.** It is still valid and still in git
+   history; removing it from `docker-compose.yml` did not revoke it.
+2. **Rotate `SECRET_KEY`.**
+3. **Purge demo data**: `scripts/purge-demo-data.py --confirm`.
+4. **Link each personnel record to a login** — without it a person has no
+   attendance, no tasks and no equipment custody. The most common setup mistake.
 
 ---
 
@@ -40,7 +38,7 @@ GitHub.
 | 8 | Developer system-health dashboard | **done** |
 | 9 | WhatsApp sharing that carries content | **done** |
 | 10 | Mobile, polish and the sweep | **done** |
-| 11 | Deployment | **next** |
+| 11 | Deployment | **done** |
 
 ---
 
