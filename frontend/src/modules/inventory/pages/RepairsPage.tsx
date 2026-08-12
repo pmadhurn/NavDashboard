@@ -14,7 +14,8 @@ import { usePermission } from '@/shared/stores/authStore';
 import { usePersonnelList } from '@/modules/personnel/hooks/usePersonnel';
 import { useProjects } from '@/modules/projects/hooks/useProjects';
 import { useAssets } from '../hooks/useAssets';
-import { useStockLocations, useVendors } from '../hooks/useCustody';
+import CreatableSelect from '@/shared/components/CreatableSelect';
+import { useCreateVendor, useStockLocations, useVendors } from '../hooks/useCustody';
 import {
   REPAIR_STATUS_COLOR,
   REPAIR_STATUS_LABEL,
@@ -123,6 +124,7 @@ function RepairCard({ r }: { r: Repair }) {
   const [locationId, setLocationId] = useState<string>();
   const { data: vendors } = useVendors();
   const { data: locations } = useStockLocations();
+  const createVendor = useCreateVendor();
   const send = useSendForRepair();
   const complete = useCompleteRepair();
   const canManage = usePermission('assets.repairs');
@@ -186,14 +188,14 @@ function RepairCard({ r }: { r: Repair }) {
             )}
             {mode === 'send' && (
               <>
-                <Select
+                <CreatableSelect
                   value={vendorId}
                   onChange={setVendorId}
-                  allowClear
                   placeholder="Vendor (optional)"
-                  size="small"
+                  noun="vendor"
+                  createPermission="stock.manage"
+                  onCreate={(name) => createVendor.mutateAsync({ name })}
                   options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))}
-                  notFoundContent="None added yet"
                 />
                 <InputNumber
                   value={cost}

@@ -186,6 +186,24 @@ export function useCreateLocation() {
   });
 }
 
+export function useCreateCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string }) =>
+      api.post<Party>('/assets/customers', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['assets', 'customers'] }),
+  });
+}
+
+export function useCreateVendor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string }) =>
+      api.post<Party>('/assets/vendors', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['assets', 'vendors'] }),
+  });
+}
+
 export function useDeleteLocation() {
   const qc = useQueryClient();
   return useMutation({

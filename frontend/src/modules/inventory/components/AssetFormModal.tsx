@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Select, Switch } from 'antd';
+import { Switch } from 'antd';
 import GlassModal from '@/shared/components/GlassModal';
 import GlassButton from '@/shared/components/GlassButton';
 import GlassInput from '@/shared/components/GlassInput';
+import CreatableSelect from '@/shared/components/CreatableSelect';
 import {
   useAssetCategories,
   useCreateAsset,
@@ -17,7 +18,6 @@ interface Props {
 export default function AssetFormModal({ open, onClose }: Props) {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState<string | undefined>();
-  const [newCategory, setNewCategory] = useState('');
   const [isBulk, setIsBulk] = useState(false);
   const [quantity, setQuantity] = useState('1');
   const [serialNumber, setSerialNumber] = useState('');
@@ -31,7 +31,6 @@ export default function AssetFormModal({ open, onClose }: Props) {
   const reset = () => {
     setName('');
     setCategoryId(undefined);
-    setNewCategory('');
     setIsBulk(false);
     setQuantity('1');
     setSerialNumber('');
@@ -41,14 +40,9 @@ export default function AssetFormModal({ open, onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
-    let finalCategoryId = categoryId;
-    if (!finalCategoryId && newCategory.trim()) {
-      const category = await createCategory.mutateAsync({ name: newCategory.trim() });
-      finalCategoryId = category.id;
-    }
     await createAsset.mutateAsync({
       name: name.trim(),
-      category_id: finalCategoryId,
+      category_id: categoryId,
       item_kind: isBulk ? 'BULK' : 'SERIALIZED',
       quantity: isBulk ? parseInt(quantity, 10) || 1 : 1,
       serial_number: serialNumber.trim() || undefined,
@@ -96,30 +90,14 @@ export default function AssetFormModal({ open, onClose }: Props) {
         </div>
         <div>
           <label style={labelStyle}>Category</label>
-          <Select
-            className="dl-select"
-            style={{ width: '100%' }}
-            placeholder="Pick or type to create"
-            value={categoryId ?? (newCategory || undefined)}
-            showSearch
-            allowClear
+          <CreatableSelect
+            value={categoryId}
+            onChange={setCategoryId}
             options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))}
-            onSearch={setNewCategory}
-            onChange={(v) => {
-              setCategoryId(v);
-              if (v) setNewCategory('');
-            }}
-            onClear={() => {
-              setCategoryId(undefined);
-              setNewCategory('');
-            }}
-            notFoundContent={
-              newCategory ? (
-                <div style={{ padding: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-                  New category "{newCategory}" will be created
-                </div>
-              ) : null
-            }
+            noun="category"
+            placeholder="Select a category"
+            createPermission="assets.categories"
+            onCreate={async (name) => createCategory.mutateAsync({ name })}
           />
         </div>
 

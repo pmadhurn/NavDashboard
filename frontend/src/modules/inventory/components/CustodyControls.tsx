@@ -7,6 +7,7 @@ import GlassButton from '@/shared/components/GlassButton';
 import GlassModal from '@/shared/components/GlassModal';
 import EmptyState from '@/shared/components/EmptyState';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
+import CreatableSelect from '@/shared/components/CreatableSelect';
 import { usePermission } from '@/shared/stores/authStore';
 import { usePersonnelList } from '@/modules/personnel/hooks/usePersonnel';
 import { useProjects } from '@/modules/projects/hooks/useProjects';
@@ -18,6 +19,9 @@ import {
   Condition,
   CustodyType,
   useAssetMovements,
+  useCreateCustomer,
+  useCreateLocation,
+  useCreateVendor,
   useCustomers,
   useMoveCustody,
   useSetCondition,
@@ -92,6 +96,19 @@ export function MoveCustodyModal({
   const { data: projects } = useProjects({});
   const { data: customers } = useCustomers();
   const { data: vendors } = useVendors();
+  const createLocation = useCreateLocation();
+  const createCustomer = useCreateCustomer();
+  const createVendor = useCreateVendor();
+
+  // Locations, customers and vendors are data the user can extend from right
+  // here; people and projects are real records with their own creation flows.
+  const creatable: Partial<
+    Record<CustodyType, { noun: string; create: (name: string) => Promise<{ id: string }> }>
+  > = {
+    LOCATION: { noun: 'location', create: (name) => createLocation.mutateAsync({ name }) },
+    CUSTOMER: { noun: 'customer', create: (name) => createCustomer.mutateAsync({ name }) },
+    VENDOR: { noun: 'vendor', create: (name) => createVendor.mutateAsync({ name }) },
+  };
 
   const options =
     custodyType === 'LOCATION'
@@ -177,16 +194,28 @@ export function MoveCustodyModal({
         {needsHolder && (
           <div>
             <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Which one?</label>
-            <Select
-              value={holderId}
-              onChange={setHolderId}
-              options={options}
-              showSearch
-              optionFilterProp="label"
-              style={{ width: '100%' }}
-              placeholder={options.length ? 'Choose…' : 'Nothing to choose yet'}
-              notFoundContent="None added yet"
-            />
+            {creatable[custodyType] ? (
+              <CreatableSelect
+                value={holderId}
+                onChange={setHolderId}
+                options={options}
+                noun={creatable[custodyType]!.noun}
+                onCreate={creatable[custodyType]!.create}
+                createPermission="stock.manage"
+                placeholder={options.length ? 'Choose…' : 'Nothing to choose yet'}
+              />
+            ) : (
+              <Select
+                value={holderId}
+                onChange={setHolderId}
+                options={options}
+                showSearch
+                optionFilterProp="label"
+                style={{ width: '100%' }}
+                placeholder={options.length ? 'Choose…' : 'Nothing to choose yet'}
+                notFoundContent="None added yet"
+              />
+            )}
           </div>
         )}
 
