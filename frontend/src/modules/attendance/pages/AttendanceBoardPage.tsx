@@ -68,7 +68,17 @@ export default function AttendanceBoardPage() {
               onChange={(m) => m && setMonth(m)}
               allowClear={false}
             />
-            <ShareButton title={`Attendance ${month.format('MMMM YYYY')}`} url="/attendance" />
+            <ShareButton
+              title={`Attendance — ${month.format('MMMM YYYY')}`}
+              url="/attendance"
+              lines={[
+                { label: 'People with entries', value: byPerson.length },
+                { label: 'Days logged', value: (rows ?? []).length },
+              ]}
+              bullets={byPerson.slice(0, 12).map(
+                ([, p]) => `${p.name}: ${p.days.size} day${p.days.size === 1 ? '' : 's'} logged`
+              )}
+            />
           </div>
         }
       />

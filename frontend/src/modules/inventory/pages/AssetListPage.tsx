@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import dayjs from 'dayjs';
 import { Select, Tabs } from 'antd';
 import {
   PlusOutlined,
@@ -295,12 +296,28 @@ function AssetsTab() {
 }
 
 export default function AssetListPage() {
+  // Same query as the tab below; React Query dedupes, so this costs nothing
+  // and keeps the share summary beside the button that sends it.
+  const { data: summary } = useCustodySummary();
   return (
     <div>
       <PageHeader
         title="Inventory"
         subtitle="Every item in the office — equipment, cables, tools"
-        actions={<ShareButton title="Inventory" url="/inventory/assets" />}
+        actions={<ShareButton
+          title="Inventory position"
+          subtitle={dayjs().format('D MMMM YYYY')}
+          url="/inventory/assets"
+          lines={[
+            { label: 'Total items', value: summary?.total },
+            { label: 'Available', value: summary?.available },
+            { label: 'With people', value: summary?.by_custody?.PERSON },
+            { label: 'At customer sites', value: summary?.by_custody?.CUSTOMER },
+            { label: 'Damaged', value: summary?.by_condition?.DAMAGED },
+            { label: 'Overdue', value: summary?.overdue },
+            { label: 'Location unknown', value: summary?.needs_reconciliation },
+          ]}
+        />}
       />
       <Tabs
         defaultActiveKey="assets"

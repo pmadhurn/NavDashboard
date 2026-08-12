@@ -134,8 +134,15 @@ export default function DeviceDetailPage() {
         actions={
           <>
             <ShareButton
-              title={`Device ${device.serial_number} (${device.device_type}) — ${device.status}`}
+              title={`Device ${device.serial_number}`}
+              subtitle={device.device_type}
               url={`/devices/${device.id}`}
+              lines={[
+                { label: 'Status', value: device.status },
+                { label: 'Where it is', value: device.custody_label },
+                { label: 'Condition', value: device.condition },
+                { label: 'Inventory code', value: device.asset_code },
+              ]}
             />
             <GlassButton icon={<SwapOutlined />} onClick={openStatusModal}>
               Change Status

@@ -101,7 +101,22 @@ export default function LeadershipPage() {
         title="Leadership"
         icon={<CrownOutlined />}
         subtitle={`Everything at a glance · updated ${dayjs(data.generated_at).fromNow()}`}
-        actions={<ShareButton title="NavDashboard leadership summary" url="/leadership" />}
+        actions={<ShareButton
+            title="NavDashboard — company snapshot"
+            subtitle={dayjs(data.generated_at).format('D MMMM YYYY, HH:mm')}
+            url="/leadership"
+            lines={[
+              { label: 'On field today', value: `${data.on_field_today} of ${data.people_total}` },
+              { label: 'In office', value: data.in_office_today },
+              { label: 'Not logged', value: data.not_logged_today },
+              { label: 'Active projects', value: data.active_projects },
+              { label: 'Devices working', value: `${data.devices_working}/${data.devices_total}` },
+              { label: 'Open issues', value: data.open_errors },
+              { label: 'Equipment out', value: data.assets_deployed },
+              { label: 'Spend this month', value: inr(data.spend_this_month) },
+              { label: 'Pending claims', value: `${data.pending_claims} (${inr(data.pending_claim_value)})` },
+            ]}
+          />}
       />
 
       {/* People today */}

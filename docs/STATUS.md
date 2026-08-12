@@ -11,19 +11,18 @@
 
 ## Current phase
 
-> **Phase 8 — Developer system-health dashboard. DONE.**
+> **Phase 9 — WhatsApp sharing that carries content. DONE.**
 
-`/system`, gated on `system.health` (Developer only). Eight checks: database,
-schema revision, file storage, AI service, authorization coverage, disk,
-activity, data consistency. Failures sort to the top; each states what
-happened, why it matters and what to do.
+`ShareButton` now takes `subtitle`, `lines`, `bullets` and `note`, and builds a
+formatted message ending in "Shared via NavDashboard.com". Wired on leadership,
+inventory, my finance, attendance, device detail and asset detail.
+`scripts/share-preview.mjs` prints what each page would send.
 
 ### Next action
-**Phase 9 — WhatsApp sharing that carries content.** `ShareButton` currently
-sends a title and a link. Give each page a builder that produces a readable
-summary — finance figures, device status, project update, inventory position —
-footed with "Shared via NavDashboard.com", and built from data the sharer is
-permitted to see.
+**Phase 10 — Mobile, polish, the sweep.** Tables to cards below 768px, the
+inline-style token sweep, both themes on every surface, and a pass over the
+non-negotiables (N1–N5) page by page. Also drop `assets.status`, which nothing
+now reads.
 
 ---
 
@@ -40,8 +39,8 @@ permitted to see.
 | 6 | Finance, built for a phone | **done** |
 | 7 | Project archive | **done** |
 | 8 | Developer system-health dashboard | **done** |
-| 9 | WhatsApp sharing that carries content | **next** |
-| 10 | Mobile, polish and the sweep | not started |
+| 9 | WhatsApp sharing that carries content | **done** |
+| 10 | Mobile, polish and the sweep | **next** |
 | 11 | Deployment | not started |
 
 ---
@@ -91,7 +90,10 @@ curl -s http://127.0.0.1:8085/api/v1/auth/me -H "Authorization: Bearer $(cat tok
 3. **`app.router.dependencies.append()` after registration does nothing.** App-level dependencies go in the `FastAPI(...)` constructor.
 4. **Browser tests need `localStorage.auth_user` *and* an intercepted `/auth/me`** — `Layout`'s `useCurrentUser()` overwrites an injected persona otherwise, and every persona silently renders as admin.
 5. **The frontend is a static build.** Code changes need `docker compose -f docker-compose.yml -f docker-compose.tunnel.yml build frontend`, not a restart.
-6. **`nginx/default.conf` is a single-file bind mount.** `sed -i` changes the inode; the container keeps serving the old file until restarted.
+6. **The browser token expires.** A stale `tok.txt` makes every request 401; the
+   api client logs out and redirects, and Playwright reports "Execution context
+   was destroyed" with nothing about auth. Re-mint before debugging the harness.
+7. **`nginx/default.conf` is a single-file bind mount.** `sed -i` changes the inode; the container keeps serving the old file until restarted.
 
 ---
 

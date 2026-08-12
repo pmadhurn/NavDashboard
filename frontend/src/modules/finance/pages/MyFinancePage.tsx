@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import dayjs from 'dayjs';
 import { PlusOutlined, WalletOutlined, DollarOutlined } from '@ant-design/icons';
 import QuickExpense from '../components/QuickExpense';
 import PageHeader from '@/shared/components/PageHeader';
@@ -9,8 +10,9 @@ import GlassModal from '@/shared/components/GlassModal';
 import EmptyState from '@/shared/components/EmptyState';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import ShareButton from '@/shared/components/ShareButton';
+import { inr } from '@/shared/utils/share';
 import PersonPicker from '@/shared/components/PersonPicker';
-import { usePermission } from '@/shared/stores/authStore';
+import { usePermission, useAuthStore } from '@/shared/stores/authStore';
 import { formatDateTime } from '@/shared/utils/formatters';
 import {
   useMyFinance,
@@ -34,6 +36,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 }
 
 export default function MyFinancePage() {
+  const user = useAuthStore((st) => st.user);
   const { data: summary, isLoading } = useMyFinance();
   const { data: advances } = useAdvances({ personId: summary?.person_id ?? undefined });
   const { data: claims } = useClaims({ mine: true });
@@ -73,7 +76,23 @@ export default function MyFinancePage() {
         subtitle="Your advances, expenses, and what's still owed"
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
-            <ShareButton title="My finance summary" url="/finance/my" />
+            <ShareButton
+              title={`Finance — ${user?.full_name ?? 'me'}`}
+              subtitle={dayjs().format('D MMMM YYYY')}
+              url="/finance/my"
+              lines={[
+                { label: 'Advances received', value: inr(summary?.advances) },
+                { label: 'Spent', value: inr(summary?.spent) },
+                { label: 'Balance', value: inr(summary?.balance) },
+                { label: 'Awaiting reimbursement', value: inr(summary?.pending_total) },
+                { label: 'Expenses logged', value: summary?.expense_count },
+              ]}
+              note={
+                (summary?.balance ?? 0) < 0
+                  ? 'Out of pocket — reimbursement pending.'
+                  : undefined
+              }
+            />
             {canEdit && (
               <>
                 {/* Primary action: recording spending is what people open this

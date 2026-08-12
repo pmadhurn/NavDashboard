@@ -62,8 +62,15 @@ export default function AssetDetailPage() {
               condition={asset.condition}
             />
             <ShareButton
-              title={`Asset: ${asset.name} (${asset.asset_code})`}
+              title={asset.name}
+              subtitle={asset.asset_code}
               url={`/inventory/assets/${asset.id}`}
+              lines={[
+                { label: 'Where it is', value: asset.custody_label },
+                { label: 'Condition', value: asset.condition },
+                { label: 'Available', value: asset.is_available ? 'Yes' : 'No' },
+                { label: 'Serial', value: asset.serial_number },
+              ]}
             />
             <GlassButton
               variant="ghost"

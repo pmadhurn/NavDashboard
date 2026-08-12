@@ -1,38 +1,62 @@
 import { WhatsAppOutlined } from '@ant-design/icons';
 import GlassButton from './GlassButton';
+import { ShareLine, buildMessage, whatsappUrl } from '@/shared/utils/share';
 
 interface ShareButtonProps {
-  /** Text shown before the link, e.g. "Project: Mumbai POC". */
+  /** Heading of the message, e.g. "Marina Rooftop Rollout". */
   title: string;
-  /** Path or absolute URL to share. Defaults to the current page. */
+  /** Path or absolute URL. Defaults to the current page. */
   url?: string;
-  /** Extra lines appended after the title (e.g. a short summary). */
+  /** One line under the heading. */
+  subtitle?: string;
+  /** Label/value pairs — the figures that make the message worth sending. */
+  lines?: ShareLine[];
+  /** Free-form bullets, for lists rather than figures. */
+  bullets?: string[];
+  /** A closing sentence. */
+  note?: string;
+  /** Legacy: plain extra text. Superseded by `lines`. */
   details?: string;
   size?: 'sm' | 'md' | 'lg';
-  /** Icon-only compact mode. */
   compact?: boolean;
 }
 
 export function buildWhatsAppUrl(title: string, url?: string, details?: string): string {
-  const link = url
-    ? url.startsWith('http')
-      ? url
-      : `${window.location.origin}${url}`
-    : window.location.href;
-  const parts = [title, details, link].filter(Boolean);
-  return `https://wa.me/?text=${encodeURIComponent(parts.join('\n'))}`;
+  return whatsappUrl(buildMessage({ heading: title, note: details, url }));
 }
 
-/** Opens WhatsApp with a prefilled message linking to a section of the app. */
+/**
+ * Share to WhatsApp with content, not just a link.
+ *
+ * Most recipients have no login here — a customer, a manager in a group, a
+ * vendor. The figures travel in the message; the link is a footnote for the
+ * people who can follow it.
+ *
+ * The content is built from what the page already has, which is what the
+ * server already decided this user may see. Nothing is fetched, so nothing can
+ * be shared that the page itself would not show.
+ */
 export default function ShareButton({
   title,
   url,
+  subtitle,
+  lines,
+  bullets,
+  note,
   details,
   size = 'sm',
   compact = false,
 }: ShareButtonProps) {
   const handleShare = () => {
-    window.open(buildWhatsAppUrl(title, url, details), '_blank', 'noopener');
+    const message = buildMessage({
+      heading: title,
+      subheading: subtitle,
+      lines,
+      bullets,
+      note: note ?? details,
+      url,
+    });
+    window.open(whatsappUrl(message), '_blank', 'noopener');
   };
 
   return (
@@ -41,6 +65,7 @@ export default function ShareButton({
       size={size}
       icon={<WhatsAppOutlined />}
       onClick={handleShare}
+      title="Share a readable summary to WhatsApp"
     >
       {compact ? '' : 'Share'}
     </GlassButton>
