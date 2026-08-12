@@ -386,6 +386,72 @@ async def create_party(db: AsyncSession, kind: str, body, user_id: UUID):
     return row
 
 
+async def update_party(db: AsyncSession, kind: str, party_id: UUID, body, user_id: UUID):
+    model = _PARTY_MODELS[kind]
+    row = (
+        await db.execute(
+            select(model).where(model.id == party_id, model.deleted_at.is_(None))
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise NotFoundException(f"{kind[:-1].capitalize()} not found")
+    changes = body.model_dump(exclude_unset=True)
+    if "name" in changes and changes["name"] != row.name:
+        clash = (
+            await db.execute(select(model).where(model.name == changes["name"]))
+        ).scalar_one_or_none()
+        if clash:
+            raise ConflictException(f"{changes['name']!r} already exists")
+    old = {k: getattr(row, k) for k in changes}
+    for field, value in changes.items():
+        setattr(row, field, value)
+    await record_audit(
+        db, action="UPDATE", entity_type=kind[:-1],
+        entity_id=row.id, user_id=user_id, old_values=old, new_values=changes,
+    )
+    await db.commit()
+    await db.refresh(row)
+    return row
+
+
+async def delete_party(db: AsyncSession, kind: str, party_id: UUID, user_id: UUID) -> None:
+    model = _PARTY_MODELS[kind]
+    row = (
+        await db.execute(
+            select(model).where(model.id == party_id, model.deleted_at.is_(None))
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise NotFoundException(f"{kind[:-1].capitalize()} not found")
+
+    custody_type = "CUSTOMER" if kind == "customers" else "VENDOR"
+    held = (
+        await db.execute(
+            select(func.count())
+            .select_from(Asset)
+            .where(
+                Asset.custody_type == custody_type,
+                Asset.custody_id == party_id,
+                Asset.deleted_at.is_(None),
+            )
+        )
+    ).scalar_one()
+    if held:
+        raise ConflictException(
+            f"{held} item(s) are recorded with them. Resolve those first — "
+            "deleting the record would leave the items pointing at nothing."
+        )
+
+    from datetime import timezone
+
+    row.deleted_at = datetime.now(timezone.utc)
+    await record_audit(
+        db, action="DELETE", entity_type=kind[:-1],
+        entity_id=row.id, user_id=user_id, old_values={"name": row.name},
+    )
+    await db.commit()
+
+
 async def enrich(db: AsyncSession, assets) -> None:
     """Fill the two derived fields the ORM cannot: who holds it, and whether
     it is available.

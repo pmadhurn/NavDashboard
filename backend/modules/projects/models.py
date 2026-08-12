@@ -108,11 +108,15 @@ class ProjectPhase(Base, SoftDeleteMixin):
 class EquipmentMovement(Base):
     __tablename__ = "equipment_movements"
 
-    project_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("projects.id"), index=True, nullable=False
+    # Nullable since Plan V2 Phase 6: equipment also leaves for testing, POCs
+    # and demos that have no project. A DEPLOYMENT outward still requires one.
+    project_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("projects.id"), index=True, nullable=True
     )
     phase_id: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     direction: Mapped[str] = mapped_column(String(10), nullable=False)  # OUTWARD | INWARD
+    # Why it left the office: DEPLOYMENT | TESTING | POC | OTHER
+    purpose: Mapped[str] = mapped_column(String(20), default="DEPLOYMENT", nullable=False)
     movement_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -120,6 +124,9 @@ class EquipmentMovement(Base):
         PG_UUID(as_uuid=True), ForeignKey("personnel.id"), nullable=True
     )
     received_by_name: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    expected_return_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
 

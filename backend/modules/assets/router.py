@@ -6,13 +6,15 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.authz import user_has
 from core.database import get_db
 from core.dependencies import get_current_user
 from modules.auth.models import User
-from modules.assets import custody_service, movement_service, service
+from modules.assets import custody_service, movement_service, request_service, service
 from modules.assets.schemas import (
     AssetCategoryCreate,
     AssetCategoryResponse,
+    AssetCategoryUpdate,
     AssetCreate,
     AssetHistoryResponse,
     AssetMovementResponse,
@@ -31,9 +33,14 @@ from modules.assets.schemas import (
     HandoverCreate,
     HandoverRespond,
     HandoverResponse,
+    ItemRequestCreate,
+    ItemRequestResponse,
+    ItemRequestStatusChange,
+    ItemRequestUpdate,
     MoveCustodyRequest,
     PartyCreate,
     PartyResponse,
+    PartyUpdate,
     RepairResponse,
     ResolveBatchRequest,
     SendForRepair,
@@ -138,6 +145,16 @@ async def create_category(
     current_user: User = Depends(get_current_user),
 ):
     return await service.create_category(db, body)
+
+
+@router.put("/categories/{category_id}", response_model=AssetCategoryResponse)
+async def update_category(
+    category_id: UUID,
+    body: AssetCategoryUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await service.update_category(db, category_id, body)
 
 
 @router.delete("/categories/{category_id}")
@@ -259,6 +276,101 @@ async def create_vendor(
     user=Depends(get_current_user),
 ):
     return await custody_service.create_party(db, "vendors", body, user.id)
+
+
+@router.put("/vendors/{vendor_id}", response_model=PartyResponse)
+async def update_vendor(
+    vendor_id: UUID,
+    body: PartyUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return await custody_service.update_party(db, "vendors", vendor_id, body, user.id)
+
+
+@router.delete("/vendors/{vendor_id}", status_code=204)
+async def delete_vendor(
+    vendor_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    await custody_service.delete_party(db, "vendors", vendor_id, user.id)
+
+
+@router.put("/customers/{customer_id}", response_model=PartyResponse)
+async def update_customer(
+    customer_id: UUID,
+    body: PartyUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return await custody_service.update_party(db, "customers", customer_id, body, user.id)
+
+
+@router.delete("/customers/{customer_id}", status_code=204)
+async def delete_customer(
+    customer_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    await custody_service.delete_party(db, "customers", customer_id, user.id)
+
+
+# --- required items (Plan V2 Phase 4) ---------------------------------------
+
+
+@router.get("/requests", response_model=list[ItemRequestResponse])
+async def list_item_requests(
+    status: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return await request_service.list_requests_enriched(db, status)
+
+
+@router.post("/requests", response_model=ItemRequestResponse, status_code=201)
+async def create_item_request(
+    body: ItemRequestCreate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    row = await request_service.create_request(db, body, user.id)
+    return (await request_service.enrich_requests(db, [row]))[0]
+
+
+@router.put("/requests/{request_id}", response_model=ItemRequestResponse)
+async def update_item_request(
+    request_id: UUID,
+    body: ItemRequestUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    may_manage = await user_has(db, user, "stock.requests.manage")
+    row = await request_service.update_request(
+        db, request_id, body, user.id, may_manage=may_manage
+    )
+    return (await request_service.enrich_requests(db, [row]))[0]
+
+
+@router.post("/requests/{request_id}/status", response_model=ItemRequestResponse)
+async def change_item_request_status(
+    request_id: UUID,
+    body: ItemRequestStatusChange,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    row = await request_service.change_status(db, request_id, body, user.id)
+    return (await request_service.enrich_requests(db, [row]))[0]
+
+
+@router.delete("/requests/{request_id}", status_code=204)
+async def delete_item_request(
+    request_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    may_manage = await user_has(db, user, "stock.requests.manage")
+    await request_service.delete_request(db, request_id, user.id, may_manage=may_manage)
 
 
 @router.get("/{asset_id}/movements", response_model=list[AssetMovementResponse])

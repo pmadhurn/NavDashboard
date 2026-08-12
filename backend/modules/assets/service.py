@@ -23,7 +23,6 @@ from modules.assets.schemas import (
 from shared.audit import record_audit
 from shared.pagination import PaginatedResponse, PaginationParams, paginate
 
-VALID_STATUSES = {"IN_OFFICE", "WITH_PROJECT", "WITH_PERSON", "DAMAGED", "LOST", "RETIRED"}
 DEVICE_CATEGORY_NAME = "LiFi Devices"
 VALID_KINDS = {"SERIALIZED", "BULK"}
 VALID_REPORT_TYPES = {"DAMAGED", "REQUIREMENT"}
@@ -206,6 +205,54 @@ async def create_category(db: AsyncSession, body: AssetCategoryCreate) -> AssetC
     return AssetCategoryResponse.model_validate(category)
 
 
+async def update_category(
+    db: AsyncSession, category_id: UUID, body
+) -> AssetCategoryResponse:
+    category = await db.get(AssetCategory, category_id)
+    if not category:
+        raise NotFoundException("Category not found")
+    changes = body.model_dump(exclude_unset=True)
+    if "name" in changes:
+        clash = (
+            await db.execute(
+                select(AssetCategory).where(
+                    func.lower(AssetCategory.name) == changes["name"].lower(),
+                    AssetCategory.id != category_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if clash:
+            raise ConflictException(f"A category named {changes['name']!r} already exists")
+    for field, value in changes.items():
+        setattr(category, field, value)
+    await db.commit()
+    await db.refresh(category)
+    return AssetCategoryResponse.model_validate(category)
+
+
+async def _assert_serial_policy(
+    db: AsyncSession,
+    category_id: Optional[UUID],
+    item_kind: str,
+    serial_number: Optional[str],
+) -> None:
+    """The category decides whether a serial is compulsory.
+
+    Enforced on the server because the form is not the only writer — imports,
+    device mirrors and quick-creates all land here too.
+    """
+    if not category_id:
+        return
+    category = await db.get(AssetCategory, category_id)
+    if not category or not category.requires_serial:
+        return
+    if item_kind != "SERIALIZED" or not (serial_number or "").strip():
+        raise BadRequestException(
+            f"Items in {category.name!r} must be tracked one-by-one with a "
+            "serial number — that is how this category is set up"
+        )
+
+
 async def delete_category(db: AsyncSession, category_id: UUID) -> None:
     category = await db.get(AssetCategory, category_id)
     if not category:
@@ -313,7 +360,7 @@ async def get_deployed(db: AsyncSession) -> list:
                 type="device" if a.device_id else "asset",
                 id=a.id,
                 label=f"{a.asset_code} {a.name}",
-                status=a.status,
+                status=a.condition,
                 custody=str(a.current_person_id) if a.current_person_id else None,
             )
         )
@@ -427,8 +474,7 @@ async def lookup_by_code(db: AsyncSession, code: str) -> AssetResponse:
 async def create_asset(db: AsyncSession, body: AssetCreate, user_id: UUID) -> AssetResponse:
     if body.item_kind not in VALID_KINDS:
         raise BadRequestException(f"item_kind must be one of {sorted(VALID_KINDS)}")
-    if body.status not in VALID_STATUSES:
-        raise BadRequestException(f"status must be one of {sorted(VALID_STATUSES)}")
+    await _assert_serial_policy(db, body.category_id, body.item_kind, body.serial_number)
 
     code = (body.asset_code or "").strip() or await _next_asset_code(db)
     exists = await db.execute(
@@ -444,11 +490,11 @@ async def create_asset(db: AsyncSession, body: AssetCreate, user_id: UUID) -> As
         item_kind=body.item_kind,
         serial_number=body.serial_number,
         quantity=body.quantity,
-        status=body.status,
         current_person_id=body.current_person_id,
         device_id=body.device_id,
         purchase_date=body.purchase_date,
         purchase_price=body.purchase_price,
+        vendor_id=body.vendor_id,
         notes=body.notes,
         tags=body.tags,
         tag_identifiers=body.tag_identifiers,
@@ -480,6 +526,14 @@ async def update_asset(
         raise BadRequestException(f"item_kind must be one of {sorted(VALID_KINDS)}")
 
     update_data = body.model_dump(exclude_unset=True)
+    # Re-check the serial rule against what the row will look like after the
+    # update — a category change alone can newly demand a serial.
+    await _assert_serial_policy(
+        db,
+        update_data.get("category_id", asset.category_id),
+        update_data.get("item_kind", asset.item_kind),
+        update_data.get("serial_number", asset.serial_number),
+    )
     for field, value in update_data.items():
         setattr(asset, field, value)
     asset.updated_at = datetime.now(timezone.utc)

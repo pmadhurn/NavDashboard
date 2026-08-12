@@ -21,6 +21,7 @@ from modules.projects.schemas import (
     MovementResponse,
     OutwardPreview,
     OutwardRequest,
+    StandaloneOutwardRequest,
     PhaseCreate,
     PhaseResponse,
     PhaseUpdate,
@@ -84,6 +85,47 @@ async def export_projects(
         media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# Movement endpoints that are not project-scoped. Also registered above
+# `/{project_id}` for the same declaration-order reason as /export.
+@router.post("/movements/outward", response_model=MovementResponse, status_code=201)
+async def standalone_outward(
+    body: StandaloneOutwardRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """An outward raised from Inventory: testing, POC, demo — or a deployment,
+    in which case a project is required and custody follows it."""
+    return await service.execute_outward(db, body.project_id, body, current_user.id)
+
+
+@router.post("/movements/outward/preview", response_model=OutwardPreview)
+async def standalone_outward_preview(
+    body: StandaloneOutwardRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await service.preview_outward(db, body.project_id, body.items)
+
+
+@router.get("/movements/open", response_model=list[MovementResponse])
+async def open_outwards(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Every outward with something still unresolved — what the office is owed."""
+    return await service.list_open_outwards(db)
+
+
+@router.get("/movements/{movement_id}", response_model=MovementResponse)
+async def get_movement(
+    movement_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """One movement in full — the gate pass, and the inward screen."""
+    return await service.get_movement(db, movement_id)
 
 
 @router.get("/{project_id}/archive")

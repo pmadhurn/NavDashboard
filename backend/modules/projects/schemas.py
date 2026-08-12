@@ -132,17 +132,24 @@ class MovementItemResponse(BaseModel):
     quantity: int
     condition_note: Optional[str] = None
     item_status: str
+    return_outcome: Optional[str] = None
+    outcome_note: Optional[str] = None
+    resolved_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
 
 class MovementResponse(BaseModel):
     id: UUID
+    project_id: Optional[UUID] = None
+    project_name: Optional[str] = None
     direction: str
+    purpose: str = "DEPLOYMENT"
     movement_date: datetime
     handled_by: Optional[UUID] = None
     handler: Optional[PersonBrief] = None
     received_by_name: Optional[str] = None
+    expected_return_date: Optional[datetime] = None
     notes: Optional[str] = None
     items: list[MovementItemResponse] = []
     created_at: datetime
@@ -211,7 +218,16 @@ class OutwardRequest(BaseModel):
     received_by_name: Optional[str] = None
     notes: Optional[str] = None
     phase_id: Optional[UUID] = None
+    purpose: str = "DEPLOYMENT"  # DEPLOYMENT | TESTING | POC | OTHER
+    expected_return_date: Optional[datetime] = None
     confirm: bool = False  # set true to proceed despite warnings
+
+
+class StandaloneOutwardRequest(OutwardRequest):
+    """An outward raised from Inventory rather than a project page. The
+    project is optional — compulsory only when the purpose is DEPLOYMENT."""
+
+    project_id: Optional[UUID] = None
 
 
 class OutwardLineResult(BaseModel):

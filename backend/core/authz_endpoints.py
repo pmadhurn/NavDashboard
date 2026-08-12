@@ -32,6 +32,7 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.assets.router.backfill_devices": "assets.backfill",  # POST /api/v1/assets/backfill-devices
     "modules.assets.router.list_categories": "assets.categories",  # GET /api/v1/assets/categories
     "modules.assets.router.create_category": "assets.categories",  # POST /api/v1/assets/categories
+    "modules.assets.router.update_category": "assets.categories",  # PUT /api/v1/assets/categories/{category_id}
     "modules.assets.router.delete_category": "assets.categories",  # DELETE /api/v1/assets/categories/{category_id}
     "modules.assets.router.deployed": "assets.read",  # GET /api/v1/assets/deployed
     "modules.assets.router.lookup_by_code": "assets.read",  # GET /api/v1/assets/lookup/{code}
@@ -269,6 +270,23 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.assets.router.create_customer": "stock.manage",
     "modules.assets.router.list_vendors": "stock.read",
     "modules.assets.router.create_vendor": "stock.manage",
+    "modules.assets.router.update_vendor": "stock.manage",
+    "modules.assets.router.delete_vendor": "stock.manage",
+    "modules.assets.router.update_customer": "stock.manage",
+    "modules.assets.router.delete_customer": "stock.manage",
+    # Standalone equipment movements (outward for testing/POC/deployment,
+    # gate pass, open-outwards list). Same key as the project-scoped flow.
+    "modules.projects.router.standalone_outward": "projects.equipment",
+    "modules.projects.router.standalone_outward_preview": "projects.equipment",
+    "modules.projects.router.open_outwards": "projects.read",
+    "modules.projects.router.get_movement": "projects.read",
+    # Required items: reading and asking are everyday acts; the lifecycle
+    # (approve/order/receive/reject) belongs to whoever runs the stock.
+    "modules.assets.router.list_item_requests": "stock.requests.read",
+    "modules.assets.router.create_item_request": "stock.requests.create",
+    "modules.assets.router.update_item_request": "stock.requests.create",
+    "modules.assets.router.change_item_request_status": "stock.requests.manage",
+    "modules.assets.router.delete_item_request": "stock.requests.create",
     "modules.assets.router.asset_movements": "assets.read",
     "modules.assets.router.move_asset_custody": "assets.custody",
     "modules.assets.router.set_asset_condition": "assets.condition",

@@ -54,6 +54,7 @@ from modules.assets.custody_models import (
     Vendor,
 )
 from modules.assets.models import Asset, AssetCategory, AssetHistory, AssetReport
+from modules.assets.request_models import ItemRequest
 from modules.documents.models import Document
 from modules.downloads.models import (
     DownloadCategory,
@@ -458,9 +459,9 @@ def _get_export_tables() -> list[dict]:
             "columns": [
                 "id", "asset_code", "name", "category_id", "item_kind",
                 "custody_type", "custody_id", "condition", "expected_return_date",
-                "serial_number", "quantity", "status", "current_project_id",
+                "serial_number", "quantity", "current_project_id",
                 "current_person_id", "device_id", "purchase_date", "purchase_price",
-                "notes", "tags", "tag_identifiers", "custom_fields",
+                "vendor_id", "notes", "tags", "tag_identifiers", "custom_fields",
                 "created_at", "updated_at",
             ],
         },
@@ -487,6 +488,16 @@ def _get_export_tables() -> list[dict]:
             "columns": [
                 "id", "report_type", "asset_id", "title", "details", "quantity",
                 "created_at", "updated_at",
+            ],
+        },
+        {
+            "name": "ItemRequests",
+            "key": "item_requests",
+            "model": ItemRequest,
+            "columns": [
+                "id", "title", "details", "quantity", "needed_by", "status",
+                "requested_by", "vendor_id", "estimated_cost", "status_note",
+                "resolved_by", "resolved_at", "created_at", "updated_at",
             ],
         },
         # --- Documents ----------------------------------------------------

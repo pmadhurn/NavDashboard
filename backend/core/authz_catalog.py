@@ -137,6 +137,10 @@ GROUPS: list[PermissionGroup] = [
                     "Where things are kept, and who we hand them to", [
         PermissionDef("stock.read", "View locations, customers and vendors", "stock"),
         PermissionDef("stock.manage", "Add and remove them", "stock", dangerous=True),
+        PermissionDef("stock.requests.read", "See the required-items list", "stock"),
+        PermissionDef("stock.requests.create", "Ask for an item to be bought", "stock"),
+        PermissionDef("stock.requests.manage",
+                      "Approve, order, receive or reject required items", "stock"),
     ]),
     PermissionGroup("materials", "Fitting materials", "Per-couple consumables (backend 'inventory')", [
         *_crud("materials", "fitting materials"),

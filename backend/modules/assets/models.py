@@ -19,6 +19,9 @@ class AssetCategory(Base):
         PG_UUID(as_uuid=True), ForeignKey("asset_categories.id"), nullable=True
     )
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # The Inventory Manager's call, per category: indoor/outdoor units and RF
+    # must carry a serial; patch cords and small items must not nag for one.
+    requires_serial: Mapped[bool] = mapped_column(default=False, nullable=False)
 
 
 class Asset(Base, SoftDeleteMixin, CustomFieldsMixin):
@@ -45,6 +48,11 @@ class Asset(Base, SoftDeleteMixin, CustomFieldsMixin):
     device_id: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     purchase_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     purchase_price: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
+    # Where it was bought. Optional on purpose — better recorded late than
+    # blocking the person adding the item.
+    vendor_id: Mapped[Optional[UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("vendors.id"), nullable=True
+    )
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     tags: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     tag_identifiers: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)

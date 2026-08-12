@@ -468,6 +468,14 @@ async def create_timeline_entry(
 
 # --- Equipment movements ---
 
+async def movement_response(db: AsyncSession, movement) -> MovementResponse:
+    resp = MovementResponse.model_validate(movement)
+    if movement.project_id:
+        project = await db.get(Project, movement.project_id)
+        resp.project_name = project.name if project else None
+    return resp
+
+
 async def list_movements(db: AsyncSession, project_id: UUID) -> list[MovementResponse]:
     await get_project(db, project_id)
     stmt = (
@@ -477,6 +485,34 @@ async def list_movements(db: AsyncSession, project_id: UUID) -> list[MovementRes
     )
     result = await db.execute(stmt)
     return [MovementResponse.model_validate(m) for m in result.scalars().all()]
+
+
+async def list_open_outwards(db: AsyncSession) -> list[MovementResponse]:
+    """Outward movements with at least one unresolved item — what the office
+    is still owed, across every project and every testing/POC trip."""
+    stmt = (
+        select(EquipmentMovement)
+        .join(EquipmentMovementItem)
+        .where(
+            EquipmentMovement.direction == "OUTWARD",
+            EquipmentMovementItem.return_outcome.is_(None),
+        )
+        .order_by(EquipmentMovement.movement_date.desc())
+        .distinct()
+    )
+    rows = (await db.execute(stmt)).scalars().all()
+    return [await movement_response(db, m) for m in rows]
+
+
+async def get_movement(db: AsyncSession, movement_id: UUID) -> MovementResponse:
+    movement = (
+        await db.execute(
+            select(EquipmentMovement).where(EquipmentMovement.id == movement_id)
+        )
+    ).scalar_one_or_none()
+    if not movement:
+        raise NotFoundException("Movement not found")
+    return await movement_response(db, movement)
 
 
 async def create_movement(
@@ -566,14 +602,15 @@ async def create_movement(
 
 # --- Outward form + inventory conflict engine ---
 
-async def preview_outward(db: AsyncSession, project_id: UUID, items: list):
+async def preview_outward(db: AsyncSession, project_id: Optional[UUID], items: list):
     """Analyse an outward form against live inventory without writing anything.
     Flags NEW_ITEM (not in inventory) and INSUFFICIENT (qty > available)."""
     from modules.assets.models import Asset
     from modules.assets.service import available_quantity
     from modules.projects.schemas import OutwardLineResult, OutwardPreview
 
-    await get_project(db, project_id)
+    if project_id:
+        await get_project(db, project_id)
     results = []
     has_conflicts = False
     for i, line in enumerate(items):
@@ -606,9 +643,18 @@ async def preview_outward(db: AsyncSession, project_id: UUID, items: list):
     return OutwardPreview(lines=results, has_conflicts=has_conflicts)
 
 
-async def execute_outward(db: AsyncSession, project_id: UUID, req, user_id: UUID):
+OUTWARD_PURPOSES = ("DEPLOYMENT", "TESTING", "POC", "OTHER")
+
+
+async def execute_outward(
+    db: AsyncSession, project_id: Optional[UUID], req, user_id: UUID
+):
     """Create an outward movement, reconciling inventory: creates missing items,
-    and (when confirmed) raises recorded stock to cover over-issues."""
+    and (when confirmed) raises recorded stock to cover over-issues.
+
+    A DEPLOYMENT outward belongs to a project; TESTING/POC/OTHER may leave with
+    just a person — custody then follows the person, not a project.
+    """
     from modules.assets.models import Asset
     from modules.assets.service import (
         available_quantity,
@@ -617,7 +663,17 @@ async def execute_outward(db: AsyncSession, project_id: UUID, req, user_id: UUID
         record_asset_event,
     )
 
-    project = await get_project(db, project_id)
+    purpose = getattr(req, "purpose", "DEPLOYMENT") or "DEPLOYMENT"
+    if purpose not in OUTWARD_PURPOSES:
+        raise BadRequestException(f"purpose must be one of {OUTWARD_PURPOSES}")
+    if purpose == "DEPLOYMENT" and not project_id:
+        raise BadRequestException("A deployment outward needs a project")
+    if not project_id and not req.handled_by:
+        raise BadRequestException(
+            "Without a project, say who is taking the items — custody follows them"
+        )
+
+    project = await get_project(db, project_id) if project_id else None
     if not req.items:
         raise BadRequestException("Add at least one item to the outward form")
 
@@ -629,11 +685,13 @@ async def execute_outward(db: AsyncSession, project_id: UUID, req, user_id: UUID
         )
 
     movement = EquipmentMovement(
-        project_id=project.id,
+        project_id=project.id if project else None,
         phase_id=req.phase_id,
         direction="OUTWARD",
+        purpose=purpose,
         handled_by=req.handled_by,
         received_by_name=req.received_by_name,
+        expected_return_date=getattr(req, "expected_return_date", None),
         notes=req.notes,
         created_by=user_id,
     )
@@ -672,26 +730,36 @@ async def execute_outward(db: AsyncSession, project_id: UUID, req, user_id: UUID
         from modules.assets import custody_service
 
         old_status = asset.condition
+        if project:
+            reason = f"Outward to {project.name}"
+            to_type, to_id = "PROJECT", project.id
+        else:
+            reason = f"Outward for {purpose.lower()}"
+            to_type, to_id = "PERSON", req.handled_by
         await custody_service.move_custody(
-            db, asset, to_custody_type="PROJECT", to_custody_id=project.id,
-            event_type="ISSUED", reason=f"Outward to {project.name}",
+            db, asset, to_custody_type=to_type, to_custody_id=to_id,
+            event_type="ISSUED", reason=reason,
+            expected_return_date=getattr(req, "expected_return_date", None),
+            source_type="equipment_movement", source_id=movement.id,
             user_id=user_id, commit=False,
         )
         await db.commit()
         await record_asset_event(
             db, asset.id, "OUTWARD", user_id,
-            old_status=old_status, new_status="WITH_PROJECT",
-            project_id=project.id, note=line.condition_note,
+            old_status=old_status,
+            new_status="WITH_PROJECT" if project else "WITH_PERSON",
+            project_id=project.id if project else None, note=line.condition_note,
         )
         labels.append(asset.asset_code)
 
     await db.refresh(movement)
-    await add_timeline_event(
-        db, project.id, "EQUIPMENT",
-        f"Equipment sent out: {', '.join(labels)}",
-        created_by=user_id,
-    )
-    return MovementResponse.model_validate(movement)
+    if project:
+        await add_timeline_event(
+            db, project.id, "EQUIPMENT",
+            f"Equipment sent out: {', '.join(labels)}",
+            created_by=user_id,
+        )
+    return await movement_response(db, movement)
 
 
 # --- Deployments (project ↔ device/couple/pair/asset) ---

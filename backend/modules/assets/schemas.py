@@ -9,6 +9,13 @@ class AssetCategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     parent_id: Optional[UUID] = None
     sort_order: int = 0
+    requires_serial: bool = False
+
+
+class AssetCategoryUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    sort_order: Optional[int] = None
+    requires_serial: Optional[bool] = None
 
 
 class AssetCategoryResponse(BaseModel):
@@ -16,6 +23,7 @@ class AssetCategoryResponse(BaseModel):
     name: str
     parent_id: Optional[UUID] = None
     sort_order: int
+    requires_serial: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -38,6 +46,7 @@ class AssetCreate(BaseModel):
     device_id: Optional[UUID] = None
     purchase_date: Optional[datetime] = None
     purchase_price: Optional[float] = None
+    vendor_id: Optional[UUID] = None
     notes: Optional[str] = None
     tags: Optional[dict] = None
     tag_identifiers: Optional[dict] = None
@@ -61,6 +70,7 @@ class AssetUpdate(BaseModel):
     current_person_id: Optional[UUID] = None
     purchase_date: Optional[datetime] = None
     purchase_price: Optional[float] = None
+    vendor_id: Optional[UUID] = None
     notes: Optional[str] = None
     tags: Optional[dict] = None
     tag_identifiers: Optional[dict] = None
@@ -80,6 +90,7 @@ class AssetResponse(BaseModel):
     device_id: Optional[UUID] = None
     purchase_date: Optional[datetime] = None
     purchase_price: Optional[float] = None
+    vendor_id: Optional[UUID] = None
     notes: Optional[str] = None
     tags: Optional[dict] = None
     tag_identifiers: Optional[dict] = None
@@ -184,6 +195,14 @@ class StockLocationResponse(BaseModel):
 
 class PartyCreate(BaseModel):
     name: str
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PartyUpdate(BaseModel):
+    name: Optional[str] = None
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
     contact_email: Optional[str] = None
@@ -376,4 +395,51 @@ class RepairResponse(BaseModel):
     sent_at: Optional[datetime] = None
     received_at: Optional[datetime] = None
     outcome_note: Optional[str] = None
+    created_at: datetime
+
+
+# --- required items (Plan V2 Phase 4) ---------------------------------------
+
+
+class ItemRequestCreate(BaseModel):
+    title: str
+    details: Optional[str] = None
+    quantity: int = 1
+    needed_by: Optional[datetime] = None
+    vendor_id: Optional[UUID] = None
+    estimated_cost: Optional[float] = None
+
+
+class ItemRequestUpdate(BaseModel):
+    title: Optional[str] = None
+    details: Optional[str] = None
+    quantity: Optional[int] = None
+    needed_by: Optional[datetime] = None
+    vendor_id: Optional[UUID] = None
+    estimated_cost: Optional[float] = None
+
+
+class ItemRequestStatusChange(BaseModel):
+    status: str
+    status_note: Optional[str] = None
+    vendor_id: Optional[UUID] = None
+    estimated_cost: Optional[float] = None
+
+
+class ItemRequestResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    details: Optional[str] = None
+    quantity: int
+    needed_by: Optional[datetime] = None
+    status: str
+    requested_by: UUID
+    requested_by_name: Optional[str] = None
+    vendor_id: Optional[UUID] = None
+    vendor_name: Optional[str] = None
+    estimated_cost: Optional[float] = None
+    status_note: Optional[str] = None
+    resolved_at: Optional[datetime] = None
     created_at: datetime
