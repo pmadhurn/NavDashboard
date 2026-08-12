@@ -11,18 +11,17 @@
 
 ## Current phase
 
-> **Phase 9 — WhatsApp sharing that carries content. DONE.**
+> **Phase 10 — Mobile, polish, the sweep. DONE.**
 
-`ShareButton` now takes `subtitle`, `lines`, `bullets` and `note`, and builds a
-formatted message ending in "Shared via NavDashboard.com". Wired on leadership,
-inventory, my finance, attendance, device detail and asset detail.
-`scripts/share-preview.mjs` prints what each page would send.
+Tables become cards below 768px. `assets.status` is dropped — custody is the
+only answer. `scripts/polish-sweep.mjs` walks 42 routes x 2 themes at 390px and
+checks for horizontal overflow, stuck spinners, blank pages and console errors:
+**84 checks, 0 problems.**
 
 ### Next action
-**Phase 10 — Mobile, polish, the sweep.** Tables to cards below 768px, the
-inline-style token sweep, both themes on every surface, and a pass over the
-non-negotiables (N1–N5) page by page. Also drop `assets.status`, which nothing
-now reads.
+**Phase 11 — Deployment.** Purge demo data (`scripts/purge-demo-data.py
+--confirm`), confirm backup covers every table, re-check secrets, then push to
+GitHub.
 
 ---
 
@@ -40,8 +39,8 @@ now reads.
 | 7 | Project archive | **done** |
 | 8 | Developer system-health dashboard | **done** |
 | 9 | WhatsApp sharing that carries content | **done** |
-| 10 | Mobile, polish and the sweep | **next** |
-| 11 | Deployment | not started |
+| 10 | Mobile, polish and the sweep | **done** |
+| 11 | Deployment | **next** |
 
 ---
 
@@ -72,6 +71,8 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/audit-guards.py` | every operation is mapped | 268 ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
+| `scripts/polish-sweep.mjs` | 42 routes x 2 themes at 390px | 84 checks, 0 problems |
+| `scripts/share-preview.mjs` | what each Share button sends | prints the messages |
 
 Browser scripts need a token and a user payload in the working directory:
 

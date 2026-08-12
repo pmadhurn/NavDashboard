@@ -305,7 +305,7 @@ async def leadership_summary(db: AsyncSession) -> LeadershipSummary:
     assets_deployed = await scalar(
         select(func.count())
         .select_from(Asset)
-        .where(Asset.status != "IN_OFFICE", Asset.deleted_at.is_(None))
+        .where(Asset.custody_type != "LOCATION", Asset.deleted_at.is_(None))
     )
 
     recent = await list_updates(db, limit=8)

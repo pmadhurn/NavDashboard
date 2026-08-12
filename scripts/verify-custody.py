@@ -90,7 +90,9 @@ async def main():
                                   reason="Taken to site", user_id=admin.id)
             check("held by person", asset.custody_type, "PERSON")
             check("not available", cs.is_available(asset), False)
-            check("legacy status mirrored", asset.status, "WITH_PERSON")
+            # `assets.status` was dropped in Phase 10 — custody_type is the
+            # single answer to "where is it" now, with no mirror to drift.
+            check("custody is the only record", asset.custody_type, "PERSON")
 
             print("\n4. Damage does NOT move the item")
             before = asset.custody_id

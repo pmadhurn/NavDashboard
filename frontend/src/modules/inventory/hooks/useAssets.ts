@@ -22,7 +22,6 @@ export interface Asset {
   item_kind: 'SERIALIZED' | 'BULK';
   serial_number: string | null;
   quantity: number;
-  status: string;
   current_project_id: string | null;
   current_person: PersonBrief | null;
   device_id: string | null;
@@ -76,14 +75,6 @@ interface Paginated<T> {
   pages: number;
 }
 
-export const ASSET_STATUSES = [
-  'IN_OFFICE',
-  'WITH_PROJECT',
-  'WITH_PERSON',
-  'DAMAGED',
-  'LOST',
-  'RETIRED',
-] as const;
 
 export function useAssets(params: {
   page?: number;

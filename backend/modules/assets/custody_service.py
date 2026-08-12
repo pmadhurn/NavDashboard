@@ -113,9 +113,6 @@ async def move_custody(
     asset.custody_id = to_custody_id
     asset.expected_return_date = expected_return_date
 
-    # `status` is still written for one release so anything reading it keeps
-    # working. Phase 2 drops the column and this block with it.
-    asset.status = _legacy_status(to_custody_type, asset.condition)
     asset.current_person_id = to_custody_id if to_custody_type == "PERSON" else None
     asset.current_project_id = to_custody_id if to_custody_type == "PROJECT" else None
 
@@ -164,7 +161,6 @@ async def set_condition(
     )
     db.add(movement)
     asset.condition = condition
-    asset.status = _legacy_status(asset.custody_type, condition)
 
     if commit:
         await db.commit()
@@ -174,25 +170,21 @@ async def set_condition(
     return movement
 
 
-def _legacy_status(custody_type: str, condition: str) -> str:
-    """Best single-enum approximation, for the one release `status` survives."""
-    if condition in ("DAMAGED", "LOST", "RETIRED"):
-        return condition if condition != "RETIRED" else "DAMAGED"
-    if condition == "UNDER_REPAIR":
-        return "DAMAGED"
-    return {
-        "LOCATION": "IN_OFFICE",
-        "PERSON": "WITH_PERSON",
-        "PROJECT": "DEPLOYED",
-        "CUSTOMER": "DEPLOYED",
-        "VENDOR": "DAMAGED",
-        "UNKNOWN": "DEPLOYED",
-    }.get(custody_type, "IN_OFFICE")
-
-
 def is_available(asset: Asset) -> bool:
     """Derived, never stored: in a stock location and in working order."""
     return asset.custody_type == CUSTODY_LOCATION and asset.condition == "OK"
+
+
+async def default_location_id(db: AsyncSession):
+    """Where a returned item goes when nothing more specific is said."""
+    return (
+        await db.execute(
+            select(StockLocation.id)
+            .where(StockLocation.deleted_at.is_(None))
+            .order_by(StockLocation.is_default.desc(), StockLocation.sort_order)
+            .limit(1)
+        )
+    ).scalar_one_or_none()
 
 
 async def list_movements(db: AsyncSession, asset_id: UUID, limit: int = 200) -> list[dict]:

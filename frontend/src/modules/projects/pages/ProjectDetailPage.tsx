@@ -323,7 +323,8 @@ function EquipmentTab({ projectId }: { projectId: string }) {
               options={(assetData?.items ?? []).map((a) => ({
                 value: a.id,
                 label: `${a.asset_code} — ${a.name}`,
-                disabled: a.status !== 'IN_OFFICE',
+                // Only what is actually in stock and working can be sent out.
+                disabled: !a.is_available,
               }))}
             />
           </div>

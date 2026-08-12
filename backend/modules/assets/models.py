@@ -38,7 +38,6 @@ class Asset(Base, SoftDeleteMixin, CustomFieldsMixin):
     item_kind: Mapped[str] = mapped_column(String(20), default="SERIALIZED", nullable=False)
     serial_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="IN_OFFICE", nullable=False, index=True)
     current_project_id: Mapped[Optional[UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     current_person_id: Mapped[Optional[UUID]] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("personnel.id"), nullable=True
@@ -105,7 +104,6 @@ class AssetReport(Base, SoftDeleteMixin):
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="OPEN", nullable=False)
     reported_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

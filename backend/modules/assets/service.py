@@ -132,7 +132,6 @@ async def sync_device_asset(db: AsyncSession, device) -> None:
             item_kind="SERIALIZED",
             serial_number=device.serial_number,
             quantity=1,
-            status="IN_OFFICE",
             device_id=device.id,
             custody_type="LOCATION",
             custody_id=location_id,
@@ -349,13 +348,12 @@ async def quick_create_asset(
         name=name[:300],
         item_kind=kind,
         quantity=quantity or 1,
-        status="IN_OFFICE",
     )
     db.add(asset)
     await db.commit()
     await db.refresh(asset)
     await record_asset_event(
-        db, asset.id, "CREATED", user_id, new_status="IN_OFFICE",
+        db, asset.id, "CREATED", user_id, new_status=asset.condition,
         note="created via outward form",
     )
     return asset

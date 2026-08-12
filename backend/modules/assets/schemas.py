@@ -34,7 +34,6 @@ class AssetCreate(BaseModel):
     item_kind: str = "SERIALIZED"
     serial_number: Optional[str] = None
     quantity: int = 1
-    status: str = "IN_OFFICE"
     current_person_id: Optional[UUID] = None
     device_id: Optional[UUID] = None
     purchase_date: Optional[datetime] = None
@@ -76,7 +75,6 @@ class AssetResponse(BaseModel):
     item_kind: str
     serial_number: Optional[str] = None
     quantity: int
-    status: str
     current_project_id: Optional[UUID] = None
     current_person: Optional[PersonBrief] = None
     device_id: Optional[UUID] = None

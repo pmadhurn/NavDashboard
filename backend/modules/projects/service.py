@@ -517,13 +517,26 @@ async def create_movement(
             )
         )
 
-        old_status = asset.status
+        # Equipment movement goes through custody, so it lands in the item's
+        # ledger like every other change rather than being a silent column write.
+        from modules.assets import custody_service
+
+        old_status = asset.condition
         if outward:
-            asset.status = "WITH_PROJECT"
-            asset.current_project_id = project.id
+            await custody_service.move_custody(
+                db, asset, to_custody_type="PROJECT", to_custody_id=project.id,
+                event_type="ISSUED", reason=f"Outward to {project.name}",
+                source_type="equipment_movement", source_id=movement.id,
+                user_id=user_id, commit=False,
+            )
         else:
-            asset.status = "IN_OFFICE"
-            asset.current_project_id = None
+            await custody_service.move_custody(
+                db, asset, to_custody_type="LOCATION",
+                to_custody_id=await custody_service.default_location_id(db),
+                event_type="RETURNED", reason=f"Inward from {project.name}",
+                source_type="equipment_movement", source_id=movement.id,
+                user_id=user_id, commit=False,
+            )
         await db.commit()
         await record_asset_event(
             db,
@@ -531,7 +544,7 @@ async def create_movement(
             "OUTWARD" if outward else "INWARD",
             user_id,
             old_status=old_status,
-            new_status=asset.status,
+            new_status=asset.condition,
             project_id=project.id,
             note=item_in.condition_note,
         )
@@ -655,9 +668,14 @@ async def execute_outward(db: AsyncSession, project_id: UUID, req, user_id: UUID
             condition_note=line.condition_note,
             item_status="WITH_CLIENT",
         ))
-        old_status = asset.status
-        asset.status = "WITH_PROJECT"
-        asset.current_project_id = project.id
+        from modules.assets import custody_service
+
+        old_status = asset.condition
+        await custody_service.move_custody(
+            db, asset, to_custody_type="PROJECT", to_custody_id=project.id,
+            event_type="ISSUED", reason=f"Outward to {project.name}",
+            user_id=user_id, commit=False,
+        )
         await db.commit()
         await record_asset_event(
             db, asset.id, "OUTWARD", user_id,
@@ -791,23 +809,33 @@ async def update_movement_item(
     asset = await db.get(Asset, item.asset_id)
     movement = await db.get(EquipmentMovement, item.movement_id)
     if asset:
-        old_status = asset.status
+        from modules.assets import custody_service
+
+        old_status = asset.condition
         if body.item_status == "RETURNED":
-            asset.status = "IN_OFFICE"
-            asset.current_project_id = None
+            await custody_service.move_custody(
+                db, asset, to_custody_type="LOCATION",
+                to_custody_id=await custody_service.default_location_id(db),
+                event_type="RETURNED", user_id=user_id, commit=False,
+            )
         elif body.item_status == "DAMAGED":
-            asset.status = "DAMAGED"
+            await custody_service.set_condition(
+                db, asset, condition="DAMAGED", user_id=user_id, commit=False,
+            )
         elif body.item_status == "LOST":
-            asset.status = "LOST"
+            await custody_service.set_condition(
+                db, asset, condition="LOST", event_type="LOST",
+                user_id=user_id, commit=False,
+            )
         await db.commit()
-        if asset.status != old_status:
+        if asset.condition != old_status:
             await record_asset_event(
                 db,
                 asset.id,
                 f"ITEM_{body.item_status}",
                 user_id,
                 old_status=old_status,
-                new_status=asset.status,
+                new_status=asset.condition,
                 project_id=movement.project_id if movement else None,
                 note=body.condition_note,
             )

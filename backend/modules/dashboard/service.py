@@ -131,7 +131,7 @@ async def get_home_summary(db: AsyncSession, user_id) -> HomeSummary:
 
         summary.equipment_out = await _scalar(
             select(func.count()).select_from(Asset).where(
-                Asset.deleted_at.is_(None), Asset.status == "WITH_PROJECT"
+                Asset.deleted_at.is_(None), Asset.custody_type == "PROJECT"
             )
         )
         summary.damaged_open = await _scalar(

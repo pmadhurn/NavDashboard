@@ -375,7 +375,7 @@ async def resolve_item(
         raise NotFoundException("Item not found")
 
     if outcome == OUTCOME_RETURNED:
-        location_id = site_location_id or await _default_location_id(db)
+        location_id = site_location_id or await cs.default_location_id(db)
         await cs.move_custody(
             db, asset, to_custody_type="LOCATION", to_custody_id=location_id,
             event_type="RETURNED", reason=note or "Returned to stock",
@@ -403,7 +403,7 @@ async def resolve_item(
             user_id=user_id, commit=False,
         )
     elif outcome == OUTCOME_DAMAGED:
-        location_id = site_location_id or await _default_location_id(db)
+        location_id = site_location_id or await cs.default_location_id(db)
         await cs.move_custody(
             db, asset, to_custody_type="LOCATION", to_custody_id=location_id,
             event_type="RETURNED", reason=note or "Returned damaged",
@@ -423,19 +423,6 @@ async def resolve_item(
         await db.commit()
         await db.refresh(asset)
     return asset
-
-
-async def _default_location_id(db: AsyncSession):
-    from modules.assets.custody_models import StockLocation
-
-    return (
-        await db.execute(
-            select(StockLocation.id)
-            .where(StockLocation.deleted_at.is_(None))
-            .order_by(StockLocation.is_default.desc(), StockLocation.sort_order)
-            .limit(1)
-        )
-    ).scalar_one_or_none()
 
 
 # --- repairs ----------------------------------------------------------------
@@ -523,7 +510,7 @@ async def complete_repair(
     if repaired:
         await cs.move_custody(
             db, asset, to_custody_type="LOCATION",
-            to_custody_id=return_location_id or await _default_location_id(db),
+            to_custody_id=return_location_id or await cs.default_location_id(db),
             event_type="REPAIRED", reason=note or "Back from repair",
             source_type="asset_repair", source_id=repair.id,
             user_id=user_id, commit=False,
