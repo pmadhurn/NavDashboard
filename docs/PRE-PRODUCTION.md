@@ -20,6 +20,7 @@ These are all live secrets. Nothing else on this page matters until they are don
 | A3 | **Clerk `sk_test_…` secret key** was pasted into a chat transcript, and the instance is the development one, `trusted-starling-62.clerk.accounts.dev`. Production needs its own Clerk instance and a fresh `CLERK_ISSUER` / `CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`. | ❌ Dev instance live | You |
 | A4 | `SECRET_KEY` rotated off the committed placeholder. | ✅ **Already done** — 64 chars, differs from the value in `90b9a24`. `DEPLOYMENT.md` still lists this as outstanding; it isn't. | — |
 | A5 | `backend/.env` and `frontend/.env` untracked. | ✅ Confirmed by `git check-ignore` | — |
+| A6 | **An admin JWT was committed to this branch.** `tok.txt` — browser-test scratch — was swept into `7618864` by a `git add -A` and pushed. Untracked and gitignored in `5b0adca`, but still readable in history. Claims: `role=ADMIN`, no `jti`, **expires 2026-08-13 05:56 UTC**. Because it carries no `jti` it cannot be revoked — it dies on expiry, or immediately if `SECRET_KEY` is rotated. | ⚠️ Live until 2026-08-13, or until A4 is redone | You: rotate `SECRET_KEY` again, or strip the blob from history and force-push |
 
 > Rotating A1 means changing it in `backend/.env` **and** in the `db` service's
 > environment, then recreating both containers. The volume keeps the data; the
