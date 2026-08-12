@@ -1,0 +1,1224 @@
+[
+  {
+    "viewport": "desktop",
+    "route": "/",
+    "renders": true,
+    "bounced": "/",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 555
+  },
+  {
+    "viewport": "desktop",
+    "route": "/devices",
+    "renders": true,
+    "bounced": "/devices",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Device",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 818
+  },
+  {
+    "viewport": "desktop",
+    "route": "/devices/2c84e9ec-710c-4f46-9f6f-b212274a9809",
+    "renders": true,
+    "bounced": "/devices/2c84e9ec-710c-4f46-9f6f-b212274a9809",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 535
+  },
+  {
+    "viewport": "desktop",
+    "route": "/couples",
+    "renders": true,
+    "bounced": "/couples",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Couple",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 463
+  },
+  {
+    "viewport": "desktop",
+    "route": "/couples/cf211940-d29b-4531-bb21-c41db9940fca",
+    "renders": true,
+    "bounced": "/couples/cf211940-d29b-4531-bb21-c41db9940fca",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 663
+  },
+  {
+    "viewport": "desktop",
+    "route": "/pairs",
+    "renders": true,
+    "bounced": "/pairs",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Pair",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 417
+  },
+  {
+    "viewport": "desktop",
+    "route": "/pairs/2f064754-d439-47b1-b52a-b3b8400f6eaa",
+    "renders": true,
+    "bounced": "/pairs/2f064754-d439-47b1-b52a-b3b8400f6eaa",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 713
+  },
+  {
+    "viewport": "desktop",
+    "route": "/map",
+    "renders": true,
+    "bounced": "/map",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 436
+  },
+  {
+    "viewport": "desktop",
+    "route": "/troubleshooting",
+    "renders": true,
+    "bounced": "/troubleshooting",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 1015
+  },
+  {
+    "viewport": "desktop",
+    "route": "/comparison",
+    "renders": true,
+    "bounced": "/comparison",
+    "action": {
+      "found": true,
+      "ok": false,
+      "label": "Compare",
+      "note": "click failed: locator.click: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator('butto"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 373
+  },
+  {
+    "viewport": "desktop",
+    "route": "/documents",
+    "renders": true,
+    "bounced": "/documents",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 322
+  },
+  {
+    "viewport": "desktop",
+    "route": "/location-history",
+    "renders": true,
+    "bounced": "/location-history",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 334
+  },
+  {
+    "viewport": "desktop",
+    "route": "/search",
+    "renders": true,
+    "bounced": "/search",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 172
+  },
+  {
+    "viewport": "desktop",
+    "route": "/downloads",
+    "renders": true,
+    "bounced": "/downloads",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Upload",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 161
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/assets",
+    "renders": true,
+    "bounced": "/inventory/assets",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Asset",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 1156
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/assets/6ca0cd01-09e6-4e11-913e-76fb86054ccb",
+    "renders": true,
+    "bounced": "/inventory/assets/6ca0cd01-09e6-4e11-913e-76fb86054ccb",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 409
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/deployed",
+    "renders": true,
+    "bounced": "/inventory/deployed",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 299
+  },
+  {
+    "viewport": "desktop",
+    "route": "/projects",
+    "renders": true,
+    "bounced": "/projects",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "New Project",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 481
+  },
+  {
+    "viewport": "desktop",
+    "route": "/projects/e8a5b046-114c-4b4d-8317-c28411e7781a",
+    "renders": true,
+    "bounced": "/projects/e8a5b046-114c-4b4d-8317-c28411e7781a",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 448
+  },
+  {
+    "viewport": "desktop",
+    "route": "/finance",
+    "renders": true,
+    "bounced": "/finance",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Export",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 675
+  },
+  {
+    "viewport": "desktop",
+    "route": "/finance/my",
+    "renders": true,
+    "bounced": "/finance/my",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add expense",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 438
+  },
+  {
+    "viewport": "desktop",
+    "route": "/finance/claims",
+    "renders": true,
+    "bounced": "/finance/claims",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "New Claim",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 233
+  },
+  {
+    "viewport": "desktop",
+    "route": "/finance/settlement",
+    "renders": true,
+    "bounced": "/finance/settlement",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Export",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 424
+  },
+  {
+    "viewport": "desktop",
+    "route": "/personnel",
+    "renders": true,
+    "bounced": "/personnel",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Personnel",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 465
+  },
+  {
+    "viewport": "desktop",
+    "route": "/audit",
+    "renders": true,
+    "bounced": "/audit",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 1915
+  },
+  {
+    "viewport": "desktop",
+    "route": "/backup",
+    "renders": true,
+    "bounced": "/backup",
+    "action": {
+      "found": true,
+      "ok": false,
+      "label": "Create Backup",
+      "note": "clicked, no modal (may act in place)"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 4865
+  },
+  {
+    "viewport": "desktop",
+    "route": "/reports",
+    "renders": true,
+    "bounced": "/reports",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Generate Report",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 803
+  },
+  {
+    "viewport": "desktop",
+    "route": "/ai",
+    "renders": true,
+    "bounced": "/ai",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 448
+  },
+  {
+    "viewport": "desktop",
+    "route": "/settings",
+    "renders": true,
+    "bounced": "/settings",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 669
+  },
+  {
+    "viewport": "desktop",
+    "route": "/devices/00000000-0000-0000-0000-000000000000",
+    "renders": true,
+    "bounced": "/devices/00000000-0000-0000-0000-000000000000",
+    "action": null,
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 158
+  },
+  {
+    "viewport": "desktop",
+    "route": "/couples/00000000-0000-0000-0000-000000000000",
+    "renders": true,
+    "bounced": "/couples/00000000-0000-0000-0000-000000000000",
+    "action": null,
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 158
+  },
+  {
+    "viewport": "desktop",
+    "route": "/pairs/00000000-0000-0000-0000-000000000000",
+    "renders": true,
+    "bounced": "/pairs/00000000-0000-0000-0000-000000000000",
+    "action": null,
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 156
+  },
+  {
+    "viewport": "desktop",
+    "route": "/projects/00000000-0000-0000-0000-000000000000",
+    "renders": true,
+    "bounced": "/projects/00000000-0000-0000-0000-000000000000",
+    "action": null,
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 231
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/assets/00000000-0000-0000-0000-000000000000",
+    "renders": true,
+    "bounced": "/inventory/assets/00000000-0000-0000-0000-000000000000",
+    "action": null,
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 228
+  },
+  {
+    "viewport": "mobile",
+    "route": "/",
+    "renders": true,
+    "bounced": "/",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 567
+  },
+  {
+    "viewport": "mobile",
+    "route": "/devices",
+    "renders": true,
+    "bounced": "/devices",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Device",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 968
+  },
+  {
+    "viewport": "mobile",
+    "route": "/devices/2c84e9ec-710c-4f46-9f6f-b212274a9809",
+    "renders": true,
+    "bounced": "/devices/2c84e9ec-710c-4f46-9f6f-b212274a9809",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 440
+  },
+  {
+    "viewport": "mobile",
+    "route": "/couples",
+    "renders": true,
+    "bounced": "/couples",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Couple",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 368
+  },
+  {
+    "viewport": "mobile",
+    "route": "/couples/cf211940-d29b-4531-bb21-c41db9940fca",
+    "renders": true,
+    "bounced": "/couples/cf211940-d29b-4531-bb21-c41db9940fca",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 568
+  },
+  {
+    "viewport": "mobile",
+    "route": "/pairs",
+    "renders": true,
+    "bounced": "/pairs",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Pair",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 322
+  },
+  {
+    "viewport": "mobile",
+    "route": "/pairs/2f064754-d439-47b1-b52a-b3b8400f6eaa",
+    "renders": true,
+    "bounced": "/pairs/2f064754-d439-47b1-b52a-b3b8400f6eaa",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 618
+  },
+  {
+    "viewport": "mobile",
+    "route": "/map",
+    "renders": true,
+    "bounced": "/map",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 341
+  },
+  {
+    "viewport": "mobile",
+    "route": "/troubleshooting",
+    "renders": true,
+    "bounced": "/troubleshooting",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 920
+  },
+  {
+    "viewport": "mobile",
+    "route": "/comparison",
+    "renders": true,
+    "bounced": "/comparison",
+    "action": {
+      "found": true,
+      "ok": false,
+      "label": "Compare",
+      "note": "click failed: locator.click: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator('butto"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 278
+  },
+  {
+    "viewport": "mobile",
+    "route": "/documents",
+    "renders": true,
+    "bounced": "/documents",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 228
+  },
+  {
+    "viewport": "mobile",
+    "route": "/location-history",
+    "renders": true,
+    "bounced": "/location-history",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 239
+  },
+  {
+    "viewport": "mobile",
+    "route": "/search",
+    "renders": true,
+    "bounced": "/search",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 153
+  },
+  {
+    "viewport": "mobile",
+    "route": "/downloads",
+    "renders": true,
+    "bounced": "/downloads",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Upload",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 172
+  },
+  {
+    "viewport": "mobile",
+    "route": "/inventory/assets",
+    "renders": true,
+    "bounced": "/inventory/assets",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Asset",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 999
+  },
+  {
+    "viewport": "mobile",
+    "route": "/inventory/assets/6ca0cd01-09e6-4e11-913e-76fb86054ccb",
+    "renders": true,
+    "bounced": "/inventory/assets/6ca0cd01-09e6-4e11-913e-76fb86054ccb",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 315
+  },
+  {
+    "viewport": "mobile",
+    "route": "/inventory/deployed",
+    "renders": true,
+    "bounced": "/inventory/deployed",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 205
+  },
+  {
+    "viewport": "mobile",
+    "route": "/projects",
+    "renders": true,
+    "bounced": "/projects",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "New Project",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 387
+  },
+  {
+    "viewport": "mobile",
+    "route": "/projects/e8a5b046-114c-4b4d-8317-c28411e7781a",
+    "renders": true,
+    "bounced": "/projects/e8a5b046-114c-4b4d-8317-c28411e7781a",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 354
+  },
+  {
+    "viewport": "mobile",
+    "route": "/finance",
+    "renders": true,
+    "bounced": "/finance",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Export",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 621
+  },
+  {
+    "viewport": "mobile",
+    "route": "/finance/my",
+    "renders": true,
+    "bounced": "/finance/my",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add expense",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 393
+  },
+  {
+    "viewport": "mobile",
+    "route": "/finance/claims",
+    "renders": true,
+    "bounced": "/finance/claims",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "New Claim",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 198
+  },
+  {
+    "viewport": "mobile",
+    "route": "/finance/settlement",
+    "renders": true,
+    "bounced": "/finance/settlement",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Export",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 389
+  },
+  {
+    "viewport": "mobile",
+    "route": "/personnel",
+    "renders": true,
+    "bounced": "/personnel",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add Personnel",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 477
+  },
+  {
+    "viewport": "mobile",
+    "route": "/audit",
+    "renders": true,
+    "bounced": "/audit",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 1877
+  },
+  {
+    "viewport": "mobile",
+    "route": "/backup",
+    "renders": true,
+    "bounced": "/backup",
+    "action": {
+      "found": true,
+      "ok": false,
+      "label": "Create Backup",
+      "note": "clicked, no modal (may act in place)"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 4887
+  },
+  {
+    "viewport": "mobile",
+    "route": "/reports",
+    "renders": true,
+    "bounced": "/reports",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Generate Report",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 708
+  },
+  {
+    "viewport": "mobile",
+    "route": "/ai",
+    "renders": true,
+    "bounced": "/ai",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 429
+  },
+  {
+    "viewport": "mobile",
+    "route": "/settings",
+    "renders": true,
+    "bounced": "/settings",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 609
+  }
+]

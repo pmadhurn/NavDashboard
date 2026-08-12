@@ -159,15 +159,21 @@ async def _email_from_backend_api(user_id: str) -> str | None:
     return None
 
 
-async def clerk_authenticate(db: AsyncSession, token: str) -> dict:
+async def clerk_authenticate(db: AsyncSession, token: str, request=None):
     """Exchange a verified Clerk session for this app's own access token.
 
-    Mirrors google_authenticate: unknown emails are queued as PENDING rather
-    than silently granted access, because approval is this app's gate, not
-    Clerk's.
+    Mirrors google_authenticate in every respect that matters: unknown emails
+    are queued as PENDING rather than silently granted access, the token comes
+    from `issue_session` so it is revocable and shows up in the admin's session
+    list, and the response carries the user and their permissions so the client
+    needs no second round trip.
     """
-    from core.security import create_access_token
-    from modules.auth.service import create_pending_google_user
+    from modules.auth.schemas import ClerkAuthResponse, TokenResponse, UserResponse
+    from modules.auth.service import (
+        create_pending_google_user,
+        effective_permission_list,
+        issue_session,
+    )
 
     claims = await verify_session_token(token)
 
@@ -188,22 +194,35 @@ async def clerk_authenticate(db: AsyncSession, token: str) -> dict:
     user = await repository.find_by_email(db, email)
     if user is None:
         await create_pending_google_user(db, email=email, full_name=full_name)
-        return {
-            "pending": True,
-            "message": "Account created. An admin needs to approve it before you can sign in.",
-        }
+        return ClerkAuthResponse(
+            pending=True,
+            message="Account created. An admin needs to approve it before you can sign in.",
+        )
 
     if user.status == "PENDING":
-        return {"pending": True, "message": "Your account is still awaiting admin approval."}
+        return ClerkAuthResponse(
+            pending=True, message="Your account is still awaiting admin approval."
+        )
 
     if not user.is_active:
         raise UnauthorizedException("Account is disabled")
 
     user.last_login = datetime.now(timezone.utc)
+    # Same rule as Google: only claim a row that has no password of its own.
+    if user.auth_provider == "LOCAL" and user.hashed_password is None:
+        user.auth_provider = "CLERK"
     await db.commit()
+    await db.refresh(user)
 
-    return {
-        "pending": False,
-        "access_token": create_access_token(user.id, user.role),
-        "token_type": "bearer",
-    }
+    # Not create_access_token: a token minted without a session row carries no
+    # `jti`, and `_assert_session_active` waves those straight through. Every
+    # Clerk sign-in would have been unrevocable for its full lifetime and
+    # invisible in the admin's session list.
+    access_token = await issue_session(db, user, provider="CLERK", request=request)
+
+    user_response = UserResponse.model_validate(user)
+    user_response.permissions = await effective_permission_list(db, user)
+    return ClerkAuthResponse(
+        pending=False,
+        token=TokenResponse(access_token=access_token, user=user_response),
+    )

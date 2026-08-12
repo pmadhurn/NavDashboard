@@ -148,6 +148,43 @@ async def main():
             check("new token works", call("GET", "/devices/", token2)[0], 200)
             check("old token still dead", call("GET", "/devices/", token)[0], 401)
 
+            print("\n5. Clerk sign-in is revocable too")
+            # A real Clerk JWT cannot be minted here, so this exercises the seam
+            # that was broken: Clerk used to call create_access_token directly,
+            # which produces a token with no `jti` — and _assert_session_active
+            # waves those straight through. Every Clerk sign-in was unrevocable
+            # for its full lifetime and invisible in the session list.
+            from modules.auth.service import issue_session
+
+            clerk_token = await issue_session(db, user, provider="CLERK")
+            check("clerk token works", call("GET", "/devices/", clerk_token)[0], 200)
+            clerk_rows = (
+                await db.execute(
+                    select(UserSession).where(
+                        UserSession.user_id == user.id,
+                        UserSession.auth_provider == "CLERK",
+                    )
+                )
+            ).scalars().all()
+            check("a CLERK session row exists to revoke", len(clerk_rows), 1)
+
+            await authz.revoke_all_for_user(db, user.id, user.id)
+            check("clerk token dies on revoke", call("GET", "/devices/", clerk_token)[0], 401)
+
+            print("\n6. A token minted without a session cannot be revoked at all")
+            # This is the property that made the Clerk bug dangerous, asserted
+            # rather than described: nothing here can kill such a token.
+            from core.security import create_access_token
+
+            orphan = create_access_token(user.id, user.role)
+            check("orphan token is accepted", call("GET", "/devices/", orphan)[0], 200)
+            await authz.revoke_all_for_user(db, user.id, user.id)
+            check(
+                "orphan token SURVIVES revoke — why every path must use issue_session",
+                call("GET", "/devices/", orphan)[0],
+                200,
+            )
+
         finally:
             await db.execute(delete(UserSession).where(UserSession.user_id == user.id))
             await db.execute(delete(UserRole).where(UserRole.user_id == user.id))

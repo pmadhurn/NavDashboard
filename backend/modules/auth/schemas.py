@@ -86,10 +86,16 @@ class ClerkLoginRequest(BaseModel):
 
 
 class ClerkAuthResponse(BaseModel):
-    pending: bool
-    message: str | None = None
-    access_token: str | None = None
-    token_type: str | None = None
+    """Deliberately the same shape as GoogleAuthResponse.
+
+    Two identity providers that answer the same question should not return two
+    different envelopes; the old bare-token version forced the client into a
+    second /auth/me call that the Google path never needed.
+    """
+
+    pending: bool = False
+    message: Optional[str] = None
+    token: Optional[TokenResponse] = None
 
 
 class ClerkConfigResponse(BaseModel):
