@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Select, Input, message } from 'antd'
+import { Select, Input } from 'antd'
 import {
   PlusOutlined,
-  DatabaseOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
   SwapOutlined,
@@ -12,7 +11,7 @@ import PageHeader from '@/shared/components/PageHeader'
 import GlassButton from '@/shared/components/GlassButton'
 import LoadingSpinner from '@/shared/components/LoadingSpinner'
 import EmptyState from '@/shared/components/EmptyState'
-import { usePairs, useSeedPairs } from '../hooks/usePairs'
+import { usePairs } from '../hooks/usePairs'
 import PairCard from '../components/PairCard'
 import PairTable from '../components/PairTable'
 import PairForm from '../components/PairForm'
@@ -35,18 +34,6 @@ export default function PairListPage() {
   if (debouncedSearch) filters['name__contains'] = debouncedSearch
 
   const { data, isLoading } = usePairs(filters)
-  const seedMutation = useSeedPairs()
-
-  const handleSeed = useCallback(() => {
-    seedMutation.mutate(undefined, {
-      onSuccess: (result) => {
-        message.success(`Seeded ${result.length} pairs`)
-      },
-      onError: () => {
-        message.error('Failed to seed pairs')
-      },
-    })
-  }, [seedMutation])
 
   const handleEdit = useCallback((pair: Pair) => {
     setEditingPair(pair)
@@ -68,18 +55,13 @@ export default function PairListPage() {
   return (
     <div>
       <PageHeader
-        title="Pairs"
-        subtitle={`${data?.total ?? 0} pairs total`}
-        breadcrumbs={[{ label: 'Dashboard', path: '/' }, { label: 'Pairs' }]}
+        title="Links"
+        subtitle={`${data?.total ?? 0} links total`}
+        breadcrumbs={[{ label: 'Dashboard', path: '/' }, { label: 'Links' }]}
         actions={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <GlassButton icon={<DatabaseOutlined />} variant="ghost" onClick={handleSeed} loading={seedMutation.isPending}>
-              Seed
-            </GlassButton>
-            <GlassButton icon={<PlusOutlined />} variant="primary" onClick={handleCreate}>
-              Add Pair
-            </GlassButton>
-          </div>
+          <GlassButton icon={<PlusOutlined />} variant="primary" onClick={handleCreate}>
+            Add Link
+          </GlassButton>
         }
       />
 
@@ -94,7 +76,7 @@ export default function PairListPage() {
         }}
       >
         <Input
-          placeholder="Search pairs..."
+          placeholder="Search links..."
           value={nameSearch}
           onChange={(e) => {
             setNameSearch(e.target.value)
@@ -145,15 +127,15 @@ export default function PairListPage() {
 
       {/* Content */}
       {isLoading ? (
-        <LoadingSpinner text="Loading pairs..." />
+        <LoadingSpinner text="Loading links..." />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<SwapOutlined style={{ fontSize: 48 }} />}
-          title="No pairs found"
-          description="Create a pair to link two couples together."
+          title="No links found"
+          description="Create a link to connect two couples together."
           action={
             <GlassButton variant="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-              Add Pair
+              Add Link
             </GlassButton>
           }
         />

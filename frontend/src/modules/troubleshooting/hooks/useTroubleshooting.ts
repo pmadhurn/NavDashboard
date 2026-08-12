@@ -175,14 +175,3 @@ export function useErrorsByEntity(entityType: string, entityId: string) {
     enabled: !!entityType && !!entityId,
   });
 }
-
-export function useSeedErrors() {
-  const queryClient = useQueryClient();
-  return useMutation<ErrorLog[], Error>({
-    mutationFn: () => api.post<ErrorLog[]>('/troubleshooting/seed'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['errors'] });
-      queryClient.invalidateQueries({ queryKey: ['error-stats'] });
-    },
-  });
-}

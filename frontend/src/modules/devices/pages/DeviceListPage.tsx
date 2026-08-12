@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Select, message } from 'antd'
-import { PlusOutlined, DatabaseOutlined } from '@ant-design/icons'
+import { PlusOutlined } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
 import GlassCard from '@/shared/components/GlassCard'
 import GlassButton from '@/shared/components/GlassButton'
@@ -8,13 +8,11 @@ import GlassInput from '@/shared/components/GlassInput'
 import ConfirmDialog from '@/shared/components/ConfirmDialog'
 import DeviceTable from '../components/DeviceTable'
 import DeviceForm from '../components/DeviceForm'
-import { useDevices, useDeleteDevice, useSeedDevices } from '../hooks/useDevices'
+import { useDevices, useDeleteDevice } from '../hooks/useDevices'
 import { useDebounce } from '@/shared/hooks/useDebounce'
-import { useAuthStore } from '@/shared/stores/authStore'
 import type { Device } from '@/shared/types/devices'
 
 export default function DeviceListPage() {
-  const user = useAuthStore((s) => s.user)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -34,7 +32,6 @@ export default function DeviceListPage() {
 
   const { data, isLoading } = useDevices(filters)
   const deleteDevice = useDeleteDevice()
-  const seedDevices = useSeedDevices()
 
   const handlePageChange = useCallback((p: number, s: number) => {
     setPage(p)
@@ -61,19 +58,6 @@ export default function DeviceListPage() {
     setDeleteTarget(null)
   }
 
-  const handleSeed = async () => {
-    try {
-      const result = await seedDevices.mutateAsync()
-      if (Array.isArray(result) && result.length > 0) {
-        message.success(`Seeded ${result.length} devices`)
-      } else {
-        message.info('Devices already exist, skipping seed')
-      }
-    } catch {
-      message.error('Seed failed')
-    }
-  }
-
   const handleFormClose = () => {
     setFormOpen(false)
     setEditDevice(null)
@@ -90,24 +74,13 @@ export default function DeviceListPage() {
         title="Devices"
         subtitle={`${data?.total ?? 0} total devices`}
         actions={
-          <>
-            {user?.role === 'ADMIN' && (
-              <GlassButton
-                icon={<DatabaseOutlined />}
-                onClick={handleSeed}
-                loading={seedDevices.isPending}
-              >
-                Seed Devices
-              </GlassButton>
-            )}
-            <GlassButton
-              variant="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddClick}
-            >
-              Add Device
-            </GlassButton>
-          </>
+          <GlassButton
+            variant="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddClick}
+          >
+            Add Device
+          </GlassButton>
         }
       />
 

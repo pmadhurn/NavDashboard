@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Tag, message } from 'antd';
+import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   AlertOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   PlusOutlined,
-  DatabaseOutlined,
   UnorderedListOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
@@ -21,7 +20,6 @@ import TroubleshootForm from '../components/TroubleshootForm';
 import {
   useErrors,
   useErrorStats,
-  useSeedErrors,
   type ErrorLog,
   type ErrorFilterState,
 } from '../hooks/useTroubleshooting';
@@ -54,16 +52,6 @@ export default function TroubleshootingPage() {
 
   const { data: errorsData, isLoading } = useErrors(filters, page, pageSize);
   const { data: stats } = useErrorStats();
-  const seedErrors = useSeedErrors();
-
-  const handleSeed = async () => {
-    try {
-      await seedErrors.mutateAsync();
-      message.success('Sample errors seeded successfully');
-    } catch {
-      message.error('Failed to seed errors (may already exist)');
-    }
-  };
 
   const openCreateForm = () => {
     setFormMode('create');
@@ -132,7 +120,7 @@ export default function TroubleshootingPage() {
       render: (_: unknown, record: ErrorLog) => {
         if (record.device_id) return <span style={{ color: '#5B8AF0' }}>Device</span>;
         if (record.couple_id) return <span style={{ color: '#5B8AF0' }}>Couple</span>;
-        if (record.pair_id) return <span style={{ color: '#5B8AF0' }}>Pair</span>;
+        if (record.pair_id) return <span style={{ color: '#5B8AF0' }}>Link</span>;
         return <span style={{ color: '#595959' }}>—</span>;
       },
     },
@@ -227,15 +215,6 @@ export default function TroubleshootingPage() {
         subtitle="Error tracking and resolution workflow"
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
-            <GlassButton
-              variant="secondary"
-              icon={<DatabaseOutlined />}
-              onClick={handleSeed}
-              loading={seedErrors.isPending}
-              size="sm"
-            >
-              Seed Data
-            </GlassButton>
             <GlassButton
               variant="primary"
               icon={<PlusOutlined />}

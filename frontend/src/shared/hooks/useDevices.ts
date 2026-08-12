@@ -85,13 +85,3 @@ export function useDeviceStats() {
   })
 }
 
-export function useSeedDevices() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () => api.post<Device[]>('/devices/seed'),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['devices'] })
-      qc.invalidateQueries({ queryKey: ['device-stats'] })
-    },
-  })
-}

@@ -86,13 +86,3 @@ export function useCoupleMapData() {
     queryFn: () => api.get<MapDataPoint[]>('/couples/map-data'),
   })
 }
-
-export function useSeedCouples() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () => api.post<Couple[]>('/couples/seed'),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['couples'] })
-    },
-  })
-}

@@ -50,16 +50,6 @@ export function useDeletePerson() {
   })
 }
 
-export function useSeedPersonnel() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: () => api.post<Person[]>('/personnel/seed'),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['personnel'] })
-    },
-  })
-}
-
 export function usePersonAssignments(id: string) {
   return useQuery<AssignmentHistory[]>({
     queryKey: ['person-assignments', id],

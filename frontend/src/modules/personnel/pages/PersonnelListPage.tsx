@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Select, message } from 'antd'
-import { PlusOutlined, DatabaseOutlined, UserOutlined, LinkOutlined } from '@ant-design/icons'
+import { PlusOutlined, UserOutlined, LinkOutlined } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
 import GlassCard from '@/shared/components/GlassCard'
 import GlassButton from '@/shared/components/GlassButton'
@@ -11,7 +11,6 @@ import PersonnelForm from '../components/PersonnelForm'
 import {
   usePersonnelList,
   useDeletePerson,
-  useSeedPersonnel,
   useBackfillPersonLinks,
 } from '../hooks/usePersonnel'
 import { useDebounce } from '@/shared/hooks/useDebounce'
@@ -37,7 +36,6 @@ export default function PersonnelListPage() {
 
   const { data, isLoading } = usePersonnelList(filters)
   const deletePerson = useDeletePerson()
-  const seedPersonnel = useSeedPersonnel()
   const backfillLinks = useBackfillPersonLinks()
 
   const handleBackfillLinks = async () => {
@@ -76,19 +74,6 @@ export default function PersonnelListPage() {
     setDeleteTarget(null)
   }
 
-  const handleSeed = async () => {
-    try {
-      const result = await seedPersonnel.mutateAsync()
-      if (Array.isArray(result) && result.length > 0) {
-        message.success(`Seeded ${result.length} personnel`)
-      } else {
-        message.info('Personnel already exist, skipping seed')
-      }
-    } catch {
-      message.error('Seed failed')
-    }
-  }
-
   const handleFormClose = () => {
     setFormOpen(false)
     setEditPerson(null)
@@ -110,22 +95,13 @@ export default function PersonnelListPage() {
         actions={
           <>
             {user?.role === 'ADMIN' && (
-              <>
-                <GlassButton
-                  icon={<LinkOutlined />}
-                  onClick={handleBackfillLinks}
-                  loading={backfillLinks.isPending}
-                >
-                  Link Logins
-                </GlassButton>
-                <GlassButton
-                  icon={<DatabaseOutlined />}
-                  onClick={handleSeed}
-                  loading={seedPersonnel.isPending}
-                >
-                  Seed Personnel
-                </GlassButton>
-              </>
+              <GlassButton
+                icon={<LinkOutlined />}
+                onClick={handleBackfillLinks}
+                loading={backfillLinks.isPending}
+              >
+                Link Logins
+              </GlassButton>
             )}
             <GlassButton
               variant="primary"

@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 import { Select, Switch, message } from 'antd'
 import {
   PlusOutlined,
-  DatabaseOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons'
@@ -14,13 +13,11 @@ import ConfirmDialog from '@/shared/components/ConfirmDialog'
 import CoupleCard from '../components/CoupleCard'
 import CoupleTable from '../components/CoupleTable'
 import CoupleForm from '../components/CoupleForm'
-import { useCouples, useDeleteCouple, useSeedCouples } from '../hooks/useCouples'
+import { useCouples, useDeleteCouple } from '../hooks/useCouples'
 import { useDebounce } from '@/shared/hooks/useDebounce'
-import { useAuthStore } from '@/shared/stores/authStore'
 import type { Couple } from '@/shared/types/couples'
 
 export default function CoupleListPage() {
-  const user = useAuthStore((s) => s.user)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -41,7 +38,6 @@ export default function CoupleListPage() {
 
   const { data, isLoading } = useCouples(filters)
   const deleteCouple = useDeleteCouple()
-  const seedCouples = useSeedCouples()
 
   const handlePageChange = useCallback((p: number, s: number) => {
     setPage(p)
@@ -68,19 +64,6 @@ export default function CoupleListPage() {
     setDeleteTarget(null)
   }
 
-  const handleSeed = async () => {
-    try {
-      const result = await seedCouples.mutateAsync()
-      if (Array.isArray(result) && result.length > 0) {
-        message.success(`Seeded ${result.length} couples`)
-      } else {
-        message.info('Couples already exist, skipping seed')
-      }
-    } catch {
-      message.error('Seed failed')
-    }
-  }
-
   const handleFormClose = () => {
     setFormOpen(false)
     setEditCouple(null)
@@ -105,16 +88,6 @@ export default function CoupleListPage() {
             >
               {viewMode === 'cards' ? 'Table' : 'Cards'}
             </GlassButton>
-            {user?.role === 'ADMIN' && (
-              <GlassButton
-                variant="secondary"
-                icon={<DatabaseOutlined />}
-                onClick={handleSeed}
-                loading={seedCouples.isPending}
-              >
-                Seed Couples
-              </GlassButton>
-            )}
             <GlassButton icon={<PlusOutlined />} onClick={handleAddClick}>
               Add Couple
             </GlassButton>

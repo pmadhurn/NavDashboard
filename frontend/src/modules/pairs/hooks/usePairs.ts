@@ -59,13 +59,3 @@ export function usePairStats() {
   })
 }
 
-export function useSeedPairs() {
-  const queryClient = useQueryClient()
-  return useMutation<Pair[], Error, void>({
-    mutationFn: () => api.post<Pair[]>('/pairs/seed'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pairs'] })
-      queryClient.invalidateQueries({ queryKey: ['couples'] })
-    },
-  })
-}
