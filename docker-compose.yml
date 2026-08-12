@@ -38,7 +38,7 @@ services:
   #image: cloudflare/cloudflared:latest
   #command: tunnel run
   #environment:
-  # - TUNNEL_TOKEN=eyJhIjoiYWM1ZmMwM2E5ZWE2NmU3OGFiNTlkN2NjMzk0NTc4ZGEiLCJ0IjoiZDlhNWM0OGYtODQwOC00ZjM3LTkwNzYtYjU1ZDczYTkzNDU1IiwicyI6IlpETm1PR1JqT0dJdFl6WXdaaTAwTnpJMUxXSmtOMkV0WmpRNVlXUmxOMkV3T0RjNCJ9
+  # - TUNNEL_TOKEN=${TUNNEL_TOKEN}   # never commit the value; it is a credential
   # - navdashboard
   #networks:
   # - navdashboard

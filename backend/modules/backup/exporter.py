@@ -55,6 +55,16 @@ from modules.assets.custody_models import (
 )
 from modules.assets.models import Asset, AssetCategory, AssetHistory, AssetReport
 from modules.documents.models import Document
+from modules.downloads.models import (
+    DownloadCategory,
+    DownloadItem,
+    DownloadItemAccess,
+    DownloadVersion,
+)
+from modules.projects.models import EquipmentMovement, EquipmentMovementItem
+from modules.personnel.models import AssignmentHistory
+from modules.devices.models import DeviceStatusHistory as DSH
+from modules.auth.models import UserScope
 from modules.attendance.models import AttendanceDay, CompOffLedger
 from modules.updates.models import DailyUpdate, UpdateComment
 
@@ -276,6 +286,34 @@ def _get_export_tables() -> list[dict]:
                         "is_repairable", "vendor_id", "cost", "sent_at",
                         "received_at", "outcome_note", "reported_by", "created_at"],
         },
+        # --- The rest (Phase 11): every remaining business table -------------
+        # A "full backup" that silently drops the whole Downloads archive, all
+        # equipment movement history and every scope grant is not a backup.
+        {"name": "DownloadCategories", "key": "download_categories", "model": DownloadCategory,
+         "columns": ["id", "name", "description", "sort_order", "created_at", "updated_at"]},
+        {"name": "DownloadItems", "key": "download_items", "model": DownloadItem,
+         "columns": ["id", "category_id", "title", "description", "created_at", "updated_at"]},
+        {"name": "DownloadVersions", "key": "download_versions", "model": DownloadVersion,
+         "columns": ["id", "item_id", "version", "file_path", "file_size",
+                     "uploaded_by", "created_at"]},
+        {"name": "DownloadItemAccess", "key": "download_item_access", "model": DownloadItemAccess,
+         "columns": ["id", "item_id", "user_id", "created_at"]},
+        {"name": "EquipmentMovements", "key": "equipment_movements", "model": EquipmentMovement,
+         "columns": ["id", "project_id", "phase_id", "direction", "handled_by",
+                     "received_by_name", "notes", "created_at", "updated_at"]},
+        {"name": "EquipmentMovementItems", "key": "equipment_movement_items",
+         "model": EquipmentMovementItem,
+         "columns": ["id", "movement_id", "asset_id", "quantity", "condition_note",
+                     "item_status", "return_outcome", "outcome_note", "resolved_at",
+                     "created_at"]},
+        {"name": "AssignmentHistory", "key": "assignment_history", "model": AssignmentHistory,
+         "columns": ["id", "person_id", "entity_type", "entity_id",
+                     "assigned_at", "unassigned_at", "created_at"]},
+        {"name": "DeviceStatusHistory", "key": "device_status_history", "model": DSH,
+         "columns": ["id", "device_id", "old_status", "new_status", "changed_by",
+                     "reason", "created_at"]},
+        {"name": "UserScopes", "key": "user_scopes", "model": UserScope,
+         "columns": ["id", "user_id", "section", "scope", "created_at"]},
         # --- Attendance ---------------------------------------------------
         {
             # Added with the module rather than deferred: a restore that silently
