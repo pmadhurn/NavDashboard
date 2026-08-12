@@ -613,3 +613,69 @@ async def update_report(
     await db.commit()
     await db.refresh(report)
     return AssetReportResponse.model_validate(report)
+
+
+# --- export -----------------------------------------------------------------
+
+
+async def export_assets(
+    db: AsyncSession,
+    fmt: str,
+    *,
+    custody_type: Optional[str] = None,
+    condition: Optional[str] = None,
+) -> tuple[bytes, str, str]:
+    """The inventory register: what exists, where it is, and what state it is in.
+
+    Custody and condition are separate columns because they are separate facts.
+    A register that collapsed them could not say "damaged, and still at the
+    customer's site", which is exactly the row someone needs to chase.
+    """
+    from modules.assets import custody_service as cs
+    from modules.exports import service as exports
+
+    stmt = select(Asset).where(Asset.deleted_at.is_(None))
+    if custody_type:
+        stmt = stmt.where(Asset.custody_type == custody_type)
+    if condition:
+        stmt = stmt.where(Asset.condition == condition)
+    assets = list((await db.execute(stmt.order_by(Asset.asset_code))).scalars().all())
+    await cs.enrich(db, assets)
+
+    scope = " · ".join(filter(None, [custody_type, condition])) or "Everything on the books"
+    return exports.render(
+        exports.Table(
+            title="Inventory",
+            subtitle=scope,
+            sheet_name="Inventory",
+            filename_stem="inventory",
+            columns=[
+                exports.Column("Code", "asset_code", width=14, pdf_width_mm=20),
+                exports.Column("Item", "name", width=38, pdf_width_mm=44, truncate=52),
+                exports.Column("Category", "category", width=20, pdf_width_mm=24, truncate=26),
+                exports.Column("Held by", "custody_label", width=26, pdf_width_mm=30,
+                               empty="—", truncate=32),
+                exports.Column("Custody", "custody_type", pdf_width_mm=21),
+                exports.Column("Condition", "condition", pdf_width_mm=21),
+                exports.Column("Qty", "quantity", kind="number", pdf_width_mm=9),
+                # A4 has no room for a ninth column; a workbook does, and a
+                # serial is exactly what someone chasing a warranty needs.
+                exports.Column("Serial", "serial_number", width=20, empty="—",
+                               formats=("xlsx", "csv")),
+            ],
+            rows=[
+                {
+                    "asset_code": a.asset_code,
+                    "name": a.name,
+                    "category": a.category.name if a.category else None,
+                    "custody_label": a.custody_label,
+                    "custody_type": a.custody_type,
+                    "condition": a.condition,
+                    "quantity": a.quantity,
+                    "serial_number": a.serial_number,
+                }
+                for a in assets
+            ],
+        ),
+        fmt,
+    )

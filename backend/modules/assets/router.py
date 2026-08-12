@@ -1,7 +1,9 @@
+import io
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
@@ -72,6 +74,27 @@ async def list_assets(
         location_id=location_id,
         person_id=person_id,
         available=available,
+    )
+
+
+# Registered above `/{asset_id}`: FastAPI matches in declaration order, and
+# below it "export" would be parsed as an id and 422 instead.
+@router.get("/export")
+async def export_assets(
+    format: str = Query("xlsx", pattern="^(xlsx|csv|pdf)$"),
+    custody_type: Optional[str] = Query(None),
+    condition: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The inventory register as a workbook, a CSV, or a printable PDF."""
+    payload, media_type, filename = await service.export_assets(
+        db, format, custody_type=custody_type, condition=condition
+    )
+    return StreamingResponse(
+        io.BytesIO(payload),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

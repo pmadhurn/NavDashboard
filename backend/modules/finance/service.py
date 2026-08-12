@@ -43,6 +43,7 @@ from modules.finance.schemas import (
     SettlementProject,
     SettlementSummary,
 )
+from modules.exports import service as exports
 from modules.projects.models import Project
 from shared.audit import record_audit
 from shared.pagination import PaginatedResponse, PaginationParams, paginate
@@ -888,57 +889,76 @@ async def export_expenses(
     )
 
 
+def _expense_table(expenses: list[Expense], scope_label: str) -> exports.Table:
+    """The spreadsheet shape of an expense list.
+
+    Amount stays a number with a money format rather than a formatted string,
+    so the column can be summed by whoever opens it.
+    """
+    return exports.Table(
+        title=scope_label,
+        sheet_name="Expenses",
+        filename_stem="expenses",
+        columns=[
+            exports.Column("Date", "expense_date", kind="date", width=12),
+            exports.Column("Title", "title", width=40),
+            exports.Column("Category", "category"),
+            exports.Column("Status", "status"),
+            exports.Column("Amount", "amount", kind="money"),
+            exports.Column("Currency", "currency"),
+            exports.Column("Notes", "notes", width=30),
+        ],
+        rows=[
+            {
+                "expense_date": e.expense_date,
+                "title": e.title,
+                "category": e.category,
+                "status": e.status,
+                "amount": float(e.amount),
+                "currency": e.currency,
+                "notes": e.notes,
+            }
+            for e in expenses
+        ],
+        total_key="amount",
+    )
+
+
 def _build_xlsx(expenses: list[Expense], scope_label: str) -> bytes:
-    import xlsxwriter
-
-    buffer = io.BytesIO()
-    workbook = xlsxwriter.Workbook(buffer, {"in_memory": True})
-    sheet = workbook.add_worksheet("Expenses")
-    bold = workbook.add_format({"bold": True})
-    money = workbook.add_format({"num_format": "#,##0.00"})
-
-    sheet.write(0, 0, scope_label, bold)
-    headers = ["Date", "Title", "Category", "Status", "Amount", "Currency", "Notes"]
-    for col, h in enumerate(headers):
-        sheet.write(2, col, h, bold)
-
-    total = 0.0
-    for row, e in enumerate(expenses, start=3):
-        total += float(e.amount)
-        sheet.write(row, 0, e.expense_date.strftime("%Y-%m-%d"))
-        sheet.write(row, 1, e.title)
-        sheet.write(row, 2, e.category or "")
-        sheet.write(row, 3, e.status)
-        sheet.write_number(row, 4, float(e.amount), money)
-        sheet.write(row, 5, e.currency)
-        sheet.write(row, 6, e.notes or "")
-
-    last = len(expenses) + 3
-    sheet.write(last, 3, "Total", bold)
-    sheet.write_number(last, 4, total, money)
-    sheet.set_column(0, 0, 12)
-    sheet.set_column(1, 1, 40)
-    sheet.set_column(6, 6, 30)
-    workbook.close()
-    return buffer.getvalue()
+    return exports.to_xlsx(_expense_table(expenses, scope_label))
 
 
 async def _build_zip(storage, expenses: list[Expense], receipts: dict) -> bytes:
-    import csv
     import zipfile
+
+    summary = exports.to_csv(
+        exports.Table(
+            title="",
+            columns=[
+                exports.Column("Date", "expense_date", kind="date"),
+                exports.Column("Title", "title"),
+                exports.Column("Category", "category"),
+                exports.Column("Status", "status"),
+                exports.Column("Amount", "amount", kind="money"),
+                exports.Column("Currency", "currency"),
+            ],
+            rows=[
+                {
+                    "expense_date": e.expense_date,
+                    "title": e.title,
+                    "category": e.category,
+                    "status": e.status,
+                    "amount": float(e.amount),
+                    "currency": e.currency,
+                }
+                for e in expenses
+            ],
+        )
+    )
 
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        # summary csv
-        summary = io.StringIO()
-        writer = csv.writer(summary)
-        writer.writerow(["Date", "Title", "Category", "Status", "Amount", "Currency"])
-        for e in expenses:
-            writer.writerow([
-                e.expense_date.strftime("%Y-%m-%d"), e.title, e.category or "",
-                e.status, float(e.amount), e.currency,
-            ])
-        zf.writestr("summary.csv", summary.getvalue())
+        zf.writestr("summary.csv", summary)
 
         for e in expenses:
             for doc in receipts.get(e.id, []):
@@ -952,55 +972,46 @@ async def _build_zip(storage, expenses: list[Expense], receipts: dict) -> bytes:
 async def _build_pdf(
     storage, expenses: list[Expense], receipts: dict, scope_label: str, include_images: bool
 ) -> bytes:
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.platypus import (
-        Image as RLImage,
-        PageBreak,
-        Paragraph,
-        SimpleDocTemplate,
-        Spacer,
-        Table,
-        TableStyle,
-    )
+    from reportlab.platypus import Image as RLImage, PageBreak, Paragraph, Spacer
 
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=20 * mm)
     styles = getSampleStyleSheet()
-    elements = [
-        Paragraph("Expense Report", styles["Title"]),
-        Paragraph(scope_label, styles["Normal"]),
-        Spacer(1, 8 * mm),
-    ]
+    total = float(sum(float(e.amount) for e in expenses))
+    currency = expenses[0].currency if expenses else "INR"
 
-    data = [["Date", "Title", "Category", "Status", "Amount"]]
-    total = 0.0
-    for e in expenses:
-        total += float(e.amount)
-        data.append([
-            e.expense_date.strftime("%d %b %Y"),
-            e.title[:50],
-            e.category or "—",
-            e.status,
-            f"{e.currency} {float(e.amount):,.2f}",
-        ])
-    data.append(["", "", "", "Total", f"{expenses[0].currency if expenses else 'INR'} {total:,.2f}"])
-
-    table = Table(data, colWidths=[26 * mm, 62 * mm, 28 * mm, 24 * mm, 34 * mm])
-    table.setStyle(
-        TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#333333")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-            ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
-            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-            ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
-        ])
+    elements = exports.pdf_elements(
+        exports.Table(
+            title="Expense Report",
+            subtitle=scope_label,
+            columns=[
+                exports.Column("Date", "expense_date", kind="date",
+                               date_format="%d %b %Y", pdf_width_mm=26),
+                exports.Column("Title", "title", truncate=50, pdf_width_mm=62),
+                exports.Column("Category", "category", empty="—", pdf_width_mm=28),
+                exports.Column("Status", "status", pdf_width_mm=24),
+                exports.Column("Amount", "amount", kind="money",
+                               prefix_key="currency", pdf_width_mm=34),
+            ],
+            rows=[
+                {
+                    "expense_date": e.expense_date,
+                    "title": e.title,
+                    "category": e.category,
+                    "status": e.status,
+                    "amount": float(e.amount),
+                    "currency": e.currency,
+                }
+                for e in expenses
+            ],
+            total_key="amount",
+            total_display=f"{currency} {total:,.2f}",
+        )
     )
-    elements.append(table)
 
+    # Everything below is the part that is not a table: receipts fetched from
+    # object storage and appended as pages. It stays here because it is about
+    # expenses specifically, not about exporting.
     if include_images:
         for e in expenses:
             docs = receipts.get(e.id, [])
@@ -1032,8 +1043,7 @@ async def _build_pdf(
                 except Exception:
                     logger.warning("Could not embed receipt %s", d.original_filename)
 
-    doc.build(elements)
-    return buffer.getvalue()
+    return exports.build_pdf(elements)
 
 
 # --- PDF bill ---
@@ -1044,12 +1054,6 @@ async def generate_bill_pdf(
     date_from: Optional[datetime],
     date_to: Optional[datetime],
 ) -> bytes:
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
-    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-    from reportlab.lib.styles import getSampleStyleSheet
-
     stmt = select(Expense).where(Expense.deleted_at.is_(None))
     project_name = "All projects"
     if project_id:
@@ -1064,43 +1068,35 @@ async def generate_bill_pdf(
     stmt = stmt.order_by(Expense.expense_date)
     expenses = (await db.execute(stmt)).scalars().all()
 
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=20 * mm)
-    styles = getSampleStyleSheet()
-    elements = [
-        Paragraph("Expense Report", styles["Title"]),
-        Paragraph(f"Scope: {project_name}", styles["Normal"]),
-        Spacer(1, 8 * mm),
-    ]
+    total = float(sum(float(e.amount) for e in expenses))
+    currency = expenses[0].currency if expenses else "INR"
 
-    data = [["Date", "Title", "Category", "Amount"]]
-    total = 0.0
-    for expense in expenses:
-        total += float(expense.amount)
-        data.append([
-            expense.expense_date.strftime("%d %b %Y"),
-            expense.title[:60],
-            expense.category or "—",
-            f"{expense.currency} {float(expense.amount):,.2f}",
-        ])
-    data.append(["", "", "Total", f"{expenses[0].currency if expenses else 'INR'} {total:,.2f}"])
-
-    table = Table(data, colWidths=[28 * mm, 78 * mm, 34 * mm, 34 * mm])
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#333333")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-                ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
-            ]
+    return exports.to_pdf(
+        exports.Table(
+            title="Expense Report",
+            subtitle=f"Scope: {project_name}",
+            columns=[
+                exports.Column("Date", "expense_date", kind="date",
+                               date_format="%d %b %Y", pdf_width_mm=28),
+                exports.Column("Title", "title", truncate=60, pdf_width_mm=78),
+                exports.Column("Category", "category", empty="—", pdf_width_mm=34),
+                exports.Column("Amount", "amount", kind="money",
+                               prefix_key="currency", pdf_width_mm=34),
+            ],
+            rows=[
+                {
+                    "expense_date": e.expense_date,
+                    "title": e.title,
+                    "category": e.category,
+                    "amount": float(e.amount),
+                    "currency": e.currency,
+                }
+                for e in expenses
+            ],
+            total_key="amount",
+            total_display=f"{currency} {total:,.2f}",
         )
     )
-    elements.append(table)
-    doc.build(elements)
-    return buffer.getvalue()
 
 
 async def attach_receipt_flags(db: AsyncSession, expenses) -> None:

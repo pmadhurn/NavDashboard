@@ -27,6 +27,7 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.ai_assistant.router.delete_session": "ai.delete",  # DELETE /api/v1/ai/sessions/{session_id}
     "modules.ai_assistant.router.get_session": "ai.read",  # GET /api/v1/ai/sessions/{session_id}
     "modules.assets.router.list_assets": "assets.read",  # GET /api/v1/assets/
+    "modules.assets.router.export_assets": "assets.export",  # GET /api/v1/assets/export
     "modules.assets.router.create_asset": "assets.create",  # POST /api/v1/assets/
     "modules.assets.router.backfill_devices": "assets.backfill",  # POST /api/v1/assets/backfill-devices
     "modules.assets.router.list_categories": "assets.categories",  # GET /api/v1/assets/categories
@@ -196,6 +197,7 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.personnel.router.get_person_assignments": "personnel.read",  # GET /api/v1/personnel/{person_id}/assignments
     "modules.personnel.router.link_user": "personnel.create",  # POST /api/v1/personnel/{person_id}/link-user
     "modules.projects.router.list_projects": "projects.read",  # GET /api/v1/projects/
+    "modules.projects.router.export_projects": "projects.export",  # GET /api/v1/projects/export
     "modules.projects.router.create_project": "projects.create",  # POST /api/v1/projects/
     "modules.projects.router.deployments_for_entity": "projects.read",  # GET /api/v1/projects/deployments/for/{entity_type}/{entity_id}
     "modules.projects.router.update_movement_item": "projects.equipment",  # PUT /api/v1/projects/movements/items/{item_id}

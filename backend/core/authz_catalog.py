@@ -115,6 +115,7 @@ GROUPS: list[PermissionGroup] = [
         PermissionDef("projects.equipment", "Record outward and inward equipment", "projects"),
         PermissionDef("projects.deployments", "Manage deployed items", "projects"),
         PermissionDef("projects.close", "Close a project", "projects", dangerous=True),
+        PermissionDef("projects.export", "Export the project register", "projects"),
     ]),
     PermissionGroup("assets", "Inventory (assets)", "The master stock list", [
         *_crud("assets", "assets"),
@@ -127,6 +128,7 @@ GROUPS: list[PermissionGroup] = [
         PermissionDef("assets.bundles", "Create and edit kits", "assets"),
         PermissionDef("assets.returns", "Record what came back from a site", "assets"),
         PermissionDef("assets.repairs", "Manage the repair workflow", "assets"),
+        PermissionDef("assets.export", "Export the inventory register", "assets"),
     ]),
     PermissionGroup("tasks", "My work", "Your own task list and notifications", [
         PermissionDef("tasks.read", "See your tasks and notifications", "tasks"),

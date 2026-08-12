@@ -1,7 +1,9 @@
+import io
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
@@ -61,6 +63,27 @@ async def create_project(
     current_user: User = Depends(get_current_user),
 ):
     return await service.create_project(db, body, current_user.id)
+
+
+# Registered above `/{project_id}`: FastAPI matches in declaration order, and
+# below it "export" would be parsed as an id and 422 instead.
+@router.get("/export")
+async def export_projects(
+    format: str = Query("xlsx", pattern="^(xlsx|csv|pdf)$"),
+    status: Optional[str] = Query(None),
+    project_type: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The project register as a workbook, a CSV, or a printable PDF."""
+    payload, media_type, filename = await service.export_projects(
+        db, format, status=status, project_type=project_type
+    )
+    return StreamingResponse(
+        io.BytesIO(payload),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/{project_id}/archive")

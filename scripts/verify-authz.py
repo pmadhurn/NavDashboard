@@ -108,6 +108,8 @@ async def main():
             # mapped PUBLIC during the migration, which would have opened
             # self-registration; the check exists so it cannot regress.
             check("POST /auth/register", call("POST", "/auth/register", token), 403)
+            check("GET /assets/export", call("GET", "/assets/export", token), 403)
+            check("GET /projects/export", call("GET", "/projects/export", token), 403)
 
             print("\n2. Grant the Rigger role -> reads open, writes stay shut")
             rigger = (
@@ -131,6 +133,15 @@ async def main():
             # gone, not merely forbidden — a forbidden route still exists.
             check("POST /seeding/run is GONE", call("POST", "/seeding/run", token), 404)
             check("GET /audit/ (excluded)", call("GET", "/audit/", token), 403)
+            # Exporting is not reading. A Rigger may look at the inventory on
+            # screen; walking out with the whole register as a file is a
+            # separate grant, and this is what proves it did not ride in on
+            # assets.read.
+            check("GET /assets/ (assets.read)", call("GET", "/assets/", token), 200)
+            check("GET /assets/export (assets.export, NOT granted)",
+                  call("GET", "/assets/export", token), 403)
+            check("GET /projects/export (projects.export, NOT granted)",
+                  call("GET", "/projects/export", token), 403)
 
             print("\n3. Public routes need no token at all")
             req = urllib.request.Request(f"{BASE}/health")

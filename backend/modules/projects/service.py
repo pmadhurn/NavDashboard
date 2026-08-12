@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.exceptions import BadRequestException, ConflictException, NotFoundException
 from modules.assets.models import Asset
 from modules.assets.service import record_asset_event
+from modules.exports import service as exports
 from modules.personnel.models import Person
 from modules.projects.models import (
     EquipmentMovement,
@@ -936,3 +937,88 @@ async def project_archive(db: AsyncSession, project_id: UUID) -> dict:
             ).scalar_one()
         ),
     }
+
+
+# --- export -----------------------------------------------------------------
+
+
+async def export_projects(
+    db: AsyncSession,
+    fmt: str,
+    *,
+    status: Optional[str] = None,
+    project_type: Optional[str] = None,
+) -> tuple[bytes, str, str]:
+    """The project register, in whichever format the asker can use.
+
+    Spend comes from the same expense rows Finance totals, so a project export
+    and a finance export of the same project cannot disagree.
+    """
+    # Deferred: finance imports this module, so a top-level import would cycle.
+    from modules.finance.models import Expense
+
+    stmt = select(Project).where(Project.deleted_at.is_(None))
+    if status:
+        stmt = stmt.where(Project.status == status)
+    if project_type:
+        stmt = stmt.where(Project.project_type == project_type)
+    projects = list((await db.execute(stmt.order_by(Project.name))).scalars().all())
+
+    spend_rows = dict(
+        (
+            await db.execute(
+                select(Expense.project_id, func.coalesce(func.sum(Expense.amount), 0))
+                .where(Expense.deleted_at.is_(None))
+                .group_by(Expense.project_id)
+            )
+        ).all()
+    )
+    member_rows = dict(
+        (
+            await db.execute(
+                select(ProjectMember.project_id, func.count())
+                .where(ProjectMember.left_at.is_(None))
+                .group_by(ProjectMember.project_id)
+            )
+        ).all()
+    )
+
+    scope = " · ".join(filter(None, [status, project_type])) or "All projects"
+    return exports.render(
+        exports.Table(
+            title="Projects",
+            subtitle=scope,
+            sheet_name="Projects",
+            filename_stem="projects",
+            columns=[
+                exports.Column("Name", "name", width=40, pdf_width_mm=40, truncate=52),
+                # Type and Site are the two a printed page can most afford to
+                # lose: the name usually carries both, and the workbook keeps them.
+                exports.Column("Type", "project_type", formats=("xlsx", "csv")),
+                exports.Column("Status", "status", pdf_width_mm=19),
+                exports.Column("Customer", "customer_name", width=28, pdf_width_mm=28, truncate=34),
+                exports.Column("Site", "site_location", width=30, formats=("xlsx", "csv")),
+                exports.Column("Start", "start_date", kind="date", width=12, pdf_width_mm=17),
+                exports.Column("End", "end_date", kind="date", width=12, pdf_width_mm=17),
+                exports.Column("Team", "members", kind="number", pdf_width_mm=10),
+                exports.Column("Spend", "spend", kind="money", width=14, pdf_width_mm=28),
+            ],
+            rows=[
+                {
+                    "name": p.name,
+                    "project_type": p.project_type,
+                    "status": p.status,
+                    "customer_name": p.customer_name,
+                    "site_location": p.site_location,
+                    "start_date": p.start_date,
+                    "end_date": p.end_date,
+                    "members": int(member_rows.get(p.id, 0)),
+                    "spend": float(spend_rows.get(p.id, 0) or 0),
+                }
+                for p in projects
+            ],
+            total_key="spend",
+            total_display=f"INR {float(sum(float(spend_rows.get(p.id, 0) or 0) for p in projects)):,.2f}",
+        ),
+        fmt,
+    )
