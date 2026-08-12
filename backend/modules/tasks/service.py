@@ -292,6 +292,38 @@ async def notify(
     return n
 
 
+async def notify_person(
+    db: AsyncSession, *, person_id, kind, title, body=None, link=None,
+    entity_type=None, entity_id=None, created_by=None, commit: bool = False,
+):
+    """Notify a person by their personnel record, if they have a login.
+
+    A notification belongs to a *user*; the equipment workflows all speak in
+    *people*, and most personnel records are not linked to a login yet. An
+    unlinked person is not an error here — it means there is nobody to tell,
+    so we say nothing and let the caller's work go through. Refusing the
+    handover because the receiver has no account would be the worse failure.
+
+    Defaults to `commit=False`: every caller is mid-transaction, and a
+    notification must never commit someone else's half-written work.
+    """
+    if not person_id:
+        return None
+    from modules.personnel.models import Person
+
+    user_id = (
+        await db.execute(select(Person.user_id).where(Person.id == person_id))
+    ).scalar_one_or_none()
+    if not user_id:
+        logger.info("No login linked to person %s — notification skipped", person_id)
+        return None
+    return await notify(
+        db, user_id=user_id, kind=kind, title=title, body=body, link=link,
+        entity_type=entity_type, entity_id=entity_id, created_by=created_by,
+        commit=commit,
+    )
+
+
 async def list_notifications(db: AsyncSession, user, *, unread_only=False, limit=100):
     from modules.tasks.models import Notification
 

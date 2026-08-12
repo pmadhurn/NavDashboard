@@ -33,9 +33,26 @@ from modules.assets.movement_models import (
     AssetRepair,
 )
 from modules.personnel.models import Person
+from modules.tasks.service import notify_person
 from shared.audit import record_audit
 
 logger = logging.getLogger(__name__)
+
+
+def _items_phrase(count: int) -> str:
+    return f"{count} item" if count == 1 else f"{count} items"
+
+
+def _asset_lines(assets, note: str | None) -> str | None:
+    """What is actually being moved, in the notification itself.
+
+    A notification that only says "you have a handover" makes you open the app
+    to find out whether it matters. Naming the items is the whole difference.
+    """
+    names = ", ".join(f"{a.name} ({a.asset_code})" for a in assets[:6])
+    if len(assets) > 6:
+        names += f", and {len(assets) - 6} more"
+    return f"{names}\n{note}" if note else (names or None)
 
 
 # --- handover ---------------------------------------------------------------
@@ -58,7 +75,7 @@ async def create_handover(
     """Offer items to someone. Custody does not move yet."""
     if from_person_id == to_person_id:
         raise BadRequestException("Choose a different person to hand over to")
-    await _person_or_404(db, from_person_id)
+    from_person = await _person_or_404(db, from_person_id)
     await _person_or_404(db, to_person_id)
     if not asset_ids:
         raise BadRequestException("Select at least one item to hand over")
@@ -112,6 +129,18 @@ async def create_handover(
     for a in assets:
         db.add(AssetHandoverItem(handover_id=handover.id, asset_id=a.id))
 
+    await notify_person(
+        db,
+        person_id=to_person_id,
+        kind="handover.offered",
+        title=f"{from_person.full_name} wants to hand you {_items_phrase(len(assets))}",
+        body=_asset_lines(assets, note),
+        link="/inventory/handovers",
+        entity_type="asset_handover",
+        entity_id=handover.id,
+        created_by=user_id,
+    )
+
     await record_audit(
         db, action="CREATE", entity_type="asset_handover", entity_id=handover.id,
         user_id=user_id, new_values={"items": len(assets), "to": str(to_person_id)},
@@ -144,14 +173,15 @@ async def respond_to_handover(
     handover.responded_by = user_id
     handover.responded_at = datetime.now(timezone.utc)
 
+    items = (
+        await db.execute(
+            select(Asset)
+            .join(AssetHandoverItem, AssetHandoverItem.asset_id == Asset.id)
+            .where(AssetHandoverItem.handover_id == handover.id)
+        )
+    ).scalars().all()
+
     if accept:
-        items = (
-            await db.execute(
-                select(Asset)
-                .join(AssetHandoverItem, AssetHandoverItem.asset_id == Asset.id)
-                .where(AssetHandoverItem.handover_id == handover.id)
-            )
-        ).scalars().all()
         for asset in items:
             await cs.move_custody(
                 db, asset,
@@ -164,6 +194,25 @@ async def respond_to_handover(
                 user_id=user_id,
                 commit=False,
             )
+
+    # The person who offered is the one still wondering. Declining matters more
+    # than accepting: the items are back on their hands and they may not know.
+    responder = await _person_name(db, handover.to_person_id) or "They"
+    await notify_person(
+        db,
+        person_id=handover.from_person_id,
+        kind="handover.accepted" if accept else "handover.declined",
+        title=(
+            f"{responder} accepted {_items_phrase(len(items))}"
+            if accept
+            else f"{responder} declined {_items_phrase(len(items))} — still with you"
+        ),
+        body=_asset_lines(items, note),
+        link="/inventory/handovers",
+        entity_type="asset_handover",
+        entity_id=handover.id,
+        created_by=user_id,
+    )
 
     await record_audit(
         db, action="UPDATE", entity_type="asset_handover", entity_id=handover.id,
@@ -189,6 +238,19 @@ async def cancel_handover(db: AsyncSession, handover_id: UUID, user_id) -> Asset
     handover.status = HANDOVER_CANCELLED
     handover.responded_by = user_id
     handover.responded_at = datetime.now(timezone.utc)
+    # Whoever was asked to accept has it in their task list. Withdrawing it
+    # silently would leave them chasing something nobody is waiting for.
+    offerer = await _person_name(db, handover.from_person_id) or "Someone"
+    await notify_person(
+        db,
+        person_id=handover.to_person_id,
+        kind="handover.cancelled",
+        title=f"{offerer} withdrew a handover — nothing for you to accept",
+        link="/inventory/handovers",
+        entity_type="asset_handover",
+        entity_id=handover.id,
+        created_by=user_id,
+    )
     await db.commit()
     await db.refresh(handover)
     return handover

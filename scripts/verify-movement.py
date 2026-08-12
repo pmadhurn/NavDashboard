@@ -24,6 +24,7 @@ from modules.assets.movement_models import (  # noqa: E402
 from modules.auth.models import User  # noqa: E402
 from modules.personnel.models import Person  # noqa: E402
 from modules.projects.models import Project  # noqa: E402
+from modules.tasks.models import Notification  # noqa: E402
 
 PREFIX = "TESTMOVE-"
 P1, P2 = "Move Probe A", "Move Probe B"
@@ -52,10 +53,20 @@ async def _purge(db):
         await db.execute(delete(Asset).where(Asset.id.in_(ids)))
     pids = (await db.execute(select(Person.id).where(Person.full_name.in_([P1, P2])))).scalars().all()
     if pids:
-        await db.execute(delete(AssetHandoverItem).where(
-            AssetHandoverItem.handover_id.in_(
-                select(AssetHandover.id).where(AssetHandover.from_person_id.in_(pids)))))
-        await db.execute(delete(AssetHandover).where(AssetHandover.from_person_id.in_(pids)))
+        hids = (await db.execute(select(AssetHandover.id).where(
+            AssetHandover.from_person_id.in_(pids) | AssetHandover.to_person_id.in_(pids)
+        ))).scalars().all()
+        if hids:
+            # Notifications outlive the handover they point at, and they hang off
+            # users rather than persons, so deleting the fixture people does not
+            # take them with it.
+            await db.execute(delete(Notification).where(
+                Notification.entity_type == "asset_handover",
+                Notification.entity_id.in_(hids),
+            ))
+            await db.execute(delete(AssetHandoverItem).where(
+                AssetHandoverItem.handover_id.in_(hids)))
+            await db.execute(delete(AssetHandover).where(AssetHandover.id.in_(hids)))
         await db.execute(delete(Person).where(Person.id.in_(pids)))
     await db.execute(text("DELETE FROM asset_bundles WHERE name = 'Test Kit (verify)'"))
     await db.execute(text("DELETE FROM customers WHERE name = 'Move Probe Customer'"))
@@ -194,6 +205,65 @@ async def main():
             await ms.delete_bundle(db, bundle.id, admin.id)
             await db.refresh(assets[6])
             check("deleting a kit keeps its items", assets[6].deleted_at, None)
+
+            print("\n13. A handover tells the other person, and survives them having no login")
+
+            async def notes_for(user_id, kind=None):
+                stmt = select(Notification).where(
+                    Notification.user_id == user_id,
+                    Notification.entity_type == "asset_handover",
+                )
+                if kind:
+                    stmt = stmt.where(Notification.kind == kind)
+                return list((await db.execute(stmt)).scalars().all())
+
+            # B has a login; A deliberately does not — that is the common state
+            # before someone links every personnel record to an account.
+            b.user_id = admin.id
+            await db.commit()
+            check("A has no login (the case that used to crash)", a.user_id, None)
+
+            spare = assets[8]
+            await cs.move_custody(db, spare, to_custody_type="PERSON", to_custody_id=a.id,
+                                  event_type="ISSUED", user_id=admin.id)
+            before = len(await notes_for(admin.id))
+
+            h3 = await ms.create_handover(db, from_person_id=a.id, to_person_id=b.id,
+                                          asset_ids=[spare.id], note="Site swap", user_id=admin.id)
+            offered = await notes_for(admin.id, "handover.offered")
+            check("the receiver is told", len(await notes_for(admin.id)) - before, 1)
+            check("it points at this handover", str(offered[-1].entity_id), str(h3.id))
+            check("it names who is offering", P1 in offered[-1].title, True)
+            check("it names the item, not just a count", spare.asset_code in (offered[-1].body or ""), True)
+            check("it links somewhere useful", offered[-1].link, "/inventory/handovers")
+            check("it arrives unread", offered[-1].read_at, None)
+
+            # Accepting notifies the *offerer* — who has no login here. The
+            # handover must still go through; nobody simply gets told.
+            before = len(await notes_for(admin.id))
+            await ms.respond_to_handover(db, h3.id, accept=True, note=None, user_id=admin.id)
+            await db.refresh(spare)
+            check("accepted despite an unlinked offerer", str(spare.custody_id), str(b.id))
+            check("nothing invented for a person with no login",
+                  len(await notes_for(admin.id)) - before, 0)
+
+            # And the other direction: B offers, A declines, B hears about it.
+            h4 = await ms.create_handover(db, from_person_id=b.id, to_person_id=a.id,
+                                          asset_ids=[spare.id], note=None, user_id=admin.id)
+            await ms.respond_to_handover(db, h4.id, accept=False, note="Not my site", user_id=admin.id)
+            declined = await notes_for(admin.id, "handover.declined")
+            check("a decline reaches the person left holding it", len(declined), 1)
+            check("and says so", "still with you" in declined[-1].title, True)
+
+            # Withdrawing an offer has to reach the person who was asked to
+            # accept it — it is sitting in their task list until it does.
+            await cs.move_custody(db, spare, to_custody_type="PERSON", to_custody_id=a.id,
+                                  event_type="ISSUED", user_id=admin.id)
+            h5 = await ms.create_handover(db, from_person_id=a.id, to_person_id=b.id,
+                                          asset_ids=[spare.id], note=None, user_id=admin.id)
+            await ms.cancel_handover(db, h5.id, admin.id)
+            check("withdrawing tells whoever was asked",
+                  len(await notes_for(admin.id, "handover.cancelled")), 1)
 
         finally:
             await _purge(db)
