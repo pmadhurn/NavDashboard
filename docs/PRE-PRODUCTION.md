@@ -20,7 +20,7 @@ These are all live secrets. Nothing else on this page matters until they are don
 | A3 | **Clerk `sk_test_…` secret key** was pasted into a chat transcript, and the instance is the development one, `trusted-starling-62.clerk.accounts.dev`. Production needs its own Clerk instance and a fresh `CLERK_ISSUER` / `CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`. | ❌ Dev instance live | You |
 | A4 | `SECRET_KEY` rotated off the committed placeholder. | ✅ **Already done** — 64 chars, differs from the value in `90b9a24`. `DEPLOYMENT.md` still lists this as outstanding; it isn't. | — |
 | A5 | `backend/.env` and `frontend/.env` untracked. | ✅ Confirmed by `git check-ignore` | — |
-| A6 | **An admin JWT was committed to this branch.** `tok.txt` — browser-test scratch — was swept into `7618864` by a `git add -A` and pushed. Untracked and gitignored in `5b0adca`, but still readable in history. Claims: `role=ADMIN`, no `jti`, **expires 2026-08-13 05:56 UTC**. Because it carries no `jti` it cannot be revoked — it dies on expiry, or immediately if `SECRET_KEY` is rotated. | ⚠️ Live until 2026-08-13, or until A4 is redone | You: rotate `SECRET_KEY` again, or strip the blob from history and force-push |
+| A6 | **An admin JWT was committed to this branch.** `tok.txt` — browser-test scratch — was swept into `7618864` by a `git add -A` and pushed. Untracked and gitignored in `5b0adca`, but still readable in history. Claims: `role=ADMIN`, no `jti`, **expires 2026-08-13 05:56 UTC**. Because it carries no `jti` it cannot be revoked — it dies on expiry, or immediately if `SECRET_KEY` is rotated. | ⚠️ Live until 2026-08-13 05:56 UTC | **You: rotate `SECRET_KEY` again.** That is the whole fix — it kills the token instantly and is a go-live action anyway. Rewriting history to strip the blob is optional tidying, not the other half. |
 
 > Rotating A1 means changing it in `backend/.env` **and** in the `db` service's
 > environment, then recreating both containers. The volume keeps the data; the
@@ -36,7 +36,7 @@ These are all live secrets. Nothing else on this page matters until they are don
 | B2 | **Link every personnel record to a login.** **0 of 5 are linked.** Until a person is linked they have no attendance, no tasks and no equipment custody — and, since this session, no notifications either: a handover to an unlinked person is delivered silently. | ❌ 0/5 linked | You |
 | B3 | **Decide which admin is real.** Two ACTIVE admins exist: `admin@navdashboard.com` (the seeded one) and `pmadhurn@gmail.com`. Delete one, or keep both deliberately. | ⚠️ Two admins | You |
 | B4 | Seeded admin password changed off the default. | ✅ Neither `admin123` nor `Admin@123` works on either account. | — |
-| B5 | **Merge the PR.** Today's work adds 4 commits on top of the 36 already there and introduces no new migrations — but the branch as a whole carries schema changes, so merging is your call, not a self-merge. | ❌ Unmerged | You |
+| B5 | **Merge the PR.** Today's work adds 8 commits on top of the 36 already there and introduces no new migrations — but the branch as a whole carries schema changes, so merging is your call, not a self-merge. | ❌ Unmerged | You |
 
 ---
 
@@ -46,16 +46,19 @@ These are all live secrets. Nothing else on this page matters until they are don
 |---|---|---|
 | C1 | **Clerk sign-in was 500ing on every attempt** and its tokens could never be revoked. Fixed today (`a2ff55b`): every sign-in path now goes through `issue_session`, so a Clerk session is revocable and appears in the admin session list. | ✅ Fixed, verify-sessions 19/19 |
 | C2 | **No rate limiting on `/auth/login`.** Nothing throttles password guessing, and `/auth/clerk` is unauthenticated (its outbound JWKS fetch is already rate-floored, but the endpoint itself is not). A public deployment wants a limiter or an upstream one at the edge. | ❌ **Open** |
-| C3 | **Exports are unbounded.** `GET /assets/export` and `GET /projects/export` load every row with no `limit`, build the whole table in memory and render it. Invisible at 14 assets; a stalled worker at ~10,000. Add a cap, or a background job, before the inventory is real. | ⚠️ Known limit |
-| C4 | 270/270 operations permission-mapped; the app refuses to start if that ever slips. | ✅ |
-| C5 | Migrations at a single head (`e8f9a0b1c2d3`), matching the running database. | ✅ |
-| C6 | `ENVIRONMENT=production`, `CORS_ORIGINS=https://nav.madhur.dev` — not the `*` default. Update it when the real domain lands. | ✅ / ⚠️ domain |
+| C3 | **`_assert_session_active` fails open on a missing `jti`.** `core/authz.py`: `if not jti: return`. That is *why* the Clerk token was unrevocable and why the JWT in A6 cannot be killed — C1 fixed the instance, not the class. Any future path that mints via `create_access_token` gets the same silent free pass. **Closing it also breaks the browser-test harness**, which mints exactly such a token (`docs/STATUS.md`) for `route-sweep`, `polish-sweep`, `nav-personas` and `share-preview` — so the job is "reject jti-less tokens **and** move the harness onto `issue_session`", roughly half a day. Note that `verify-sessions.py` §6 asserts the fail-open *deliberately*; when this is fixed those two checks invert, and that is the fix landing, not a regression. | ❌ **Open — the class, not the instance** |
+| C4 | **Exports are unbounded.** `GET /assets/export` and `GET /projects/export` load every row with no `limit`, build the whole table in memory and render it. Invisible at 14 assets; a stalled worker at ~10,000. Add a cap, or a background job, before the inventory is real. | ⚠️ Known limit |
+| C5 | 270/270 operations permission-mapped; the app refuses to start if that ever slips. | ✅ |
+| C6 | Migrations at a single head (`e8f9a0b1c2d3`), matching the running database. | ✅ |
+| C7 | `ENVIRONMENT=production`, `CORS_ORIGINS=https://nav.madhur.dev` — not the `*` default. Update it when the real domain lands. | ✅ / ⚠️ domain |
 
 ---
 
 ## D. Should do — not blocking
 
-The four items deferred deliberately in the previous session, with their real cost.
+Listed, not done. D1 touches the couple workflow, which was never in scope to
+change; D2 is a day; D3 is a routing change better made deliberately. Scaling
+any of them into a release is your call, not something to absorb quietly.
 
 | # | Item | Cost | Why it was deferred |
 |---|---|---|---|
@@ -84,6 +87,9 @@ Re-run all of it after any of A–C. Anything below its number is a regression.
 | `route-sweep.mjs` | 63/63 |
 | `polish-sweep.mjs` | 84 checks, 0 problems |
 | `nav-personas.mjs` | 6/6, settings blocked for all three non-admins |
+
+All of the above were re-run against the **deployed image** on 2026-08-12 after
+the final rebuild, not against a `docker cp`'d container.
 
 Run the backend scripts with `docker cp … && docker exec …` as each file's
 docstring shows. Browser scripts need a fresh `tok.txt` and `user.json` (see
