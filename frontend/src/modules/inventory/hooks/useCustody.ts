@@ -198,9 +198,52 @@ export function useCreateCustomer() {
 export function useCreateVendor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string }) =>
-      api.post<Party>('/assets/vendors', body),
+    // Name-only from CreatableSelect (which shows its own feedback), full body
+    // from the Vendors page — the endpoint takes both.
+    mutationFn: (body: {
+      name: string;
+      contact_name?: string;
+      contact_phone?: string;
+      contact_email?: string;
+      notes?: string;
+    }) => api.post<Party>('/assets/vendors', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['assets', 'vendors'] }),
+  });
+}
+
+export function useUpdateVendor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      name?: string;
+      contact_name?: string | null;
+      contact_phone?: string | null;
+      contact_email?: string | null;
+      notes?: string | null;
+    }) => api.put<Party>(`/assets/vendors/${id}`, body),
+    onSuccess: () => {
+      invalidate(qc);
+      message.success('Vendor updated');
+    },
+    onError: (err: any) =>
+      message.error(err?.response?.data?.detail || 'Could not update the vendor'),
+  });
+}
+
+export function useDeleteVendor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del<void>(`/assets/vendors/${id}`),
+    onSuccess: () => {
+      invalidate(qc);
+      message.success('Vendor removed');
+    },
+    onError: (err: any) =>
+      message.error(err?.response?.data?.detail || 'Could not remove the vendor'),
   });
 }
 

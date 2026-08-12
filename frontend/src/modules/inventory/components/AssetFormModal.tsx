@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Switch } from 'antd';
+import { DatePicker, InputNumber, Switch } from 'antd';
+import type { Dayjs } from 'dayjs';
 import GlassModal from '@/shared/components/GlassModal';
 import GlassButton from '@/shared/components/GlassButton';
 import GlassInput from '@/shared/components/GlassInput';
@@ -9,6 +10,7 @@ import {
   useCreateAsset,
   useCreateAssetCategory,
 } from '../hooks/useAssets';
+import { useCreateVendor, useVendors } from '../hooks/useCustody';
 
 interface Props {
   open: boolean;
@@ -22,11 +24,16 @@ export default function AssetFormModal({ open, onClose }: Props) {
   const [quantity, setQuantity] = useState('1');
   const [serialNumber, setSerialNumber] = useState('');
   const [notes, setNotes] = useState('');
+  const [vendorId, setVendorId] = useState<string | undefined>();
+  const [purchasePrice, setPurchasePrice] = useState<number | null>(null);
+  const [purchaseDate, setPurchaseDate] = useState<Dayjs | null>(null);
   const [showMore, setShowMore] = useState(false);
 
   const { data: categories } = useAssetCategories();
+  const { data: vendors } = useVendors();
   const createAsset = useCreateAsset();
   const createCategory = useCreateAssetCategory();
+  const createVendor = useCreateVendor();
 
   const reset = () => {
     setName('');
@@ -35,6 +42,9 @@ export default function AssetFormModal({ open, onClose }: Props) {
     setQuantity('1');
     setSerialNumber('');
     setNotes('');
+    setVendorId(undefined);
+    setPurchasePrice(null);
+    setPurchaseDate(null);
     setShowMore(false);
   };
 
@@ -47,6 +57,9 @@ export default function AssetFormModal({ open, onClose }: Props) {
       quantity: isBulk ? parseInt(quantity, 10) || 1 : 1,
       serial_number: serialNumber.trim() || undefined,
       notes: notes.trim() || undefined,
+      vendor_id: vendorId,
+      purchase_price: purchasePrice ?? undefined,
+      purchase_date: purchaseDate ? purchaseDate.format('YYYY-MM-DD') : undefined,
     } as any);
     reset();
     onClose();
@@ -138,10 +151,43 @@ export default function AssetFormModal({ open, onClose }: Props) {
           {showMore ? '▾' : '▸'} More details
         </div>
         {showMore && (
-          <div>
-            <label style={labelStyle}>Notes</label>
-            <GlassInput value={notes} onChange={setNotes} placeholder="Anything worth noting" />
-          </div>
+          <>
+            <div>
+              <label style={labelStyle}>Notes</label>
+              <GlassInput value={notes} onChange={setNotes} placeholder="Anything worth noting" />
+            </div>
+            <div>
+              <label style={labelStyle}>Vendor</label>
+              <CreatableSelect
+                value={vendorId}
+                onChange={setVendorId}
+                options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))}
+                noun="vendor"
+                placeholder="Where was it bought?"
+                createPermission="stock.manage"
+                onCreate={(name) => createVendor.mutateAsync({ name })}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Purchase price</label>
+              <InputNumber
+                value={purchasePrice}
+                onChange={setPurchasePrice}
+                min={0}
+                prefix="₹"
+                style={{ width: '100%' }}
+                placeholder="What it cost"
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Purchase date</label>
+              <DatePicker
+                value={purchaseDate}
+                onChange={setPurchaseDate}
+                style={{ width: '100%' }}
+              />
+            </div>
+          </>
         )}
       </div>
     </GlassModal>

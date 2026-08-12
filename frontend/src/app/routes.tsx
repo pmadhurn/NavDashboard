@@ -39,6 +39,8 @@ const HandoversPage = lazy(() => import('@/modules/inventory/pages/HandoversPage
 const ReturnsPage = lazy(() => import('@/modules/inventory/pages/ReturnsPage'));
 const KitsPage = lazy(() => import('@/modules/inventory/pages/KitsPage'));
 const RepairsPage = lazy(() => import('@/modules/inventory/pages/RepairsPage'));
+const RequiredItemsPage = lazy(() => import('@/modules/inventory/pages/RequiredItemsPage'));
+const VendorsPage = lazy(() => import('@/modules/inventory/pages/VendorsPage'));
 const ProjectListPage = lazy(() => import('@/modules/projects/pages/ProjectListPage'));
 const ProjectDetailPage = lazy(() => import('@/modules/projects/pages/ProjectDetailPage'));
 const FinancePage = lazy(() => import('@/modules/finance/pages/FinancePage'));
@@ -118,6 +120,8 @@ export function AppRoutes() {
           <Route path="inventory/returns" element={<RequirePermission permission="assets.returns"><ReturnsPage /></RequirePermission>} />
           <Route path="inventory/kits" element={<RequirePermission permission="assets.read"><KitsPage /></RequirePermission>} />
           <Route path="inventory/repairs" element={<RequirePermission permission="assets.read"><RepairsPage /></RequirePermission>} />
+          <Route path="inventory/requests" element={<RequirePermission permission="stock.requests.read"><RequiredItemsPage /></RequirePermission>} />
+          <Route path="inventory/vendors" element={<RequirePermission permission="stock.read"><VendorsPage /></RequirePermission>} />
           <Route path="inventory/deployed" element={<RequirePermission permission="assets.read"><DeployedPage /></RequirePermission>} />
           <Route path="projects" element={<RequirePermission permission="projects.read"><ProjectListPage /></RequirePermission>} />
           <Route path="projects/:id" element={<RequirePermission permission="projects.read"><ProjectDetailPage /></RequirePermission>} />

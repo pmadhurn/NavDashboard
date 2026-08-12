@@ -34,6 +34,8 @@ import {
   AppstoreAddOutlined,
   MessageOutlined,
   CrownOutlined,
+  ShoppingCartOutlined,
+  ShopOutlined,
 } from '@ant-design/icons';
 import { can } from '@/shared/stores/authStore';
 
@@ -134,10 +136,12 @@ export const WORKSPACES: Workspace[] = [
     icon: <AppstoreOutlined />,
     items: [
       { key: '/inventory/assets', icon: <AppstoreOutlined />, label: 'Assets', permission: 'assets.read' },
+      { key: '/inventory/requests', icon: <ShoppingCartOutlined />, label: 'Required Items', permission: 'stock.requests.read' },
       { key: '/inventory/returns', icon: <InboxOutlined />, label: 'Record a return', permission: 'assets.returns' },
       { key: '/inventory/handovers', icon: <SwapOutlined />, label: 'Handovers', permission: 'assets.read' },
       { key: '/inventory/kits', icon: <AppstoreAddOutlined />, label: 'Kits', permission: 'assets.read' },
       { key: '/inventory/repairs', icon: <ToolOutlined />, label: 'Repairs', permission: 'assets.read' },
+      { key: '/inventory/vendors', icon: <ShopOutlined />, label: 'Vendors', permission: 'stock.read' },
     ],
   },
   {
@@ -175,6 +179,9 @@ export const WORKSPACES: Workspace[] = [
         label: 'Settlement',
         permission: 'finance.settle'
       },
+      // Finance plans payments from the required-items list, so it lives in
+      // both workspaces — same route, one page.
+      { key: '/inventory/requests', icon: <ShoppingCartOutlined />, label: 'Required Items', permission: 'stock.requests.read' },
     ],
   },
   {
