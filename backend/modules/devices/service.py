@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.exceptions import ConflictException, NotFoundException
 from modules.devices import repository
-from modules.devices.constants import STATUS_COLORS, DeviceStatus
+
 from modules.devices.models import Device, DeviceStatusHistory
 from modules.devices.schemas import (
     DeviceCreate,
@@ -242,41 +242,3 @@ async def get_device_status_history(
 async def get_device_stats(db: AsyncSession) -> DeviceStatsResponse:
     stats = await repository.get_stats(db)
     return DeviceStatsResponse(**stats)
-
-
-async def seed_devices(
-    db: AsyncSession, user_id: UUID
-) -> list[DeviceResponse]:
-    count = await repository.count_all(db)
-    if count > 0:
-        return []
-
-    seed_data = [
-        ("IU-00001", "IU", "WORKING"),
-        ("IU-00002", "IU", "WORKING"),
-        ("OU-00001", "OU", "WORKING"),
-        ("OU-00002", "OU", "NOT_WORKING"),
-        ("HC-00001", "HC", "WORKING"),
-        ("HC-00002", "HC", "WORKING"),
-        ("RF-00001", "RF", "WORKING"),
-        ("RF-00002", "RF", "FAULTY"),
-        ("IU-00003", "IU", "FAULTY"),
-        ("OU-00003", "OU", "WORKING"),
-    ]
-
-    results = []
-    for serial, dtype, status in seed_data:
-        device_in = DeviceCreate(
-            serial_number=serial, device_type=dtype, status=status
-        )
-        device = await repository.create(db, device_in)
-        await record_audit(
-            db,
-            action="CREATE",
-            entity_type="device",
-            entity_id=device.id,
-            user_id=user_id,
-            new_values={"serial_number": serial, "device_type": dtype, "seed": True},
-        )
-        results.append(_to_response(device))
-    return results

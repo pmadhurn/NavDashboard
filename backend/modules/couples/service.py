@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from math import ceil
 from uuid import UUID
 
@@ -26,7 +25,6 @@ from modules.locations.schemas import (
     MapDataPoint,
 )
 from modules.locations.service import calculate_distance
-from modules.personnel import repository as personnel_repository
 from shared.audit import record_audit
 from shared.filters import apply_filters
 from shared.pagination import PaginatedResponse, PaginationParams
@@ -39,7 +37,6 @@ from .schemas import (
     CoupleResponse,
     CoupleUpdate,
     LocationChangeRequest,
-    MaterialCreateInline,
 )
 
 STATUS_COLORS: dict[str, str] = {
@@ -370,127 +367,3 @@ async def get_couple_location_history(
 async def get_couple_map_data(db: AsyncSession) -> list[MapDataPoint]:
     data = await repository.get_map_data(db)
     return [MapDataPoint(**d) for d in data]
-
-
-async def seed_couples(
-    db: AsyncSession, user_id: UUID
-) -> list[CoupleResponse]:
-    count = await repository.count_all(db)
-    if count > 0:
-        return []
-
-    async def get_device_by_serial(serial: str) -> Device | None:
-        return await devices_repository.find_by_serial(db, serial)
-
-    from modules.personnel.models import Person
-
-    personnel_stmt = (
-        select(Person)
-        .where(Person.deleted_at.is_(None))
-        .order_by(Person.created_at)
-        .limit(6)
-    )
-    personnel_result = await db.execute(personnel_stmt)
-    personnel = list(personnel_result.scalars().all())
-    person_ids = [p.id for p in personnel]
-
-    templates = await inventory_repository.get_templates(db)
-    rooftop_template_id = None
-    for t in templates:
-        if t.template_name == "Standard Rooftop Kit":
-            rooftop_template_id = t.id
-            break
-
-    seed_configs = [
-        {
-            "name": "Couple A1",
-            "status": "WORKING",
-            "has_rf": False,
-            "lat": 48.8566,
-            "lng": 2.3522,
-            "address": "Paris Office Rooftop",
-            "serials": ["IU-00001", "OU-00001", "HC-00001"],
-            "template_id": rooftop_template_id,
-            "materials": None,
-            "person_idx": 0,
-        },
-        {
-            "name": "Couple A2",
-            "status": "WORKING",
-            "has_rf": True,
-            "lat": 48.8606,
-            "lng": 2.3376,
-            "address": "Louvre Building North",
-            "serials": ["IU-00002", "OU-00002", "HC-00002", "RF-00001"],
-            "template_id": rooftop_template_id,
-            "materials": None,
-            "person_idx": 1,
-        },
-        {
-            "name": "Couple B1",
-            "status": "NOT_WORKING",
-            "has_rf": False,
-            "lat": 48.8530,
-            "lng": 2.3499,
-            "address": "Seine Tower South",
-            "serials": ["IU-00003", "OU-00003"],
-            "template_id": None,
-            "materials": [
-                {"name": "Mounting Bracket", "quantity": 1, "unit": "pcs"},
-                {"name": "Ethernet Cable Cat6", "quantity": 2, "unit": "pcs"},
-            ],
-            "person_idx": 2,
-        },
-        {
-            "name": "Couple B2",
-            "status": "FAULTY",
-            "has_rf": True,
-            "lat": 48.8490,
-            "lng": 2.3470,
-            "address": "Latin Quarter Hub",
-            "serials": ["RF-00002"],
-            "template_id": None,
-            "materials": None,
-            "person_idx": 3,
-        },
-    ]
-
-    results: list[CoupleResponse] = []
-    for cfg in seed_configs:
-        device_ids: list[UUID] = []
-        for serial in cfg["serials"]:
-            dev = await get_device_by_serial(serial)
-            if dev:
-                device_ids.append(dev.id)
-
-        person_id = (
-            person_ids[cfg["person_idx"]]
-            if cfg["person_idx"] < len(person_ids)
-            else None
-        )
-
-        inline_materials = None
-        if cfg["materials"]:
-            inline_materials = [
-                MaterialCreateInline(**m) for m in cfg["materials"]
-            ]
-
-        couple_in = CoupleCreate(
-            name=cfg["name"],
-            status=cfg["status"],
-            has_rf=cfg["has_rf"],
-            handling_person_id=person_id,
-            location=LocationCreate(
-                latitude=cfg["lat"],
-                longitude=cfg["lng"],
-                address_note=cfg["address"],
-            ),
-            device_ids=device_ids,
-            fitting_materials=inline_materials,
-            template_id=cfg["template_id"],
-        )
-
-        couple_resp = await create_couple(db, couple_in, user_id)
-        results.append(couple_resp)
-
-    return results

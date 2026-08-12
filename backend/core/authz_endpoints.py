@@ -95,7 +95,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.couples.router.list_couples": "couples.read",  # GET /api/v1/couples/
     "modules.couples.router.create_couple": "couples.create",  # POST /api/v1/couples/
     "modules.couples.router.get_map_data": "couples.read",  # GET /api/v1/couples/map-data
-    "modules.couples.router.seed_couples": "couples.seed",  # POST /api/v1/couples/seed
     "modules.couples.router.delete_couple": "couples.delete",  # DELETE /api/v1/couples/{id}
     "modules.couples.router.get_couple": "couples.read",  # GET /api/v1/couples/{id}
     "modules.couples.router.update_couple": "couples.update",  # PUT /api/v1/couples/{id}
@@ -110,7 +109,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.dashboard.router.status_distribution": "dashboard.read",  # GET /api/v1/dashboard/status-distribution
     "modules.devices.router.list_devices": "devices.read",  # GET /api/v1/devices/
     "modules.devices.router.create_device": "devices.create",  # POST /api/v1/devices/
-    "modules.devices.router.seed_devices": "devices.seed",  # POST /api/v1/devices/seed
     "modules.devices.router.find_by_serial": "devices.read",  # GET /api/v1/devices/serial/{serial_number}
     "modules.devices.router.device_stats": "devices.read",  # GET /api/v1/devices/stats
     "modules.devices.router.delete_device": "devices.delete",  # DELETE /api/v1/devices/{id}
@@ -164,7 +162,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.inventory.router.get_materials_by_couple": "materials.read",  # GET /api/v1/inventory/by-couple/{couple_id}
     "modules.inventory.router.copy_from_couple": "materials.create",  # POST /api/v1/inventory/copy-from/{source_couple_id}
     "modules.inventory.router.create_from_template": "materials.templates",  # POST /api/v1/inventory/from-template/{template_id}
-    "modules.inventory.router.seed_inventory": "materials.seed",  # POST /api/v1/inventory/seed
     "modules.inventory.router.get_suggestions": "materials.read",  # GET /api/v1/inventory/suggestions
     "modules.inventory.router.list_templates": "materials.templates",  # GET /api/v1/inventory/templates
     "modules.inventory.router.create_template": "materials.templates",  # POST /api/v1/inventory/templates
@@ -181,7 +178,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.locations.router.update_location": "locations.update",  # PUT /api/v1/locations/{id}
     "modules.pairs.router.list_pairs": "pairs.read",  # GET /api/v1/pairs/
     "modules.pairs.router.create_pair": "pairs.create",  # POST /api/v1/pairs/
-    "modules.pairs.router.seed_pairs": "pairs.seed",  # POST /api/v1/pairs/seed
     "modules.pairs.router.get_pair_stats": "pairs.read",  # GET /api/v1/pairs/stats
     "modules.pairs.router.delete_pair": "pairs.delete",  # DELETE /api/v1/pairs/{pair_id}
     "modules.pairs.router.get_pair": "pairs.read",  # GET /api/v1/pairs/{pair_id}
@@ -190,7 +186,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.personnel.router.create_person": "personnel.create",  # POST /api/v1/personnel/
     "modules.personnel.router.backfill_links": "personnel.create",  # POST /api/v1/personnel/backfill-links
     "modules.personnel.router.search_personnel": "personnel.read",  # GET /api/v1/personnel/search
-    "modules.personnel.router.seed_personnel": "personnel.seed",  # POST /api/v1/personnel/seed
     "modules.personnel.router.delete_person": "personnel.delete",  # DELETE /api/v1/personnel/{person_id}
     "modules.personnel.router.get_person": "personnel.read",  # GET /api/v1/personnel/{person_id}
     "modules.personnel.router.update_person": "personnel.update",  # PUT /api/v1/personnel/{person_id}
@@ -241,7 +236,6 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.troubleshooting.router.get_errors_by_device": "troubleshooting.read",  # GET /api/v1/troubleshooting/by-device/{device_id}
     "modules.troubleshooting.router.get_errors_by_pair": "troubleshooting.read",  # GET /api/v1/troubleshooting/by-pair/{pair_id}
     "modules.troubleshooting.router.get_faulty_devices": "troubleshooting.read",  # GET /api/v1/troubleshooting/faulty-devices
-    "modules.troubleshooting.router.seed_errors": "troubleshooting.seed",  # POST /api/v1/troubleshooting/seed
     "modules.troubleshooting.router.get_error_stats": "troubleshooting.read",  # GET /api/v1/troubleshooting/stats
     "modules.troubleshooting.router.delete_error": "troubleshooting.delete",  # DELETE /api/v1/troubleshooting/{error_id}
     "modules.troubleshooting.router.get_error": "troubleshooting.read",  # GET /api/v1/troubleshooting/{error_id}

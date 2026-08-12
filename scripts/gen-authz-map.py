@@ -39,11 +39,6 @@ OVR = {
     "delete_backup_file": "backup.delete", "download_backup": "backup.read",
     "backup_history": "backup.read", "table_counts": "backup.read",
   },
-  "seeding": {
-    "run_seed": "seeding.run", "remove_seeded": "seeding.remove",
-    "adopt_existing": "seeding.run", "preview_adopt": "seeding.read",
-    "get_seed_status": "seeding.read",
-  },
   "projects": {
     "add_member": "projects.members", "remove_member": "projects.members",
     "move_member": "projects.members",
@@ -103,9 +98,7 @@ for qual, method, path in rows:
     short = qual.rsplit('.', 1)[-1]
     key = OVR.get(seg, {}).get(short)
     if key is None:
-        if 'seed' in short:
-            key = f"{mod}.seed"
-        elif 'categor' in short and mod in ('assets', 'downloads'):
+        if 'categor' in short and mod in ('assets', 'downloads'):
             key = f"{mod}.categories"
         elif 'template' in short and mod == 'materials':
             key = "materials.templates"
