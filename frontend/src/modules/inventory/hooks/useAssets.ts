@@ -7,6 +7,12 @@ export interface AssetCategory {
   name: string;
   parent_id: string | null;
   sort_order: number;
+  /**
+   * Items in this category must be entered one-by-one with a serial number.
+   * Present on GET /assets/categories rows; optional because the category
+   * embedded in an asset brief may omit it.
+   */
+  requires_serial?: boolean;
 }
 
 export interface PersonBrief {
@@ -204,6 +210,25 @@ export function useCreateAssetCategory() {
       api.post<AssetCategory>('/assets/categories', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
+    },
+  });
+}
+
+export function useUpdateAssetCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { name?: string; requires_serial?: boolean; sort_order?: number };
+    }) => api.put<AssetCategory>(`/assets/categories/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Could not update the category');
     },
   });
 }

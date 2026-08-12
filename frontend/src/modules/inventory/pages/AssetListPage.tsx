@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import dayjs from 'dayjs';
-import { Select, Tabs } from 'antd';
+import { Select, Tabs, message } from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
   AppstoreOutlined,
   WarningOutlined,
   ShoppingCartOutlined,
+  QrcodeOutlined,
+  PrinterOutlined,
+  TagsOutlined,
+  CheckSquareOutlined,
+  BorderOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '@/shared/components/PageHeader';
@@ -14,6 +19,7 @@ import GlassButton from '@/shared/components/GlassButton';
 import GlassInput from '@/shared/components/GlassInput';
 import DataTable from '@/shared/components/DataTable';
 import ShareButton from '@/shared/components/ShareButton';
+import QrScannerModal from '@/shared/components/QrScanner';
 import { usePermission } from '@/shared/stores/authStore';
 import { CustodyBadges } from '../components/CustodyControls';
 import {
@@ -23,8 +29,11 @@ import {
   useStockLocations,
 } from '../hooks/useCustody';
 import { useAssets, useAssetCategories, useBackfillDevices, Asset } from '../hooks/useAssets';
+import { lookupAsset } from '../hooks/useOutward';
 import AssetFormModal from '../components/AssetFormModal';
 import AssetReportsPanel from '../components/AssetReportsPanel';
+import PrintLabelsModal from '../components/PrintLabelsModal';
+import CategoryManagerModal from '../components/CategoryManagerModal';
 
 function AssetsTab() {
   const navigate = useNavigate();
@@ -36,9 +45,16 @@ function AssetsTab() {
   const [locationId, setLocationId] = useState<string | undefined>();
   const [source, setSource] = useState<string | undefined>();
   const [formOpen, setFormOpen] = useState(false);
+  // Label printing: selection mode adds a tick column and repurposes the row
+  // click; selections survive page/filter changes so a batch can span pages.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Record<string, Asset>>({});
+  const [printOpen, setPrintOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   const canEdit = usePermission('assets.update');
   const canManage = usePermission('assets.delete');
+  const canCategories = usePermission('assets.categories');
   const backfillDevices = useBackfillDevices();
   const { data, isLoading } = useAssets({
     page,
@@ -53,7 +69,33 @@ function AssetsTab() {
   const { data: summary } = useCustodySummary();
   const { data: categories } = useAssetCategories();
 
+  const toggleSelected = (record: Asset) =>
+    setSelected((prev) => {
+      if (prev[record.id]) {
+        const { [record.id]: _dropped, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [record.id]: record };
+    });
+
+  const selectedList = Object.values(selected);
+
   const columns = [
+    ...(selectMode
+      ? [
+          {
+            title: '',
+            key: 'select',
+            width: 40,
+            render: (_: unknown, record: Asset) =>
+              selected[record.id] ? (
+                <CheckSquareOutlined style={{ color: 'var(--primary)', fontSize: 16 }} />
+              ) : (
+                <BorderOutlined style={{ color: 'var(--text-muted)', fontSize: 16 }} />
+              ),
+          },
+        ]
+      : []),
     {
       title: 'Code',
       dataIndex: 'asset_code',
@@ -257,12 +299,64 @@ function AssetsTab() {
             Sync Devices
           </GlassButton>
         )}
+        {canCategories && (
+          <GlassButton
+            variant="ghost"
+            icon={<TagsOutlined />}
+            onClick={() => setCategoriesOpen(true)}
+          >
+            Manage categories
+          </GlassButton>
+        )}
+        {selectMode ? (
+          <>
+            <GlassButton
+              variant="ghost"
+              onClick={() => {
+                setSelectMode(false);
+                setSelected({});
+              }}
+            >
+              Cancel
+            </GlassButton>
+            <GlassButton
+              icon={<PrinterOutlined />}
+              disabled={selectedList.length === 0}
+              onClick={() => setPrintOpen(true)}
+            >
+              Print {selectedList.length} label{selectedList.length === 1 ? '' : 's'}
+            </GlassButton>
+          </>
+        ) : (
+          <GlassButton
+            variant="ghost"
+            icon={<PrinterOutlined />}
+            onClick={() => setSelectMode(true)}
+          >
+            Print labels
+          </GlassButton>
+        )}
         {canEdit && (
           <GlassButton icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
             Add Asset
           </GlassButton>
         )}
       </div>
+
+      {selectMode && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-secondary)',
+            padding: '8px 12px',
+            borderRadius: 8,
+            background: 'var(--overlay-subtle)',
+            marginBottom: 12,
+          }}
+        >
+          Tap rows to pick the items to label — the selection keeps across pages and filters.
+        </div>
+      )}
 
       <style>{`
         .dl-select .ant-select-selector {
@@ -278,8 +372,11 @@ function AssetsTab() {
         columns={columns}
         data={data?.items ?? []}
         loading={isLoading}
+        titleKey="asset_code"
         onRowClick={(record) =>
-          navigate(record.device_id ? `/devices/${record.device_id}` : `/inventory/assets/${record.id}`)
+          selectMode
+            ? toggleSelected(record)
+            : navigate(record.device_id ? `/devices/${record.device_id}` : `/inventory/assets/${record.id}`)
         }
         pagination={{
           current: page,
@@ -291,6 +388,12 @@ function AssetsTab() {
       />
 
       <AssetFormModal open={formOpen} onClose={() => setFormOpen(false)} />
+      <PrintLabelsModal
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        assets={selectedList}
+      />
+      <CategoryManagerModal open={categoriesOpen} onClose={() => setCategoriesOpen(false)} />
     </div>
   );
 }
@@ -299,12 +402,38 @@ export default function AssetListPage() {
   // Same query as the tab below; React Query dedupes, so this costs nothing
   // and keeps the share summary beside the button that sends it.
   const { data: summary } = useCustodySummary();
+  const navigate = useNavigate();
+  const [scanOpen, setScanOpen] = useState(false);
+
+  // A scan is "take me to this thing": resolve the code (asset code, serial,
+  // or tag) and jump straight to the item.
+  const handleScan = async (code: string) => {
+    try {
+      const asset = await lookupAsset(code);
+      navigate(`/inventory/assets/${asset.id}`);
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        message.error('No item with that code');
+      } else {
+        message.error(err?.response?.data?.detail || 'Could not look up that code');
+      }
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title="Inventory"
         subtitle="Every item in the office — equipment, cables, tools"
-        actions={<ShareButton
+        actions={<>
+        <GlassButton
+          variant="ghost"
+          icon={<QrcodeOutlined />}
+          onClick={() => setScanOpen(true)}
+        >
+          Scan
+        </GlassButton>
+        <ShareButton
           title="Inventory position"
           subtitle={dayjs().format('D MMMM YYYY')}
           url="/inventory/assets"
@@ -317,8 +446,10 @@ export default function AssetListPage() {
             { label: 'Overdue', value: summary?.overdue },
             { label: 'Location unknown', value: summary?.needs_reconciliation },
           ]}
-        />}
+        />
+        </>}
       />
+      <QrScannerModal open={scanOpen} onClose={() => setScanOpen(false)} onScan={handleScan} />
       <Tabs
         defaultActiveKey="assets"
         items={[

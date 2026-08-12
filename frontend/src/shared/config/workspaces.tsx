@@ -30,7 +30,8 @@ import {
   ClockCircleOutlined,
   HeartOutlined,
   CheckCircleOutlined,
-  InboxOutlined,
+  ExportOutlined,
+  ImportOutlined,
   AppstoreAddOutlined,
   MessageOutlined,
   CrownOutlined,
@@ -137,7 +138,11 @@ export const WORKSPACES: Workspace[] = [
     items: [
       { key: '/inventory/assets', icon: <AppstoreOutlined />, label: 'Assets', permission: 'assets.read' },
       { key: '/inventory/requests', icon: <ShoppingCartOutlined />, label: 'Required Items', permission: 'stock.requests.read' },
-      { key: '/inventory/returns', icon: <InboxOutlined />, label: 'Record a return', permission: 'assets.returns' },
+      // The movement pair: out on a gate pass, back against it. The old
+      // "Record a return" page still exists at /inventory/returns for items
+      // that come back without a pass — linked from the inward screen.
+      { key: '/inventory/outward', icon: <ExportOutlined />, label: 'Take items out', permission: 'projects.equipment' },
+      { key: '/inventory/inward', icon: <ImportOutlined />, label: 'Receive items back', permission: 'assets.returns' },
       { key: '/inventory/handovers', icon: <SwapOutlined />, label: 'Handovers', permission: 'assets.read' },
       { key: '/inventory/kits', icon: <AppstoreAddOutlined />, label: 'Kits', permission: 'assets.read' },
       { key: '/inventory/repairs', icon: <ToolOutlined />, label: 'Repairs', permission: 'assets.read' },

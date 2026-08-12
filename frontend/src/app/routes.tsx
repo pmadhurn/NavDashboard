@@ -37,6 +37,9 @@ const AssetDetailPage = lazy(() => import('@/modules/inventory/pages/AssetDetail
 const DeployedPage = lazy(() => import('@/modules/inventory/pages/DeployedPage'));
 const HandoversPage = lazy(() => import('@/modules/inventory/pages/HandoversPage'));
 const ReturnsPage = lazy(() => import('@/modules/inventory/pages/ReturnsPage'));
+const OutwardPage = lazy(() => import('@/modules/inventory/pages/OutwardPage'));
+const GatePassPage = lazy(() => import('@/modules/inventory/pages/GatePassPage'));
+const InwardPage = lazy(() => import('@/modules/inventory/pages/InwardPage'));
 const KitsPage = lazy(() => import('@/modules/inventory/pages/KitsPage'));
 const RepairsPage = lazy(() => import('@/modules/inventory/pages/RepairsPage'));
 const RequiredItemsPage = lazy(() => import('@/modules/inventory/pages/RequiredItemsPage'));
@@ -118,6 +121,9 @@ export function AppRoutes() {
           <Route path="inventory/assets/:id" element={<RequirePermission permission="assets.read"><AssetDetailPage /></RequirePermission>} />
           <Route path="inventory/handovers" element={<RequirePermission permission="assets.read"><HandoversPage /></RequirePermission>} />
           <Route path="inventory/returns" element={<RequirePermission permission="assets.returns"><ReturnsPage /></RequirePermission>} />
+          <Route path="inventory/outward" element={<RequirePermission permission="projects.equipment"><OutwardPage /></RequirePermission>} />
+          <Route path="inventory/outward/:movementId" element={<RequirePermission permission="projects.read"><GatePassPage /></RequirePermission>} />
+          <Route path="inventory/inward" element={<RequirePermission permission="projects.read"><InwardPage /></RequirePermission>} />
           <Route path="inventory/kits" element={<RequirePermission permission="assets.read"><KitsPage /></RequirePermission>} />
           <Route path="inventory/repairs" element={<RequirePermission permission="assets.read"><RepairsPage /></RequirePermission>} />
           <Route path="inventory/requests" element={<RequirePermission permission="stock.requests.read"><RequiredItemsPage /></RequirePermission>} />

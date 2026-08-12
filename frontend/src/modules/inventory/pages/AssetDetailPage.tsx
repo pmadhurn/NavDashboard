@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeftOutlined, HistoryOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, HistoryOutlined, PrinterOutlined } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassButton from '@/shared/components/GlassButton';
@@ -9,6 +9,7 @@ import EmptyState from '@/shared/components/EmptyState';
 import ShareButton from '@/shared/components/ShareButton';
 import { formatDateTime } from '@/shared/utils/formatters';
 import { useAsset } from '../hooks/useAssets';
+import PrintLabelsModal from '../components/PrintLabelsModal';
 import {
   AssetTimeline,
   CustodyActions,
@@ -28,6 +29,7 @@ export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: asset, isLoading } = useAsset(id);
+  const [printOpen, setPrintOpen] = useState(false);
 
   // `isLoading` and "no data" are distinct states: a 404 ends the load with
   // `asset` still undefined, so folding them together spins forever.
@@ -61,6 +63,13 @@ export default function AssetDetailPage() {
               assetName={asset.name}
               condition={asset.condition}
             />
+            <GlassButton
+              variant="ghost"
+              icon={<PrinterOutlined />}
+              onClick={() => setPrintOpen(true)}
+            >
+              Print label
+            </GlassButton>
             <ShareButton
               title={asset.name}
               subtitle={asset.asset_code}
@@ -160,6 +169,12 @@ export default function AssetDetailPage() {
           <AssetTimeline assetId={asset.id} />
         </GlassCard>
       </div>
+
+      <PrintLabelsModal
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        assets={[asset]}
+      />
     </div>
   );
 }

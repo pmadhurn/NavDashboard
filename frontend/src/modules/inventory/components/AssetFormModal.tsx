@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DatePicker, InputNumber, Switch } from 'antd';
 import type { Dayjs } from 'dayjs';
 import GlassModal from '@/shared/components/GlassModal';
@@ -35,6 +35,15 @@ export default function AssetFormModal({ open, onClose }: Props) {
   const createCategory = useCreateAssetCategory();
   const createVendor = useCreateVendor();
 
+  // The category's serial policy: some categories track items one-by-one, so
+  // bulk entry is off the table and the serial number stops being optional.
+  const selectedCategory = (categories ?? []).find((c) => c.id === categoryId);
+  const serialRequired = !!selectedCategory?.requires_serial;
+
+  useEffect(() => {
+    if (serialRequired) setIsBulk(false);
+  }, [serialRequired]);
+
   const reset = () => {
     setName('');
     setCategoryId(undefined);
@@ -50,6 +59,7 @@ export default function AssetFormModal({ open, onClose }: Props) {
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
+    if (serialRequired && !serialNumber.trim()) return;
     await createAsset.mutateAsync({
       name: name.trim(),
       category_id: categoryId,
@@ -89,7 +99,7 @@ export default function AssetFormModal({ open, onClose }: Props) {
           <GlassButton
             onClick={handleSubmit}
             loading={createAsset.isPending}
-            disabled={!name.trim()}
+            disabled={!name.trim() || (serialRequired && !serialNumber.trim())}
           >
             Add Asset
           </GlassButton>
@@ -118,28 +128,37 @@ export default function AssetFormModal({ open, onClose }: Props) {
           <div>
             <div style={{ color: 'var(--primary)', fontSize: 13 }}>Bulk item</div>
             <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-              Counted by quantity (cables, connectors) instead of one-by-one
+              {serialRequired
+                ? 'This category tracks items one-by-one'
+                : 'Counted by quantity (cables, connectors) instead of one-by-one'}
             </div>
           </div>
           <Switch
-            checked={isBulk}
+            checked={isBulk && !serialRequired}
             onChange={setIsBulk}
-            style={{ background: isBulk ? 'var(--status-working)' : '#4A4A4A' }}
+            disabled={serialRequired}
+            style={{
+              background: isBulk && !serialRequired ? 'var(--status-working)' : '#4A4A4A',
+            }}
           />
         </div>
 
-        {isBulk ? (
+        {isBulk && !serialRequired ? (
           <div>
             <label style={labelStyle}>Quantity</label>
             <GlassInput type="number" value={quantity} onChange={setQuantity} placeholder="1" />
           </div>
         ) : (
           <div>
-            <label style={labelStyle}>Serial number (optional)</label>
+            <label style={labelStyle}>
+              Serial number{serialRequired ? '' : ' (optional)'}
+            </label>
             <GlassInput
               value={serialNumber}
               onChange={setSerialNumber}
-              placeholder="Serial number if it has one"
+              placeholder={
+                serialRequired ? 'Serial number (required)' : 'Serial number if it has one'
+              }
             />
           </div>
         )}

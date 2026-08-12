@@ -13,6 +13,7 @@ import GlassButton from '@/shared/components/GlassButton';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { useSettings, useSystemInfo, useUpdateSetting } from '../hooks/useSettings';
 import { useAuthStore } from '@/shared/stores/authStore';
+import EmailSettings from './EmailSettings';
 
 export default function GeneralSettings() {
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -404,6 +405,9 @@ export default function GeneralSettings() {
           </div>
         )}
       </GlassCard>
+
+      {/* Section 4: Email (SMTP) */}
+      <EmailSettings />
     </div>
   );
 }
