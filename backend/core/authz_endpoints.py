@@ -110,6 +110,10 @@ ENDPOINT_PERMISSIONS: dict[str, str] = {
     "modules.dashboard.router.status_distribution": "dashboard.read",  # GET /api/v1/dashboard/status-distribution
     "modules.devices.router.list_devices": "devices.read",  # GET /api/v1/devices/
     "modules.devices.router.create_device": "devices.create",  # POST /api/v1/devices/
+    "modules.devices.router.list_device_models": "devices.read",  # GET /api/v1/devices/models
+    "modules.devices.router.create_device_model": "devices.update",  # POST /api/v1/devices/models
+    "modules.devices.router.delete_device_model": "devices.update",  # DELETE /api/v1/devices/models/{model_id}
+    "modules.pairs.router.pair_composition": "pairs.read",  # GET /api/v1/pairs/{pair_id}/composition
     "modules.devices.router.find_by_serial": "devices.read",  # GET /api/v1/devices/serial/{serial_number}
     "modules.devices.router.device_stats": "devices.read",  # GET /api/v1/devices/stats
     "modules.devices.router.delete_device": "devices.delete",  # DELETE /api/v1/devices/{id}

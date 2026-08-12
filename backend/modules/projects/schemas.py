@@ -22,6 +22,9 @@ class ProjectCreate(BaseModel):
     longitude: Optional[float] = None
     start_date: Optional[datetime] = None
     description: Optional[str] = None
+    # Team selected while creating: each member gets an in-app notification
+    # and — when mail is configured — an email with the project details.
+    member_ids: list[UUID] = []
 
 
 class ProjectUpdate(BaseModel):

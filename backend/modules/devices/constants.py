@@ -6,6 +6,10 @@ class DeviceType(str, enum.Enum):
     OU = "OU"
     HC = "HC"
     RF = "RF"
+    # Auto-alignment: the gyro the OU mounts on, and its controller box.
+    # Gyro cable and power cables are bulk inventory items, not devices.
+    GYRO = "GYRO"
+    GYRO_CTRL = "GYRO_CTRL"
 
 
 class DeviceStatus(str, enum.Enum):

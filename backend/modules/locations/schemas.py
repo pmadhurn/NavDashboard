@@ -56,3 +56,9 @@ class MapDataPoint(BaseModel):
     longitude: float
     status: str
     has_rf: bool
+    pair_id: Optional[UUID] = None
+    pair_name: Optional[str] = None
+    # Filled when the couple (or its link) is deployed to a project, so a dot
+    # on the map can say what it is deployed FOR and link to the project.
+    project_id: Optional[UUID] = None
+    project_name: Optional[str] = None

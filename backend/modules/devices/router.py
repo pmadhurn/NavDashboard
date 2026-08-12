@@ -9,6 +9,8 @@ from core.dependencies import get_current_user
 from modules.devices import service
 from modules.devices.schemas import (
     DeviceCreate,
+    DeviceModelCreate,
+    DeviceModelResponse,
     DeviceResponse,
     DeviceStatsResponse,
     DeviceStatusHistoryResponse,
@@ -47,6 +49,34 @@ async def device_stats(
     current_user=Depends(get_current_user),
 ):
     return await service.get_device_stats(db)
+
+
+# Declared above /{id}: FastAPI matches in declaration order, and below it
+# "models" would be parsed as a device id and 422.
+@router.get("/models", response_model=list[DeviceModelResponse])
+async def list_device_models(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await service.list_device_models(db)
+
+
+@router.post("/models", response_model=DeviceModelResponse, status_code=201)
+async def create_device_model(
+    body: DeviceModelCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return await service.create_device_model(db, body, current_user.id)
+
+
+@router.delete("/models/{model_id}", status_code=204)
+async def delete_device_model(
+    model_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    await service.delete_device_model(db, model_id, current_user.id)
 
 
 @router.get("/serial/{serial_number}", response_model=DeviceResponse)

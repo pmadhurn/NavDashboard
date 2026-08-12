@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.exceptions import ConflictException, NotFoundException
@@ -242,3 +242,67 @@ async def get_device_status_history(
 async def get_device_stats(db: AsyncSession) -> DeviceStatsResponse:
     stats = await repository.get_stats(db)
     return DeviceStatsResponse(**stats)
+
+
+# --- Device models (product/version list) -----------------------------------
+
+
+async def list_device_models(db: AsyncSession):
+    from modules.devices.models import DeviceModel
+    from modules.devices.schemas import DeviceModelResponse
+
+    rows = (
+        await db.execute(select(DeviceModel).order_by(DeviceModel.name))
+    ).scalars().all()
+    return [DeviceModelResponse.model_validate(r) for r in rows]
+
+
+async def create_device_model(db: AsyncSession, body, user_id: UUID):
+    from modules.devices.models import DeviceModel
+    from modules.devices.schemas import DeviceModelResponse
+
+    existing = (
+        await db.execute(
+            select(DeviceModel).where(DeviceModel.name.ilike(body.name.strip()))
+        )
+    ).scalar_one_or_none()
+    if existing:
+        # The form's inline-create path treats "already there" as selection,
+        # not as an error.
+        return DeviceModelResponse.model_validate(existing)
+    row = DeviceModel(
+        name=body.name.strip(), device_type=body.device_type, notes=body.notes
+    )
+    db.add(row)
+    await record_audit(
+        db, action="CREATE", entity_type="device_model",
+        entity_id=row.id, user_id=user_id, new_values={"name": row.name},
+    )
+    await db.commit()
+    await db.refresh(row)
+    return DeviceModelResponse.model_validate(row)
+
+
+async def delete_device_model(db: AsyncSession, model_id: UUID, user_id: UUID) -> None:
+    from modules.devices.models import DeviceModel
+
+    row = await db.get(DeviceModel, model_id)
+    if not row:
+        raise NotFoundException("Model not found")
+    used = (
+        await db.execute(
+            select(func.count()).select_from(Device).where(
+                Device.device_model_id == model_id, Device.deleted_at.is_(None)
+            )
+        )
+    ).scalar_one()
+    if used:
+        raise ConflictException(
+            f"{used} device(s) are recorded as this model — reassign them first"
+        )
+    await db.delete(row)
+    await record_audit(
+        db, action="DELETE", entity_type="device_model",
+        entity_id=model_id, user_id=user_id, old_values={"name": row.name},
+    )
+    await db.commit()

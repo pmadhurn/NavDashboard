@@ -481,6 +481,34 @@ async def resolve_item(
             event_type="LOST", user_id=user_id, commit=False,
         )
 
+    # Close the outward-form lines this item was out on. Custody says where
+    # the thing is NOW; the movement item says how the trip ended — resolving
+    # one without the other leaves the gate-pass list open forever.
+    from datetime import datetime, timezone
+
+    from modules.projects.models import EquipmentMovement, EquipmentMovementItem
+
+    open_lines = (
+        await db.execute(
+            select(EquipmentMovementItem)
+            .join(EquipmentMovement)
+            .where(
+                EquipmentMovementItem.asset_id == asset_id,
+                EquipmentMovementItem.return_outcome.is_(None),
+                EquipmentMovement.direction == "OUTWARD",
+            )
+        )
+    ).scalars().all()
+    for line in open_lines:
+        line.return_outcome = outcome
+        line.outcome_note = note
+        line.resolved_at = datetime.now(timezone.utc)
+        line.item_status = "RETURNED" if outcome == OUTCOME_RETURNED else (
+            "DAMAGED" if outcome == OUTCOME_DAMAGED
+            else "LOST" if outcome == OUTCOME_LOST
+            else "WITH_CLIENT"
+        )
+
     if commit:
         await db.commit()
         await db.refresh(asset)

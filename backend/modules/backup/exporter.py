@@ -19,7 +19,7 @@ from modules.auth.models import (
     UserRole,
 )
 from modules.couples.models import Couple
-from modules.devices.models import Device, DeviceStatusHistory
+from modules.devices.models import Device, DeviceModel, DeviceStatusHistory
 from modules.inventory.models import FittingMaterial, MaterialTemplate
 from modules.locations.models import Location, LocationHistory
 from modules.pairs.models import Pair
@@ -75,12 +75,20 @@ logger = logging.getLogger(__name__)
 def _get_export_tables() -> list[dict]:
     return [
         {
+            "name": "DeviceModels",
+            "key": "device_models",
+            "model": DeviceModel,
+            "columns": ["id", "name", "device_type", "notes",
+                        "created_at", "updated_at"],
+        },
+        {
             "name": "Devices",
             "key": "devices",
             "model": Device,
             "columns": [
                 "id", "serial_number", "device_type", "couple_id", "status",
-                "handling_person_id", "notes", "metadata_json", "custom_fields",
+                "handling_person_id", "device_model_id", "notes",
+                "metadata_json", "custom_fields",
                 "created_at", "updated_at",
             ],
         },

@@ -263,3 +263,71 @@ async def delete_pair(
 async def get_pair_stats(db: AsyncSession) -> PairStatsResponse:
     stats = await repository.get_stats(db)
     return PairStatsResponse(total=stats["total"], by_status=stats["by_status"])
+
+
+# --- Link composition (bill of materials) ------------------------------------
+
+# What one side of a link is built from. Cables and patch cords beyond the
+# hybrid cable are bulk inventory items, not devices, so they are not listed.
+_EXPECTED_PER_COUPLE = ("IU", "OU", "HC")
+
+
+async def get_pair_composition(db: AsyncSession, pair_id: UUID) -> dict:
+    """The full bill of materials of a link: per side (couple), which devices
+    are present, their models and serials — and what is missing.
+
+    A link = two couples aligned. Each couple: IU + OU + HC (+ RF when the
+    couple is flagged has_rf, + optional GYRO/GYRO_CTRL for auto-alignment).
+    """
+    from modules.devices.models import Device
+
+    pair = await repository.get_by_id(db, pair_id)
+    if not pair:
+        raise NotFoundException("Link not found")
+
+    couples = await _get_pair_couples(db, pair_id)
+    sides = []
+    for couple in couples:
+        devices = (
+            await db.execute(
+                select(Device).where(
+                    Device.couple_id == couple.id, Device.deleted_at.is_(None)
+                )
+            )
+        ).scalars().all()
+        by_type: dict[str, list[dict]] = {}
+        for d in devices:
+            by_type.setdefault(d.device_type, []).append(
+                {
+                    "id": str(d.id),
+                    "serial_number": d.serial_number,
+                    "status": d.status,
+                    "model": d.device_model_name,
+                }
+            )
+        expected = list(_EXPECTED_PER_COUPLE) + (["RF"] if couple.has_rf else [])
+        missing = [t for t in expected if not by_type.get(t)]
+        sides.append(
+            {
+                "couple_id": str(couple.id),
+                "couple_name": couple.name,
+                "has_rf": couple.has_rf,
+                "has_gyro": bool(by_type.get("GYRO") or by_type.get("GYRO_CTRL")),
+                "devices": by_type,
+                "missing": missing,
+            }
+        )
+
+    notes = []
+    if len(couples) < 2:
+        notes.append(
+            f"A link is two couples aligned — this one has {len(couples)}."
+        )
+    return {
+        "pair_id": str(pair.id),
+        "pair_name": pair.name,
+        "status": pair.status,
+        "sides": sides,
+        "complete": len(couples) == 2 and all(not s["missing"] for s in sides),
+        "notes": notes,
+    }

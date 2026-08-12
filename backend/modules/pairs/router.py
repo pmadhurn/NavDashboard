@@ -50,6 +50,16 @@ async def create_pair(
     return await service.create_pair(db, pair_in, current_user.id)
 
 
+@router.get("/{pair_id}/composition")
+async def pair_composition(
+    pair_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """The link's bill of materials: per side, what is fitted and what is missing."""
+    return await service.get_pair_composition(db, pair_id)
+
+
 @router.get("/{pair_id}", response_model=PairResponse)
 async def get_pair(
     pair_id: UUID,

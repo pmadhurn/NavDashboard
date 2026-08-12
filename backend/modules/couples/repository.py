@@ -83,6 +83,7 @@ async def get_map_data(db: AsyncSession) -> list[dict]:
             Location.longitude,
             Couple.status,
             Couple.has_rf,
+            Couple.pair_id,
         )
         .join(Location, Couple.location_id == Location.id)
         .where(Couple.deleted_at.is_(None))
@@ -97,6 +98,7 @@ async def get_map_data(db: AsyncSession) -> list[dict]:
             "longitude": row[3],
             "status": row[4],
             "has_rf": row[5],
+            "pair_id": row[6],
         }
         for row in result.all()
     ]

@@ -366,4 +366,44 @@ async def get_couple_location_history(
 
 async def get_couple_map_data(db: AsyncSession) -> list[MapDataPoint]:
     data = await repository.get_map_data(db)
+    if data:
+        # One query per lookup table, not per dot: names for pairs, and the
+        # active deployment (couple- or pair-level) that says what each dot
+        # is deployed for.
+        from modules.pairs.models import Pair
+        from modules.projects.models import Project, ProjectDeployment
+
+        pair_ids = {d["pair_id"] for d in data if d.get("pair_id")}
+        pair_names: dict = {}
+        if pair_ids:
+            for pid, name in (
+                await db.execute(select(Pair.id, Pair.name).where(Pair.id.in_(pair_ids)))
+            ).all():
+                pair_names[pid] = name
+
+        couple_ids = {d["couple_id"] for d in data}
+        deploy_by_entity: dict = {}
+        rows = (
+            await db.execute(
+                select(ProjectDeployment, Project.name)
+                .join(Project, ProjectDeployment.project_id == Project.id)
+                .where(
+                    ProjectDeployment.removed_at.is_(None),
+                    ProjectDeployment.entity_type.in_(("couple", "pair")),
+                )
+            )
+        ).all()
+        for dep, project_name in rows:
+            deploy_by_entity[(dep.entity_type, dep.entity_id)] = (
+                dep.project_id, project_name
+            )
+
+        for d in data:
+            if d.get("pair_id"):
+                d["pair_name"] = pair_names.get(d["pair_id"])
+            hit = deploy_by_entity.get(("couple", d["couple_id"])) or (
+                deploy_by_entity.get(("pair", d["pair_id"])) if d.get("pair_id") else None
+            )
+            if hit:
+                d["project_id"], d["project_name"] = hit
     return [MapDataPoint(**d) for d in data]

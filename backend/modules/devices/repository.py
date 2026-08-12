@@ -36,6 +36,7 @@ async def create(db: AsyncSession, obj_in: DeviceCreate) -> Device:
         status=obj_in.status,
         couple_id=obj_in.couple_id,
         handling_person_id=obj_in.handling_person_id,
+        device_model_id=obj_in.device_model_id,
         notes=obj_in.notes,
         custom_fields=obj_in.custom_fields,
         metadata_json=obj_in.metadata_json,

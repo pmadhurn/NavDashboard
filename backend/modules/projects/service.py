@@ -157,6 +157,9 @@ async def create_project(db: AsyncSession, body: ProjectCreate, user_id: UUID) -
     await db.commit()
     await db.refresh(project)
 
+    if body.member_ids:
+        await _add_initial_team(db, project, body.member_ids, user_id)
+
     await add_timeline_event(
         db, project.id, "NOTE", "Project created", created_by=user_id
     )
@@ -251,6 +254,55 @@ async def get_summary(db: AsyncSession, project_id: UUID) -> ProjectSummary:
 
 
 # --- Members ---
+
+async def _add_initial_team(db: AsyncSession, project, member_ids, user_id: UUID) -> None:
+    """Attach the team chosen at create time and tell each member.
+
+    In-app notification always (when the person has a login); email rides on
+    top when mail is configured, and neither can fail the creation.
+    """
+    from modules.mail.service import base_url, send_later
+    from modules.tasks.service import notify_person
+
+    people = (
+        await db.execute(
+            select(Person).where(Person.id.in_(set(member_ids)), Person.deleted_at.is_(None))
+        )
+    ).scalars().all()
+    start = project.start_date.strftime("%d %b %Y") if project.start_date else "not set yet"
+    site = project.site_location or "to be announced"
+    for person in people:
+        db.add(ProjectMember(project_id=project.id, person_id=person.id))
+        await notify_person(
+            db, person_id=person.id, kind="PROJECT_ASSIGNED",
+            title=f"You are on the team for {project.name}",
+            body=f"Starts {start} · {site}",
+            link=f"/projects/{project.id}",
+            entity_type="project", entity_id=project.id, created_by=user_id,
+            commit=False,
+        )
+    await db.commit()
+
+    emails = [p.email for p in people if p.email]
+    if emails:
+        root = await base_url(db)
+        link = f"{root}/projects/{project.id}" if root else ""
+        text = (
+            f"You have been added to the team for the project {project.name!r}.\n\n"
+            f"Type: {project.project_type}\n"
+            f"Start date: {start}\n"
+            f"Site: {site}\n"
+            + (f"\nDetails: {link}\n" if link else "")
+            + "\nPlease keep yourself available. — NavDashboard"
+        )
+        # One mail per person, so nobody sees the rest of the list.
+        for addr in emails:
+            send_later(
+                to=addr,
+                subject=f"New project: {project.name} — you are on the team",
+                text=text,
+            )
+
 
 async def add_member(
     db: AsyncSession, project_id: UUID, body: MemberAdd, user_id: UUID
@@ -873,6 +925,12 @@ async def update_movement_item(
     item.item_status = body.item_status
     if body.condition_note:
         item.condition_note = body.condition_note
+    # Terminal statuses also close the line, so the open-outwards list and the
+    # per-item receive screen agree on what is still out.
+    if body.item_status in ("RETURNED", "DAMAGED", "LOST"):
+        item.return_outcome = body.item_status
+        item.outcome_note = body.condition_note or item.outcome_note
+        item.resolved_at = datetime.now(timezone.utc)
     await db.commit()
 
     asset = await db.get(Asset, item.asset_id)

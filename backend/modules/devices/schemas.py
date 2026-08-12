@@ -13,6 +13,7 @@ class DeviceCreate(BaseModel):
     status: str = "WORKING"
     couple_id: Optional[UUID] = None
     handling_person_id: Optional[UUID] = None
+    device_model_id: Optional[UUID] = None
     notes: Optional[str] = None
     custom_fields: Optional[dict] = None
     metadata_json: Optional[dict] = None
@@ -24,9 +25,25 @@ class DeviceUpdate(BaseModel):
     status: Optional[str] = None
     couple_id: Optional[UUID] = None
     handling_person_id: Optional[UUID] = None
+    device_model_id: Optional[UUID] = None
     notes: Optional[str] = None
     custom_fields: Optional[dict] = None
     metadata_json: Optional[dict] = None
+
+
+class DeviceModelCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    device_type: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class DeviceModelResponse(BaseModel):
+    id: UUID
+    name: str
+    device_type: Optional[str] = None
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
 
 
 class DeviceResponse(BaseModel):
@@ -37,6 +54,8 @@ class DeviceResponse(BaseModel):
     status_color: str = ""
     couple_id: Optional[UUID] = None
     handling_person_id: Optional[UUID] = None
+    device_model_id: Optional[UUID] = None
+    device_model_name: Optional[str] = None
     notes: Optional[str] = None
     custom_fields: Optional[dict] = None
     metadata_json: Optional[dict] = None

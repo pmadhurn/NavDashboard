@@ -17,17 +17,32 @@ DEFAULT_SETTINGS: dict[str, tuple[str, str]] = {
     "default_map_lat": ("48.8566", "Default map center latitude"),
     "default_map_lng": ("2.3522", "Default map center longitude"),
     "default_map_zoom": ("13", "Default map zoom level"),
+    # Outbound email (modules/mail). Off until enabled and filled in;
+    # notifications stay in-app either way.
+    "mail_enabled": ("false", "Send emails (true/false). Needs the smtp_* settings"),
+    "smtp_host": ("", "SMTP server, e.g. smtp.gmail.com"),
+    "smtp_port": ("587", "SMTP port: 587 STARTTLS, 465 SSL"),
+    "smtp_user": ("", "SMTP username (usually the sending address)"),
+    "smtp_password": ("", "SMTP password or app password"),
+    "smtp_from": ("", "From address, e.g. NavDashboard <no-reply@yourdomain>"),
+    "smtp_tls": ("true", "Use STARTTLS on ports other than 465"),
+    "app_base_url": ("", "Public URL used in email links; empty = first CORS origin"),
 }
 
 
 async def _ensure_defaults(db: AsyncSession) -> None:
-    """Seed default settings if none exist."""
-    count = await repository.count_settings(db)
-    if count == 0:
-        for key, (value, description) in DEFAULT_SETTINGS.items():
+    """Seed any default settings that are missing (first boot seeds them all;
+    upgrades seed only the new keys, without touching edited values)."""
+    rows = await repository.get_all_settings(db)
+    existing = {r.key for r in rows}
+    added = 0
+    for key, (value, description) in DEFAULT_SETTINGS.items():
+        if key not in existing:
             await repository.set_setting(db, key, value, description)
+            added += 1
+    if added:
         await db.commit()
-        logger.info("Default settings seeded.")
+        logger.info("Seeded %d missing default setting(s).", added)
 
 
 async def get_all_settings(db: AsyncSession) -> list[SettingResponse]:
