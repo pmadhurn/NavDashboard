@@ -8,6 +8,7 @@ import {
   CloseOutlined,
   PlusOutlined,
   InboxOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import PageHeader from '@/shared/components/PageHeader';
 import GlassCard from '@/shared/components/GlassCard';
@@ -22,6 +23,7 @@ import { useAssets } from '../hooks/useAssets';
 import {
   Handover,
   HandoverStatus,
+  useBundles,
   useCancelHandover,
   useCreateHandover,
   useHandovers,
@@ -49,13 +51,37 @@ function StartHandoverModal({ open, onClose }: { open: boolean; onClose: () => v
   const [toId, setToId] = useState<string>();
   const [picked, setPicked] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  const [kitUsed, setKitUsed] = useState<{ name: string; added: number; missing: string[] } | null>(
+    null
+  );
   const { data: personnel } = usePersonnelList({ size: 200 });
   // Only what that person is actually holding can be handed on.
   const { data: assets } = useAssets({ custodyType: 'PERSON', personId: fromId });
+  const { data: kits } = useBundles();
   const create = useCreateHandover();
 
   const people = personnel?.items ?? [];
   const holding = assets?.items ?? [];
+
+  /** Tick everything in the kit this person actually has, and say what they don't.
+   *
+   * The server refuses a handover naming anything the sender is not holding, so
+   * sending the whole kit blind just returns a 409 and the shortcut costs more
+   * than it saves. Half a kit handed over with the gap named is the useful
+   * answer — the missing pieces are somewhere, and that is a different job. */
+  const applyKit = (kitId: string) => {
+    const kit = (kits ?? []).find((k) => k.id === kitId);
+    if (!kit) return;
+    const held = new Set(holding.map((a) => a.id));
+    const inHand = kit.items.filter((i) => held.has(i.id));
+    const missing = kit.items.filter((i) => !held.has(i.id));
+    setPicked((prev) => Array.from(new Set([...prev, ...inHand.map((i) => i.id)])));
+    setKitUsed({
+      name: kit.name,
+      added: inHand.length,
+      missing: missing.map((i) => `${i.name} (${i.asset_code})`),
+    });
+  };
 
   const submit = () =>
     create.mutate(
@@ -65,6 +91,7 @@ function StartHandoverModal({ open, onClose }: { open: boolean; onClose: () => v
           setPicked([]);
           setNote('');
           setToId(undefined);
+          setKitUsed(null);
           onClose();
         },
       }
@@ -81,6 +108,7 @@ function StartHandoverModal({ open, onClose }: { open: boolean; onClose: () => v
               onChange={(v) => {
                 setFromId(v);
                 setPicked([]);
+                setKitUsed(null);
               }}
               showSearch
               optionFilterProp="label"
@@ -105,6 +133,51 @@ function StartHandoverModal({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         </div>
 
+        {fromId && (kits ?? []).length > 0 && (
+          <div>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Start from a kit (optional)
+            </label>
+            <Select
+              value={null}
+              onChange={applyKit}
+              showSearch
+              optionFilterProp="label"
+              style={{ width: '100%' }}
+              placeholder="Pick the kit, not twelve items"
+              suffixIcon={<AppstoreOutlined />}
+              options={(kits ?? []).map((k) => ({
+                value: k.id,
+                label: `${k.name} · ${k.items.length} item${k.items.length === 1 ? '' : 's'}`,
+              }))}
+            />
+            {kitUsed && (
+              <div
+                style={{
+                  fontSize: 11,
+                  marginTop: 6,
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  background: 'var(--overlay-subtle)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <strong>{kitUsed.name}</strong> — {kitUsed.added} ticked.
+                {kitUsed.missing.length > 0 && (
+                  <div style={{ marginTop: 4, color: 'var(--text-muted)' }}>
+                    Not with them, so not included: {kitUsed.missing.join(', ')}
+                  </div>
+                )}
+                {kitUsed.added === 0 && (
+                  <div style={{ marginTop: 4, color: 'var(--text-muted)' }}>
+                    None of this kit is with them at the moment.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <div
             style={{
@@ -121,9 +194,10 @@ function StartHandoverModal({ open, onClose }: { open: boolean; onClose: () => v
               <GlassButton
                 size="sm"
                 variant="ghost"
-                onClick={() =>
-                  setPicked(picked.length === holding.length ? [] : holding.map((a) => a.id))
-                }
+                onClick={() => {
+                  setPicked(picked.length === holding.length ? [] : holding.map((a) => a.id));
+                  setKitUsed(null);
+                }}
               >
                 {picked.length === holding.length ? 'Clear' : 'Select all'}
               </GlassButton>
