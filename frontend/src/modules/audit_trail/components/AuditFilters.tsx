@@ -22,7 +22,7 @@ const ACTION_OPTIONS = [
 const ENTITY_TYPE_OPTIONS = [
   { label: 'Device', value: 'device' },
   { label: 'Couple', value: 'couple' },
-  { label: 'Pair', value: 'pair' },
+  { label: 'Link', value: 'pair' },
   { label: 'Error Log', value: 'error_log' },
   { label: 'Personnel', value: 'personnel' },
   { label: 'User', value: 'user' },

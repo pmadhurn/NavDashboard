@@ -11,7 +11,6 @@ import {
   ProjectOutlined,
   AppstoreOutlined,
   DeploymentUnitOutlined,
-  DownloadOutlined,
   FileOutlined,
   DollarOutlined,
   WalletOutlined,
@@ -116,13 +115,29 @@ export const WORKSPACES: Workspace[] = [
     icon: <ThunderboltOutlined />,
     items: [
       { key: '/projects', icon: <ProjectOutlined />, label: 'Projects', permission: 'projects.read' },
-      { key: '/inventory/assets', icon: <AppstoreOutlined />, label: 'Inventory', permission: 'assets.read' },
-      { key: '/inventory/deployed', icon: <DeploymentUnitOutlined />, label: 'Deployed', permission: 'assets.read' },
+      { key: '/documents', icon: <FileOutlined />, label: 'Documents', permission: 'documents.read' },
+      // Downloads is a standalone archive of software and downloadable material —
+      // deliberately NOT the documents users upload against a project. It kept its
+      // own tab until 2026-08-12, when the bar ran out of room; it lives here now,
+      // still as its own page so the two are never confused.
+      { key: '/downloads', icon: <CloudDownloadOutlined />, label: 'Downloads', permission: 'downloads.read' },
+    ],
+  },
+  {
+    // Inventory serves the whole office, not just the field teams — finance
+    // checks required items, R&D draws test equipment, the boss asks "what do
+    // we need to buy". Promoted out of Field Operations on 2026-08-12.
+    key: 'inventory',
+    label: 'Inventory',
+    shortLabel: 'Stock',
+    accent: '#7E8FA6',
+    icon: <AppstoreOutlined />,
+    items: [
+      { key: '/inventory/assets', icon: <AppstoreOutlined />, label: 'Assets', permission: 'assets.read' },
       { key: '/inventory/returns', icon: <InboxOutlined />, label: 'Record a return', permission: 'assets.returns' },
       { key: '/inventory/handovers', icon: <SwapOutlined />, label: 'Handovers', permission: 'assets.read' },
       { key: '/inventory/kits', icon: <AppstoreAddOutlined />, label: 'Kits', permission: 'assets.read' },
       { key: '/inventory/repairs', icon: <ToolOutlined />, label: 'Repairs', permission: 'assets.read' },
-      { key: '/documents', icon: <FileOutlined />, label: 'Documents', permission: 'documents.read' },
     ],
   },
   {
@@ -134,7 +149,10 @@ export const WORKSPACES: Workspace[] = [
     items: [
       { key: '/devices', icon: <ApiOutlined />, label: 'Devices', permission: 'devices.read' },
       { key: '/couples', icon: <LinkOutlined />, label: 'Couples', permission: 'devices.read' },
-      { key: '/pairs', icon: <SwapOutlined />, label: 'Pairs', permission: 'devices.read' },
+      // A "link" is two couples aligned and talking — the UI word is Links;
+      // the API and database keep the historical name `pair`.
+      { key: '/pairs', icon: <SwapOutlined />, label: 'Links', permission: 'devices.read' },
+      { key: '/inventory/deployed', icon: <DeploymentUnitOutlined />, label: 'Deployed', permission: 'assets.read' },
       { key: '/map', icon: <EnvironmentOutlined />, label: 'Map', permission: 'devices.read' },
       { key: '/location-history', icon: <HistoryOutlined />, label: 'Location History', permission: 'devices.read' },
       { key: '/troubleshooting', icon: <ToolOutlined />, label: 'Troubleshooting', permission: 'troubleshooting.read' },
@@ -157,18 +175,6 @@ export const WORKSPACES: Workspace[] = [
         label: 'Settlement',
         permission: 'finance.settle'
       },
-    ],
-  },
-  {
-    // Downloads is a standalone archive of software and downloadable material —
-    // deliberately NOT the documents users upload against a project. It gets its
-    // own tab so the two are never confused.
-    key: 'downloads',
-    label: 'Downloads',
-    accent: '#7E8FA6',
-    icon: <DownloadOutlined />,
-    items: [
-      { key: '/downloads', icon: <CloudDownloadOutlined />, label: 'Library', permission: 'downloads.read' },
     ],
   },
   {

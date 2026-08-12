@@ -13,7 +13,7 @@ interface AdvancedFiltersProps {
 const ENTITY_TYPES = [
   { label: 'Device', value: 'device' },
   { label: 'Couple', value: 'couple' },
-  { label: 'Pair', value: 'pair' },
+  { label: 'Link', value: 'pair' },
   { label: 'Personnel', value: 'personnel' },
   { label: 'Error', value: 'error' },
 ];

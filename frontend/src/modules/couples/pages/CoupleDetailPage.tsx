@@ -173,9 +173,9 @@ export default function CoupleDetailPage() {
                 </div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Pair</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Link</div>
                 <div style={{ color: 'var(--text-primary)', fontSize: 14 }}>
-                  {couple.pair_id ? couple.pair_id.slice(0, 8) + '...' : 'Unpaired'}
+                  {couple.pair_id ? couple.pair_id.slice(0, 8) + '...' : 'Unlinked'}
                 </div>
               </div>
               <div>

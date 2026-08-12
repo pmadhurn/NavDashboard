@@ -25,7 +25,7 @@ interface CardDef {
 
 const cards: CardDef[] = [
   {
-    label: 'Total Pairs',
+    label: 'Total Links',
     key: 'total_pairs',
     icon: <SwapOutlined style={{ fontSize: 24, color: 'var(--text-muted)' }} />,
     accent: '#2E2E2E',

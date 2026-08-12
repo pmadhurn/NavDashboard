@@ -75,7 +75,7 @@ const ComparisonSelector: React.FC<ComparisonSelectorProps> = ({
           onChange={handleEntityTypeChange}
           options={[
             { label: 'Couples', value: 'couples' },
-            { label: 'Pairs', value: 'pairs' },
+            { label: 'Links', value: 'pairs' },
             { label: 'Devices', value: 'devices' },
           ]}
           style={{
@@ -94,7 +94,7 @@ const ComparisonSelector: React.FC<ComparisonSelectorProps> = ({
           <Select
             showSearch
             allowClear
-            placeholder={`Select ${entityType.slice(0, -1)}...`}
+            placeholder={`Select ${entityType === 'pairs' ? 'link' : entityType.slice(0, -1)}...`}
             style={{ width: '100%' }}
             value={entityA}
             onChange={setEntityA}
@@ -133,7 +133,7 @@ const ComparisonSelector: React.FC<ComparisonSelectorProps> = ({
           <Select
             showSearch
             allowClear
-            placeholder={`Select ${entityType.slice(0, -1)}...`}
+            placeholder={`Select ${entityType === 'pairs' ? 'link' : entityType.slice(0, -1)}...`}
             style={{ width: '100%' }}
             value={entityB}
             onChange={setEntityB}

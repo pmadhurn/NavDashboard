@@ -228,7 +228,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
                 marginBottom: 6,
               }}
             >
-              Pair
+              Link
             </div>
             <Select
               size="small"
@@ -236,7 +236,7 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
               onChange={(val) => update({ pairId: val === 'all' ? null : val })}
               style={{ width: '100%' }}
               options={[
-                { label: 'All Pairs', value: 'all' },
+                { label: 'All Links', value: 'all' },
                 ...pairs.map((p) => ({ label: p.name, value: p.id })),
               ]}
               popupClassName="dark-select-dropdown"

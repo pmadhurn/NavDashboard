@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Input, Dropdown, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -9,6 +9,7 @@ import {
   BulbOutlined,
   MoonOutlined,
   MenuOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/shared/stores/authStore';
 import { useUiStore } from '@/shared/stores/uiStore';
@@ -41,6 +42,65 @@ export default function TopNav() {
   const [searchValue, setSearchValue] = useState('');
 
   const workspaces = visibleWorkspaces(user);
+
+  // ── Overflow: tabs that don't fit collapse into a trailing "More ▾" menu.
+  // A hidden measurer renders every tab at full width; a ResizeObserver on the
+  // real strip recomputes how many fit. CSS breakpoints can't do this — the
+  // workspace count varies per user and grew past the last hardcoded one.
+  const tabsRef = useRef<HTMLElement | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(workspaces.length);
+  const workspacesSignature = workspaces.map((ws) => ws.key).join(',');
+
+  useLayoutEffect(() => {
+    const strip = tabsRef.current;
+    const measurer = measureRef.current;
+    if (!strip || !measurer) return;
+
+    const recompute = () => {
+      const children = Array.from(measurer.children) as HTMLElement[];
+      // Last measurer child is the "More" button; the rest mirror the tabs.
+      const moreButton = children[children.length - 1];
+      if (!moreButton) return;
+      const moreWidth = moreButton.getBoundingClientRect().width;
+      const tabWidths = children
+        .slice(0, -1)
+        .map((el) => el.getBoundingClientRect().width);
+      const gap = 2;
+      const available = strip.clientWidth;
+
+      const total = tabWidths.reduce((sum, w, i) => sum + w + (i > 0 ? gap : 0), 0);
+      if (total <= available) {
+        setVisibleCount(tabWidths.length);
+        return;
+      }
+      let used = moreWidth;
+      let fit = 0;
+      for (const w of tabWidths) {
+        const next = used + w + (fit > 0 || moreWidth > 0 ? gap : 0);
+        if (next > available) break;
+        used = next;
+        fit += 1;
+      }
+      setVisibleCount(fit);
+    };
+
+    recompute();
+    const observer = new ResizeObserver(recompute);
+    observer.observe(strip);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspacesSignature, isMobile]);
+
+  let shownTabs = workspaces.slice(0, visibleCount);
+  let overflowTabs = workspaces.slice(visibleCount);
+  // The bar must always show where you are: an active tab in overflow swaps
+  // into the last visible slot (same rule as the mobile bar).
+  const activeInOverflow = overflowTabs.find((ws) => ws.key === activeWorkspace);
+  if (activeInOverflow && shownTabs.length > 0) {
+    shownTabs = [...shownTabs.slice(0, -1), activeInOverflow];
+    overflowTabs = workspaces.filter((ws) => !shownTabs.includes(ws));
+  }
   const roleColor = user?.role ? getRoleColor(user.role) : 'var(--text-muted)';
   const isDark = mode === 'dark';
 
@@ -138,8 +198,8 @@ export default function TopNav() {
 
       {/* Workspace tabs — desktop only; mobile uses the bottom bar */}
       {!isMobile && (
-        <nav className="navdash-tabs" aria-label="Workspaces">
-          {workspaces.map((ws) => {
+        <nav className="navdash-tabs" aria-label="Workspaces" ref={tabsRef}>
+          {shownTabs.map((ws) => {
             const active = ws.key === activeWorkspace;
             return (
               <button
@@ -147,10 +207,6 @@ export default function TopNav() {
                 type="button"
                 onClick={() => openWorkspace(ws)}
                 aria-current={active ? 'page' : undefined}
-                // Below 1500px the label is hidden and only the icon remains,
-                // so the accessible name has to come from somewhere.
-                title={ws.label}
-                aria-label={ws.label}
                 className={`navdash-tab${active ? ' is-active' : ''}`}
                 style={{
                   ['--tab-accent' as string]: ws.accent,
@@ -161,10 +217,44 @@ export default function TopNav() {
               </button>
             );
           })}
+          {overflowTabs.length > 0 && (
+            <Dropdown
+              menu={{
+                items: overflowTabs.map((ws) => ({
+                  key: ws.key,
+                  icon: <span style={{ color: ws.accent }}>{ws.icon}</span>,
+                  label: ws.label,
+                  onClick: () => openWorkspace(ws),
+                })),
+              }}
+              trigger={['click']}
+              placement="bottomLeft"
+            >
+              <button type="button" className="navdash-tab" aria-label="More workspaces">
+                <span>More</span>
+                <DownOutlined style={{ fontSize: 10 }} />
+              </button>
+            </Dropdown>
+          )}
+          {/* Hidden measurer: every tab at natural width, plus the More button. */}
+          <div ref={measureRef} aria-hidden className="navdash-tabs-measure">
+            {workspaces.map((ws) => (
+              <button key={ws.key} type="button" tabIndex={-1} className="navdash-tab">
+                <span style={{ display: 'flex', fontSize: 14 }}>{ws.icon}</span>
+                <span>{ws.label}</span>
+              </button>
+            ))}
+            <button type="button" tabIndex={-1} className="navdash-tab">
+              <span>More</span>
+              <DownOutlined style={{ fontSize: 10 }} />
+            </button>
+          </div>
         </nav>
       )}
 
-      <div style={{ flex: 1, minWidth: 0 }} />
+      {/* Desktop: the tab strip itself is the flexible region (it must own the
+          leftover width to know how many tabs fit). Mobile has no strip. */}
+      {isMobile && <div style={{ flex: 1, minWidth: 0 }} />}
 
       {/* Search */}
       {isMobile ? (

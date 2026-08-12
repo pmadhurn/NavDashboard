@@ -10,7 +10,7 @@ interface StatusOverviewProps {
 const ENTITY_LABELS: Record<string, string> = {
   device: 'Devices',
   couple: 'Couples',
-  pair: 'Pairs',
+  pair: 'Links',
 }
 
 const STATUS_COLORS = {

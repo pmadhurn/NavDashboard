@@ -154,23 +154,23 @@ export default function PairDetailPage() {
     if (!id) return
     deleteMutation.mutate(id, {
       onSuccess: () => {
-        message.success('Pair deleted')
+        message.success('Link deleted')
         navigate('/pairs')
       },
       onError: () => {
-        message.error('Failed to delete pair')
+        message.error('Failed to delete link')
       },
     })
   }, [id, deleteMutation, navigate])
 
   if (isLoading) {
-    return <LoadingSpinner text="Loading pair..." fullPage />
+    return <LoadingSpinner text="Loading link..." fullPage />
   }
 
   if (!pair) {
     return (
       <div style={{ color: '#fff', textAlign: 'center', marginTop: 80 }}>
-        Pair not found
+        Link not found
       </div>
     )
   }
@@ -184,12 +184,12 @@ export default function PairDetailPage() {
         title={pair.name}
         breadcrumbs={[
           { label: 'Dashboard', path: '/' },
-          { label: 'Pairs', path: '/pairs' },
+          { label: 'Links', path: '/pairs' },
           { label: pair.name },
         ]}
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
-            <ShareButton title={`Pair ${pair.name} — ${pair.status}`} url={`/pairs/${pair.id}`} />
+            <ShareButton title={`Link ${pair.name} — ${pair.status}`} url={`/pairs/${pair.id}`} />
             <GlassButton icon={<EditOutlined />} variant="ghost" onClick={() => setFormOpen(true)}>
               Edit
             </GlassButton>
@@ -246,7 +246,7 @@ export default function PairDetailPage() {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete Pair"
+        title="Delete Link"
         message={`Delete "${pair.name}"? The couples will NOT be deleted — they will become unassigned.`}
         confirmText="Delete"
         onConfirm={handleDelete}

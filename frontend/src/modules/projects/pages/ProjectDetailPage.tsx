@@ -545,7 +545,7 @@ function DeployedTab({ projectId }: { projectId: string }) {
       ) : !deployments || deployments.length === 0 ? (
         <EmptyState
           title="No links deployed"
-          description="Attach the devices, couples, or pairs deployed at this project site."
+          description="Attach the devices, couples, or links deployed at this project site."
         />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -603,7 +603,7 @@ function DeployedTab({ projectId }: { projectId: string }) {
               options={[
                 { value: 'device', label: 'Device' },
                 { value: 'couple', label: 'Couple' },
-                { value: 'pair', label: 'Pair' },
+                { value: 'pair', label: 'Link' },
                 { value: 'asset', label: 'Equipment' },
               ]}
             />

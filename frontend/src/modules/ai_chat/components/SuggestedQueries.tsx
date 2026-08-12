@@ -15,7 +15,7 @@ interface SuggestedQueriesProps {
 const suggestions = [
   {
     icon: <ApiOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,
-    query: 'What is the current status of all pairs?',
+    query: 'What is the current status of all links?',
   },
   {
     icon: <WarningOutlined style={{ fontSize: 22, color: 'var(--input-focus)' }} />,

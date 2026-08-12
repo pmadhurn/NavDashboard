@@ -57,7 +57,7 @@ const SearchPage: React.FC = () => {
           <Input
             ref={inputRef}
             size="large"
-            placeholder="Search across devices, couples, pairs, personnel, and errors..."
+            placeholder="Search across devices, couples, links, personnel, and errors..."
             prefix={<SearchOutlined style={{ color: 'var(--text-muted)' }} />}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -98,7 +98,7 @@ const SearchPage: React.FC = () => {
         <EmptyState
           icon={<SearchOutlined style={{ fontSize: 48, color: 'var(--text-muted)' }} />}
           title="Search across all entities"
-          description="Search across all devices, couples, pairs, personnel, and more"
+          description="Search across all devices, couples, links, personnel, and more"
         />
       )}
 

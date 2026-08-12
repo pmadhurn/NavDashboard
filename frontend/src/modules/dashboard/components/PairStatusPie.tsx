@@ -97,7 +97,7 @@ export default function PairStatusPie({ data, loading }: PairStatusPieProps) {
             margin: 0,
           }}
         >
-          Pair Status
+          Link Status
         </h3>
       </div>
 
@@ -123,7 +123,7 @@ export default function PairStatusPie({ data, loading }: PairStatusPieProps) {
             fontSize: 14,
           }}
         >
-          No pairs
+          No links
         </div>
       ) : (
         <>

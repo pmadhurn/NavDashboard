@@ -8,7 +8,7 @@ import { useTableCounts, useExportXlsx, useExportCsv } from '../hooks/useBackup'
 const EXPORT_TABLES = [
   { key: 'devices', label: 'Devices' },
   { key: 'couples', label: 'Couples' },
-  { key: 'pairs', label: 'Pairs' },
+  { key: 'pairs', label: 'Links' },
   { key: 'locations', label: 'Locations' },
   { key: 'location_history', label: 'Location History' },
   { key: 'personnel', label: 'Personnel' },

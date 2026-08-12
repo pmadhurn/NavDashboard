@@ -153,7 +153,7 @@ export default function ErrorFilters({ filters, onChange }: ErrorFiltersProps) {
               { label: 'All', value: 'all' },
               { label: 'Device', value: 'device' },
               { label: 'Couple', value: 'couple' },
-              { label: 'Pair', value: 'pair' },
+              { label: 'Link', value: 'pair' },
             ]}
             value={filters.entity_type}
             onChange={handleEntityTypeChange}

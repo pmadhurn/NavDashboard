@@ -32,7 +32,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 function getEntityLabel(error: ErrorLog): string {
   if (error.device_id) return 'Device';
   if (error.couple_id) return 'Couple';
-  if (error.pair_id) return 'Pair';
+  if (error.pair_id) return 'Link';
   return 'Unknown';
 }
 

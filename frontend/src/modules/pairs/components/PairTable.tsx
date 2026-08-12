@@ -36,10 +36,10 @@ export default function PairTable({ pairs, loading, onEdit, pagination }: PairTa
     }
     deleteMutation.mutate(pair.id, {
       onSuccess: () => {
-        message.success(`Pair "${pair.name}" deleted`)
+        message.success(`Link "${pair.name}" deleted`)
       },
       onError: () => {
-        message.error('Failed to delete pair')
+        message.error('Failed to delete link')
       },
     })
   }
@@ -178,7 +178,7 @@ export default function PairTable({ pairs, loading, onEdit, pagination }: PairTa
       rowKey="id"
       onRowClick={(record) => navigate(`/pairs/${record.id}`)}
       pagination={pagination}
-      emptyText="No pairs found"
+      emptyText="No links found"
     />
   )
 }

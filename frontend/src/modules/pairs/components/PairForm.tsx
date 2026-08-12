@@ -133,11 +133,11 @@ export default function PairForm({ open, onClose, pair }: PairFormProps) {
         { id: pair.id, data: updateData },
         {
           onSuccess: () => {
-            message.success('Pair updated')
+            message.success('Link updated')
             onClose()
           },
           onError: () => {
-            message.error('Failed to update pair')
+            message.error('Failed to update link')
           },
         }
       )
@@ -154,12 +154,12 @@ export default function PairForm({ open, onClose, pair }: PairFormProps) {
       }
       createMutation.mutate(createData, {
         onSuccess: () => {
-          message.success('Pair created')
+          message.success('Link created')
           onClose()
         },
         onError: (err) => {
           const detail = (err as unknown as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-          message.error(detail ?? 'Failed to create pair')
+          message.error(detail ?? 'Failed to create link')
         },
       })
     }
@@ -171,7 +171,7 @@ export default function PairForm({ open, onClose, pair }: PairFormProps) {
     <GlassModal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit Pair' : 'Create Pair'}
+      title={isEdit ? 'Edit Link' : 'Create Link'}
       width={560}
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -193,7 +193,7 @@ export default function PairForm({ open, onClose, pair }: PairFormProps) {
           <GlassInput
             value={name}
             onChange={setName}
-            placeholder="Pair name"
+            placeholder="Link name"
           />
         </div>
 

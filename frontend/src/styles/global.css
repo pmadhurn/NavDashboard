@@ -882,19 +882,30 @@ body {
 
 /* ── Top navigation ─────────────────────────────────────────────────────────
    Workspace tabs live in the top bar; the sidebar carries only the active
-   workspace's pages. The strip scrolls horizontally rather than wrapping, so
-   the bar keeps a fixed height at every width. */
+   workspace's pages. The strip owns the leftover width between the brand and
+   the search box; tabs that don't fit collapse into a "More ▾" menu (measured
+   in TopNav.tsx — the workspace count varies per user, so no CSS breakpoint
+   can know where the bar overflows). */
 
 .navdash-tabs {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex: 1;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overflow: hidden;
 }
-.navdash-tabs::-webkit-scrollbar { display: none; }
+
+/* Off-screen twin used only to measure each tab's natural width. */
+.navdash-tabs-measure {
+  position: fixed;
+  top: -200px;
+  left: 0;
+  display: flex;
+  gap: 2px;
+  visibility: hidden;
+  pointer-events: none;
+}
 
 .navdash-tab {
   display: flex;
@@ -935,16 +946,6 @@ body {
   height: 2px;
   border-radius: 2px 2px 0 0;
   background: var(--tab-accent, var(--secondary));
-}
-
-/* Labels are the first thing to go: icons still identify the workspace, and the
-   active one keeps its label for orientation. The breakpoint is 1500px, not a
-   rounder 1100px, because eight full labels plus the brand, search box, theme
-   toggle and user chip measure ~1405px — at 1440 the last tab was clipped. */
-@media (max-width: 1500px) {
-  .navdash-tab > span:last-child { display: none; }
-  .navdash-tab.is-active > span:last-child { display: inline; }
-  .navdash-tab { padding: 7px 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

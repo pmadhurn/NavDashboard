@@ -13,7 +13,7 @@ const ENTITY_TYPE_OPTIONS = [
   { value: '', label: 'All Entities' },
   { value: 'device', label: 'Device' },
   { value: 'couple', label: 'Couple' },
-  { value: 'pair', label: 'Pair' },
+  { value: 'pair', label: 'Link' },
   { value: 'error', label: 'Error' },
   { value: 'general', label: 'General' },
 ];
@@ -54,7 +54,7 @@ export default function DocumentsPage() {
     <div>
       <PageHeader
         title="Documents"
-        subtitle="Upload and manage files attached to devices, couples, and pairs"
+        subtitle="Upload and manage files attached to devices, couples, and links"
         actions={
           <GlassButton variant="primary" onClick={() => setUploaderOpen(true)}>
             <UploadOutlined /> Upload

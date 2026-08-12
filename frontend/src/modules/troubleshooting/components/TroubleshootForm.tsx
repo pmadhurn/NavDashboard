@@ -292,7 +292,7 @@ export default function TroubleshootForm({
                 Couple
               </Radio>
               <Radio value="pair" style={{ color: 'var(--chart1)' }}>
-                Pair
+                Link
               </Radio>
             </Radio.Group>
           </div>
@@ -303,7 +303,7 @@ export default function TroubleshootForm({
             </span>
             <Select
               showSearch
-              placeholder={`Select ${entityType}...`}
+              placeholder={`Select ${entityType === 'pair' ? 'link' : entityType}...`}
               value={entityId || undefined}
               onChange={setEntityId}
               options={entities}

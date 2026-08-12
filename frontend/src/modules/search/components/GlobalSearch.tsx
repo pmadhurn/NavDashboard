@@ -23,7 +23,7 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
 const ENTITY_LABELS: Record<string, string> = {
   device: 'Device',
   couple: 'Couple',
-  pair: 'Pair',
+  pair: 'Link',
   personnel: 'Personnel',
   error: 'Error',
 };

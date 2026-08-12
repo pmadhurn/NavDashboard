@@ -99,7 +99,7 @@ export default function GeneralSettings() {
         { label: 'Tables', value: String(systemInfo.table_count) },
         { label: 'Total Devices', value: String(systemInfo.total_devices) },
         { label: 'Total Couples', value: String(systemInfo.total_couples) },
-        { label: 'Total Pairs', value: String(systemInfo.total_pairs) },
+        { label: 'Total Links', value: String(systemInfo.total_pairs) },
         { label: 'Total Documents', value: String(systemInfo.total_documents) },
         { label: 'Total Users', value: String(systemInfo.total_users) },
         { label: 'Audit Entries', value: String(systemInfo.total_audit_entries) },

@@ -19,7 +19,7 @@ interface DocumentUploaderProps {
 const ENTITY_TYPES = [
   { value: 'device', label: 'Device' },
   { value: 'couple', label: 'Couple' },
-  { value: 'pair', label: 'Pair' },
+  { value: 'pair', label: 'Link' },
   { value: 'error', label: 'Error' },
   { value: 'general', label: 'General' },
 ];
