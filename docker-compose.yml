@@ -1,8 +1,22 @@
+# NavDashboard — the whole stack, one file.
+#
+#   docker compose up -d --build
+#
+# The app is served on 127.0.0.1:8085. Nothing is exposed on a public
+# interface; put a Cloudflare tunnel (or any reverse proxy) in front of that
+# port. The tunnel is deliberately NOT part of this file — it is run and
+# maintained separately.
+#
+# Origin settings for the tunnel:
+#   Service type : HTTP
+#   URL          : localhost:8085     (cloudflared started with --network host)
 services:
   nginx:
     image: nginx:alpine
+    # Loopback only: the tunnel dials this; nothing else on the network can.
+    # 8080 is taken on this host by open-webui, hence 8085.
     ports:
-      - "8080:80"
+      - "127.0.0.1:8085:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -18,12 +32,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      # Explicit: the Dockerfile's last stage is `production`, so without this
-      # the dev stack would silently build the static image instead.
-      target: dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      # The built static bundle, served by nginx — not the Vite dev server.
+      # Source edits need `up -d --build`, not a restart.
+      target: production
     networks:
       - navdashboard
     restart: unless-stopped
@@ -34,15 +45,6 @@ services:
       retries: 10
       start_period: 30s
 
-  #cloudflared:
-  #image: cloudflare/cloudflared:latest
-  #command: tunnel run
-  #environment:
-  # - TUNNEL_TOKEN=${TUNNEL_TOKEN}   # never commit the value; it is a credential
-  # - navdashboard
-  #networks:
-  # - navdashboard
-  #restart: unless-stopped
   backend:
     build:
       context: ./backend
@@ -50,10 +52,15 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./backend:/app
+      # Backups only. No source mount: the running code is the built image.
       - ./database/backups:/backups
     env_file:
       - ./backend/.env
+    environment:
+      ENVIRONMENT: production
+      # Once this is not "*", allow_credentials turns on (core/config.py), so
+      # every origin the app answers on has to be listed here.
+      CORS_ORIGINS: https://navdashboard.com,https://www.navdashboard.com,https://nav.madhur.dev
     depends_on:
       db:
         condition: service_healthy
@@ -107,8 +114,8 @@ services:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     ports:
-      - "9010:9000"
-      - "9011:9001"
+      - "127.0.0.1:9010:9000"
+      - "127.0.0.1:9011:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-navdashboard}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-navdashboard_minio_secret}
@@ -123,21 +130,10 @@ services:
       timeout: 10s
       retries: 3
 
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   networks:
-  #     - navdashboard
-  #   restart: unless-stopped
-
 volumes:
   pgdata:
   minio_data:
   redis_data:
-  # ollama_data:
 
 networks:
   navdashboard:
@@ -148,6 +144,4 @@ networks:
       # recreated — and the host firewall allows container→host traffic per
       # *interface name*, so a regenerated name silently breaks the backend's
       # access to the host's Ollama on 11434 ([Errno 113] No route to host).
-      # With a fixed name, the matching firewall rule only has to be written
-      # once and survives `compose down`/`up`.
       com.docker.network.bridge.name: br-navdash
