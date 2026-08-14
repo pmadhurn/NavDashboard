@@ -85,7 +85,7 @@ services:
     environment:
       POSTGRES_DB: navdashboard
       POSTGRES_USER: navdashboard
-      POSTGRES_PASSWORD: navdashboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-navdashboard}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
