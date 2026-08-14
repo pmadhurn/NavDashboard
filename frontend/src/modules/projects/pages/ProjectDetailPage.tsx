@@ -47,6 +47,7 @@ import {
 } from '../hooks/useProjects';
 import OutwardForm from '../components/OutwardForm';
 import { ProjectFilesTab, ProjectOverviewTab } from '../components/ProjectArchive';
+import { PROJECT_STATUS_OPTIONS } from '../constants';
 
 const ENTRY_ICONS: Record<string, React.ReactNode> = {
   VISIT: <CarOutlined />,
@@ -855,10 +856,7 @@ export default function ProjectDetailPage() {
                 value={project.status}
                 style={{ width: 130 }}
                 onChange={(status) => updateProject.mutate({ id, data: { status } })}
-                options={['UPCOMING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED', 'ARCHIVED'].map((s) => ({
-                  value: s,
-                  label: s.replace('_', ' '),
-                }))}
+                options={PROJECT_STATUS_OPTIONS}
               />
             ) : (
               <StatusBadge status={project.status} />
@@ -916,7 +914,7 @@ export default function ProjectDetailPage() {
           ...(deskOnly
             ? []
             : [{ key: 'equipment', label: 'Equipment', children: <EquipmentTab projectId={id} /> }]),
-          { key: 'files', label: 'Files & photos', children: <ProjectFilesTab projectId={id} /> },
+          { key: 'files', label: 'Documents', children: <ProjectFilesTab projectId={id} /> },
           { key: 'deployed', label: 'Deployed', children: <DeployedTab projectId={id} /> },
           ...(deskOnly
             ? []

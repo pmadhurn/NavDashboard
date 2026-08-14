@@ -1,10 +1,12 @@
 export interface Device {
   id: string
   serial_number: string
-  device_type: 'IU' | 'OU' | 'HC' | 'RF'
+  device_type: 'IU' | 'OU' | 'HC' | 'RF' | 'GYRO' | 'GYRO_CTRL'
   status: 'WORKING' | 'NOT_WORKING' | 'FAULTY'
   status_color: string
   couple_id: string | null
+  device_model_id?: string | null
+  device_model_name?: string | null
   handling_person_id: string | null
   notes: string | null
   custom_fields: Record<string, unknown> | null
@@ -42,6 +44,7 @@ export interface DeviceCreate {
   serial_number: string
   device_type: string
   status?: string
+  device_model_id?: string | null
   couple_id?: string | null
   handling_person_id?: string | null
   notes?: string | null

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Upload, Select, Progress, message } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 import type { UploadFile as AntUploadFile } from 'antd/es/upload/interface';
+import { useQuery } from '@tanstack/react-query';
 import GlassModal from '@/shared/components/GlassModal';
 import GlassButton from '@/shared/components/GlassButton';
 import GlassInput from '@/shared/components/GlassInput';
+import { api } from '@/shared/api/client';
 import { useUploadDocument } from '../hooks/useDocuments';
 
 const { Dragger } = Upload;
@@ -20,6 +22,7 @@ const ENTITY_TYPES = [
   { value: 'device', label: 'Device' },
   { value: 'couple', label: 'Couple' },
   { value: 'pair', label: 'Link' },
+  { value: 'project', label: 'Project' },
   { value: 'error', label: 'Error' },
   { value: 'general', label: 'General' },
 ];
@@ -37,6 +40,15 @@ export default function DocumentUploader({
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const uploadMutation = useUploadDocument();
+
+  // Same lite-list pattern the project Deployed tab uses for couples/links:
+  // load names only when the picker actually needs them.
+  const { data: projectData } = useQuery({
+    queryKey: ['projects-lite'],
+    queryFn: () =>
+      api.get<{ items: { id: string; name: string }[] }>('/projects/', { size: 100 }),
+    enabled: open && entityType === 'project',
+  });
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -146,13 +158,29 @@ export default function DocumentUploader({
           </div>
           <div style={{ flex: 1 }}>
             <label style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4, display: 'block' }}>
-              Entity ID
+              {entityType === 'project' ? 'Project' : 'Entity ID'}
             </label>
-            <GlassInput
-              value={entityId}
-              onChange={handleInputChange(setEntityId)}
-              placeholder="Entity UUID (optional)"
-            />
+            {entityType === 'project' ? (
+              <Select
+                value={entityId || undefined}
+                onChange={(val) => setEntityId(val ?? '')}
+                placeholder="Pick a project"
+                showSearch
+                allowClear
+                optionFilterProp="label"
+                style={{ width: '100%' }}
+                options={(projectData?.items ?? []).map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                }))}
+              />
+            ) : (
+              <GlassInput
+                value={entityId}
+                onChange={handleInputChange(setEntityId)}
+                placeholder="Entity UUID (optional)"
+              />
+            )}
           </div>
         </div>
 

@@ -33,15 +33,20 @@ export default function DeviceTable({
       dataIndex: 'serial_number',
       key: 'serial_number',
       render: (text: string, record: Device) => (
-        <span
-          style={{ fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}
+        <div
+          style={{ cursor: 'pointer' }}
           onClick={(e) => {
             e.stopPropagation()
             navigate(`/devices/${record.id}`)
           }}
         >
-          {text}
-        </span>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{text}</span>
+          {record.device_model_name && (
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>
+              {record.device_model_name}
+            </div>
+          )}
+        </div>
       ),
     },
     {

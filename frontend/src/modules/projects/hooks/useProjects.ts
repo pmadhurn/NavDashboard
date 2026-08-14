@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import { api } from '@/shared/api/client';
+import type { ProjectStatus } from '../constants';
 
 export interface PersonBrief {
   id: string;
@@ -20,7 +21,7 @@ export interface Project {
   id: string;
   name: string;
   project_type: 'POC' | 'DEMO' | 'INSTALLATION' | 'OTHER';
-  status: 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CLOSED';
+  status: ProjectStatus;
   customer_name: string | null;
   site_location: string | null;
   start_date: string | null;
@@ -112,8 +113,13 @@ export function useProjectMovements(id: string | undefined) {
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; project_type: string; customer_name?: string }) =>
-      api.post<Project>('/projects/', data),
+    mutationFn: (data: {
+      name: string;
+      project_type: string;
+      customer_name?: string;
+      // Personnel ids added as team members at creation — they get notified.
+      member_ids?: string[];
+    }) => api.post<Project>('/projects/', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       message.success('Project created');

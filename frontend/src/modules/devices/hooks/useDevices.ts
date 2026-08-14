@@ -84,3 +84,42 @@ export function useDeviceStats() {
     queryFn: () => api.get<DeviceStats>('/devices/stats'),
   })
 }
+
+// --- Device models (hardware catalog: "which product is this unit?") ---
+
+export interface DeviceModel {
+  id: string
+  name: string
+  device_type: string | null
+  notes: string | null
+}
+
+export function useDeviceModels() {
+  return useQuery<DeviceModel[]>({
+    queryKey: ['device-models'],
+    queryFn: () => api.get<DeviceModel[]>('/devices/models'),
+  })
+}
+
+export function useCreateDeviceModel() {
+  const qc = useQueryClient()
+  return useMutation({
+    // The endpoint is idempotent on duplicate names, so a double-submit
+    // simply resolves to the existing row.
+    mutationFn: (data: { name: string; device_type?: string | null; notes?: string | null }) =>
+      api.post<DeviceModel>('/devices/models', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['device-models'] })
+    },
+  })
+}
+
+export function useDeleteDeviceModel() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.del<void>(`/devices/models/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['device-models'] })
+    },
+  })
+}

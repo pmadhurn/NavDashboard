@@ -9,6 +9,10 @@ import {
   ToolOutlined,
   EnvironmentOutlined,
   LinkOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  CompassOutlined,
+  ApartmentOutlined,
 } from '@ant-design/icons'
 import PageHeader from '@/shared/components/PageHeader'
 import ShareButton from '@/shared/components/ShareButton'
@@ -18,12 +22,177 @@ import StatusBadge from '@/shared/components/StatusBadge'
 import LoadingSpinner from '@/shared/components/LoadingSpinner'
 import ConfirmDialog from '@/shared/components/ConfirmDialog'
 import PairForm from '../components/PairForm'
-import { usePair, useDeletePair } from '../hooks/usePairs'
+import { usePair, useDeletePair, usePairComposition } from '../hooks/usePairs'
+import type { CompositionSide } from '../hooks/usePairs'
 import type { Couple } from '@/shared/types/couples'
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '—'
   return new Date(value).toLocaleString()
+}
+
+// Render order + human names for the expected build of one side of a link.
+const COMPOSITION_TYPE_ORDER = ['IU', 'OU', 'HC', 'RF', 'GYRO', 'GYRO_CTRL']
+const COMPOSITION_TYPE_LABELS: Record<string, string> = {
+  IU: 'Indoor Unit',
+  OU: 'Outdoor Unit',
+  HC: 'Hub Controller',
+  RF: 'RF Module',
+  GYRO: 'Gyro',
+  GYRO_CTRL: 'Gyro Controller',
+}
+
+function CompositionSideCard({ side }: { side: CompositionSide }) {
+  const fittedTypes = COMPOSITION_TYPE_ORDER.filter(
+    (t) => (side.devices[t]?.length ?? 0) > 0
+  )
+
+  return (
+    <div
+      style={{
+        background: 'var(--overlay-subtle)',
+        borderRadius: 12,
+        padding: 14,
+        minWidth: 0,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+        <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>
+          {side.couple_name}
+        </span>
+        {side.has_rf && <Tag color="blue" icon={<WifiOutlined />}>RF</Tag>}
+        {side.has_gyro && <Tag color="purple" icon={<CompassOutlined />}>Gyro</Tag>}
+      </div>
+
+      {fittedTypes.length === 0 && (
+        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 8 }}>
+          No devices fitted yet
+        </div>
+      )}
+
+      {fittedTypes.map((type) => (
+        <div key={type} style={{ marginBottom: 8 }}>
+          <div
+            style={{
+              color: 'var(--text-muted)',
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              marginBottom: 4,
+            }}
+          >
+            {COMPOSITION_TYPE_LABELS[type] ?? type}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {(side.devices[type] ?? []).map((device) => (
+              <div
+                key={device.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  background: 'var(--overlay-subtle)',
+                }}
+              >
+                <span style={{ color: 'var(--text-primary)', fontSize: 13, fontFamily: 'monospace' }}>
+                  {device.serial_number}
+                </span>
+                {device.model && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{device.model}</span>
+                )}
+                <StatusBadge status={device.status} size="sm" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {side.missing.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+          {side.missing.map((m) => (
+            <Tag key={m} color="orange" icon={<WarningOutlined />} style={{ margin: 0 }}>
+              {/* The API may send type codes ("OU") or full sentences; phrase codes, pass sentences through. */}
+              {COMPOSITION_TYPE_LABELS[m] || /^[A-Z_]+$/.test(m) ? `No ${COMPOSITION_TYPE_LABELS[m] ?? m} fitted` : m}
+            </Tag>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CompositionCard({ pairId }: { pairId: string }) {
+  const { data: composition, isLoading } = usePairComposition(pairId)
+
+  if (isLoading) {
+    return (
+      <GlassCard style={{ marginBottom: 24 }}>
+        <LoadingSpinner text="Checking composition..." />
+      </GlassCard>
+    )
+  }
+
+  if (!composition) return null
+
+  return (
+    <GlassCard style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+        <ApartmentOutlined style={{ color: 'var(--text-secondary)' }} />
+        <span
+          style={{
+            color: 'var(--text-secondary)',
+            fontSize: 12,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+          }}
+        >
+          Composition
+        </span>
+        {composition.complete && (
+          <Tag color="green" icon={<CheckCircleOutlined />} style={{ margin: 0 }}>
+            Complete
+          </Tag>
+        )}
+      </div>
+
+      {composition.notes.map((note) => (
+        <div
+          key={note}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 12px',
+            borderRadius: 8,
+            background: 'var(--overlay-subtle)',
+            color: 'var(--status-not-working)',
+            fontSize: 13,
+            marginBottom: 10,
+          }}
+        >
+          <WarningOutlined style={{ flexShrink: 0 }} />
+          <span>{note}</span>
+        </div>
+      ))}
+
+      {/* Sides stack vertically on a phone, sit side by side when there is room. */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 14,
+        }}
+      >
+        {composition.sides.map((side) => (
+          <CompositionSideCard key={side.couple_id} side={side} />
+        ))}
+      </div>
+    </GlassCard>
+  )
 }
 
 function CoupleColumn({ couple, side }: { couple: Couple; side: string }) {
@@ -235,6 +404,9 @@ export default function PairDetailPage() {
           </div>
         )}
       </GlassCard>
+
+      {/* Composition: expected build per side, with gaps called out */}
+      <CompositionCard pairId={pair.id} />
 
       {/* Two-column layout */}
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>

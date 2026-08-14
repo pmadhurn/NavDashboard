@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import {
   LeftOutlined,
   RightOutlined,
@@ -261,6 +262,44 @@ export default function MapSidePanel({
                 >
                   {formatCoordinates(couple.latitude, couple.longitude)}
                 </div>
+                {couple.pair_name && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--text-muted)',
+                      marginTop: 2,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    Part of link {couple.pair_name}
+                  </div>
+                )}
+                {couple.project_name && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      marginTop: 2,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    <span style={{ color: 'var(--text-muted)' }}>Deployed for </span>
+                    {couple.project_id ? (
+                      <Link
+                        to={`/projects/${couple.project_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ color: 'var(--primary)' }}
+                      >
+                        {couple.project_name}
+                      </Link>
+                    ) : (
+                      <span style={{ color: 'var(--text-secondary)' }}>{couple.project_name}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* RF indicator */}

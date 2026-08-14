@@ -4,7 +4,13 @@ import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import GlassModal from '@/shared/components/GlassModal'
 import GlassButton from '@/shared/components/GlassButton'
 import GlassInput from '@/shared/components/GlassInput'
-import { useCreateDevice, useUpdateDevice } from '../hooks/useDevices'
+import CreatableSelect from '@/shared/components/CreatableSelect'
+import {
+  useCreateDevice,
+  useUpdateDevice,
+  useDeviceModels,
+  useCreateDeviceModel,
+} from '../hooks/useDevices'
 import type { Device } from '@/shared/types/devices'
 
 interface DeviceFormProps {
@@ -21,8 +27,11 @@ interface CustomFieldRow {
 export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
   const [form] = Form.useForm()
   const [customFields, setCustomFields] = useState<CustomFieldRow[]>([])
+  const [modelId, setModelId] = useState<string | undefined>(undefined)
   const createDevice = useCreateDevice()
   const updateDevice = useUpdateDevice()
+  const { data: deviceModels } = useDeviceModels()
+  const createModel = useCreateDeviceModel()
   const isEdit = !!device
 
   useEffect(() => {
@@ -34,6 +43,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
           status: device.status,
           notes: device.notes || '',
         })
+        setModelId(device.device_model_id ?? undefined)
         if (device.custom_fields) {
           setCustomFields(
             Object.entries(device.custom_fields).map(([k, v]) => ({
@@ -47,6 +57,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
       } else {
         form.resetFields()
         form.setFieldsValue({ status: 'WORKING' })
+        setModelId(undefined)
         setCustomFields([])
       }
     }
@@ -72,6 +83,7 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
       const payload = {
         serial_number: values.serial_number,
         device_type: values.device_type,
+        device_model_id: modelId || null,
         status: values.status,
         notes: values.notes || null,
         custom_fields: cfObj,
@@ -157,8 +169,24 @@ export default function DeviceForm({ open, onClose, device }: DeviceFormProps) {
               { label: 'OU — Outdoor Unit', value: 'OU' },
               { label: 'HC — Hub Controller', value: 'HC' },
               { label: 'RF — RF Module', value: 'RF' },
+              { label: 'GYRO — Gyro', value: 'GYRO' },
+              { label: 'GYRO_CTRL — Gyro Controller', value: 'GYRO_CTRL' },
             ]}
             style={{ width: '100%' }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label={<span style={{ color: 'var(--text-secondary)' }}>Model</span>}
+        >
+          <CreatableSelect
+            value={modelId}
+            onChange={setModelId}
+            noun="model"
+            createPermission="devices.update"
+            placeholder="Select a model (optional)"
+            options={(deviceModels ?? []).map((m) => ({ value: m.id, label: m.name }))}
+            onCreate={(name) => createModel.mutateAsync({ name })}
           />
         </Form.Item>
 

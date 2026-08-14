@@ -1,5 +1,13 @@
 import { Popup } from 'react-leaflet'
-import { WifiOutlined, EnvironmentOutlined, EyeOutlined, HistoryOutlined } from '@ant-design/icons'
+import { Link } from 'react-router-dom'
+import {
+  WifiOutlined,
+  EnvironmentOutlined,
+  EyeOutlined,
+  HistoryOutlined,
+  ProjectOutlined,
+  SwapOutlined,
+} from '@ant-design/icons'
 import type { MapDataPoint } from '@/shared/types/locations'
 import type { Couple } from '@/shared/types/couples'
 import { formatCoordinates } from '@/shared/utils/formatters'
@@ -121,6 +129,56 @@ export default function DevicePopup({
           <EnvironmentOutlined style={{ fontSize: 13 }} />
           <span>{formatCoordinates(point.latitude, point.longitude)}</span>
         </div>
+
+        {/* Deployed context */}
+        {point.pair_name && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 6,
+              fontSize: 12,
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <SwapOutlined style={{ fontSize: 13 }} />
+            <span>
+              Part of link{' '}
+              {point.pair_id ? (
+                <Link to={`/pairs/${point.pair_id}`} style={{ color: 'var(--primary)' }}>
+                  {point.pair_name}
+                </Link>
+              ) : (
+                point.pair_name
+              )}
+            </span>
+          </div>
+        )}
+        {point.project_name && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 10,
+              fontSize: 12,
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <ProjectOutlined style={{ fontSize: 13 }} />
+            <span>
+              Deployed for{' '}
+              {point.project_id ? (
+                <Link to={`/projects/${point.project_id}`} style={{ color: 'var(--primary)' }}>
+                  {point.project_name}
+                </Link>
+              ) : (
+                point.project_name
+              )}
+            </span>
+          </div>
+        )}
 
         {/* Full couple detail section */}
         {couple && (

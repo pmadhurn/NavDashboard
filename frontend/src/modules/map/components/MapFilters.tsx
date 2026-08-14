@@ -217,6 +217,23 @@ export default function MapFilters({ filters, onChange, pairs }: MapFiltersProps
             />
           </div>
 
+          {/* Deployed toggle */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Deployed only</span>
+            <Switch
+              size="small"
+              checked={filters.showDeployedOnly}
+              onChange={(checked) => update({ showDeployedOnly: checked })}
+            />
+          </div>
+
           {/* Pair dropdown */}
           <div style={{ marginBottom: 14 }}>
             <div

@@ -62,6 +62,7 @@ const entityTypeColors: Record<string, string> = {
   device: '#6E7E8A',
   couple: 'var(--status-working)',
   pair: 'var(--status-not-working)',
+  project: '#8C8468',
   error: 'var(--status-faulty)',
   general: 'var(--text-muted)',
 };

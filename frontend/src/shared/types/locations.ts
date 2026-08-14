@@ -37,4 +37,9 @@ export interface MapDataPoint {
   longitude: number
   status: string
   has_rf: boolean
+  pair_id: string | null
+  pair_name: string | null
+  // Set when the couple (or its link) is deployed to a project.
+  project_id: string | null
+  project_name: string | null
 }

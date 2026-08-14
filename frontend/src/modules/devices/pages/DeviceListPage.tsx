@@ -100,6 +100,8 @@ export default function DeviceListPage() {
               { label: 'OU', value: 'OU' },
               { label: 'HC', value: 'HC' },
               { label: 'RF', value: 'RF' },
+              { label: 'Gyro', value: 'GYRO' },
+              { label: 'Gyro Controller', value: 'GYRO_CTRL' },
             ]}
           />
           <Select

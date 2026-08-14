@@ -10,6 +10,7 @@ export interface MapFilters {
   showNotWorking: boolean
   showFaulty: boolean
   showRfOnly: boolean
+  showDeployedOnly: boolean
   pairId: string | null
   showTrails: boolean
 }
@@ -19,6 +20,7 @@ export const DEFAULT_MAP_FILTERS: MapFilters = {
   showNotWorking: true,
   showFaulty: true,
   showRfOnly: false,
+  showDeployedOnly: false,
   pairId: null,
   showTrails: true,
 }
@@ -52,6 +54,9 @@ export function useMapCouples(filters?: MapFilters) {
       }
       if (filters.showRfOnly) {
         result = result.filter((p) => p.has_rf)
+      }
+      if (filters.showDeployedOnly) {
+        result = result.filter((p) => p.project_id)
       }
       if (filters.pairId && pairsQuery.data) {
         const pair = pairsQuery.data.items.find((p) => p.id === filters.pairId)

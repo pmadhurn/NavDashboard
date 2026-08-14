@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Select } from 'antd';
-import { PlusOutlined, SearchOutlined, ProjectOutlined, TeamOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  SearchOutlined,
+  ProjectOutlined,
+  TeamOutlined,
+  DownOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '@/shared/components/PageHeader';
 import GlassCard from '@/shared/components/GlassCard';
@@ -12,9 +19,13 @@ import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import StatusBadge from '@/shared/components/StatusBadge';
 import { usePermission } from '@/shared/stores/authStore';
 import { formatRelativeTime } from '@/shared/utils/formatters';
+import { usePersonnelList } from '@/modules/personnel/hooks/usePersonnel';
 import { useProjects, useCreateProject, Project } from '../hooks/useProjects';
+import { PROJECT_STATUS_OPTIONS, PROJECT_STATUS_BUCKETS } from '../constants';
 
 const PROJECT_TYPES = ['POC', 'DEMO', 'INSTALLATION', 'OTHER'] as const;
+
+const BUCKETED_STATUSES = new Set<string>(PROJECT_STATUS_BUCKETS.flatMap((b) => b.statuses));
 
 const TYPE_COLORS: Record<string, string> = {
   POC: 'var(--role-technician)',
@@ -70,6 +81,79 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
   );
 }
 
+function ProjectGrid({ projects, onOpen }: { projects: Project[]; onOpen: (id: string) => void }) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+        gap: 14,
+      }}
+    >
+      {projects.map((project) => (
+        <ProjectCard key={project.id} project={project} onClick={() => onOpen(project.id)} />
+      ))}
+    </div>
+  );
+}
+
+function BucketHeader({
+  title,
+  count,
+  collapsible,
+  open,
+  onToggle,
+}: {
+  title: string;
+  count: number;
+  collapsible?: boolean;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
+  return (
+    <div
+      onClick={collapsible ? onToggle : undefined}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 10,
+        cursor: collapsible ? 'pointer' : 'default',
+        userSelect: 'none',
+      }}
+    >
+      {collapsible &&
+        (open ? (
+          <DownOutlined style={{ fontSize: 11, color: 'var(--text-muted)' }} />
+        ) : (
+          <RightOutlined style={{ fontSize: 11, color: 'var(--text-muted)' }} />
+        ))}
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        {title}
+      </span>
+      <span
+        style={{
+          fontSize: 11,
+          color: 'var(--text-muted)',
+          background: 'var(--overlay-subtle)',
+          padding: '1px 8px',
+          borderRadius: 10,
+        }}
+      >
+        {count}
+      </span>
+    </div>
+  );
+}
+
 export default function ProjectListPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -79,9 +163,13 @@ export default function ProjectListPage() {
   const [name, setName] = useState('');
   const [newType, setNewType] = useState<string>('POC');
   const [customer, setCustomer] = useState('');
+  const [memberIds, setMemberIds] = useState<string[]>([]);
+  // key → user-toggled open state; buckets fall back to their default.
+  const [openBuckets, setOpenBuckets] = useState<Record<string, boolean>>({});
 
   const canEdit = usePermission('projects.create');
   const { data, isLoading } = useProjects({ search, type, status });
+  const { data: personnel } = usePersonnelList({ size: 100 });
   const createProject = useCreateProject();
 
   const handleCreate = async () => {
@@ -90,10 +178,12 @@ export default function ProjectListPage() {
       name: name.trim(),
       project_type: newType,
       customer_name: customer.trim() || undefined,
+      member_ids: memberIds.length ? memberIds : undefined,
     });
     setCreateOpen(false);
     setName('');
     setCustomer('');
+    setMemberIds([]);
     navigate(`/projects/${project.id}`);
   };
 
@@ -136,10 +226,7 @@ export default function ProjectListPage() {
           allowClear
           value={status}
           onChange={setStatus}
-          options={['UPCOMING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED', 'ARCHIVED'].map((s) => ({
-            value: s,
-            label: s.replace('_', ' '),
-          }))}
+          options={PROJECT_STATUS_OPTIONS}
         />
       </div>
 
@@ -165,21 +252,38 @@ export default function ProjectListPage() {
               : 'Projects shared with you will appear here.'
           }
         />
+      ) : status ? (
+        // A specific status is filtered — buckets would be noise, show flat.
+        <ProjectGrid projects={data.items} onOpen={(id) => navigate(`/projects/${id}`)} />
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: 14,
-          }}
-        >
-          {data.items.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              onClick={() => navigate(`/projects/${project.id}`)}
-            />
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {PROJECT_STATUS_BUCKETS.map((bucket) => {
+            const projects = data.items.filter((p) =>
+              bucket.statuses.includes(p.status)
+                ? true
+                : // A status the buckets don't know about must not vanish —
+                  // park it under Ongoing rather than hide the project.
+                  bucket.key === 'ongoing' && !BUCKETED_STATUSES.has(p.status)
+            );
+            if (projects.length === 0) return null;
+            const open = openBuckets[bucket.key] ?? !bucket.collapsedByDefault;
+            return (
+              <div key={bucket.key}>
+                <BucketHeader
+                  title={bucket.title}
+                  count={projects.length}
+                  collapsible
+                  open={open}
+                  onToggle={() =>
+                    setOpenBuckets((prev) => ({ ...prev, [bucket.key]: !open }))
+                  }
+                />
+                {open && (
+                  <ProjectGrid projects={projects} onOpen={(id) => navigate(`/projects/${id}`)} />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -241,6 +345,27 @@ export default function ProjectListPage() {
               Customer / site (optional)
             </label>
             <GlassInput value={customer} onChange={setCustomer} placeholder="Who is this for?" />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+              Team (optional)
+            </label>
+            <Select
+              className="dl-select"
+              mode="multiple"
+              style={{ width: '100%' }}
+              placeholder="Pick from personnel"
+              optionFilterProp="label"
+              value={memberIds}
+              onChange={setMemberIds}
+              options={(personnel?.items ?? []).map((p) => ({
+                value: p.id,
+                label: p.full_name,
+              }))}
+            />
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+              Everyone you pick is notified (and emailed once mail is set up).
+            </div>
           </div>
         </div>
       </GlassModal>
