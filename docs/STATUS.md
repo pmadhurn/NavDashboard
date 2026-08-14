@@ -2,24 +2,30 @@
 
 **Read this first.** One screen, always current. Update it at the end of every working block.
 
-**Last updated:** 2026-08-12 — all phases done
+**Last updated:** 2026-08-12 — Plan V2 delivered (see [`PLAN-V2.md`](./PLAN-V2.md))
 **Branch:** `navos/step-1-route-test`
 **Live:** https://nav.madhur.dev (loopback `127.0.0.1:8085`)
-**Plan:** [`PLAN.md`](./PLAN.md)
+**Plans:** [`PLAN-V2.md`](./PLAN-V2.md) (current) · [`PLAN.md`](./PLAN.md) (the 12 phases before it, all done)
 
 ---
 
 ## Current phase
 
-> **All 12 phases DONE.** See [`DEPLOYMENT.md`](./DEPLOYMENT.md) before going live.
+> **Plan V2 shipped**: Inventory as a top-level workspace, Required Items +
+> Vendors, QR labels/scanning, purpose-based outward → gate pass → scan-to-tick
+> inward, device models (1G/10G/gyro), link composition, map deployment
+> context, project buckets + documents + team-at-create, fail-soft SMTP mail
+> (Admin → Settings, off by default), and the `/learn` illustrated guides.
+> **Demo data was purged from the live DB on 2026-08-12** (users, roles and
+> stock locations kept).
 
 ### Next action — for the humans, not the code
 1. **Revoke the old Cloudflare tunnel token.** It is still valid and still in git
    history; removing it from `docker-compose.yml` did not revoke it.
-2. **Rotate `SECRET_KEY`.**
-3. **Purge demo data**: `scripts/purge-demo-data.py --confirm`.
-4. **Link each personnel record to a login** — without it a person has no
+2. **Rotate `SECRET_KEY`** (also kills the leaked `tok.txt` JWT — see PRE-PRODUCTION A6).
+3. **Link each personnel record to a login** — without it a person has no
    attendance, no tasks and no equipment custody. The most common setup mistake.
+4. **To turn on email**: Admin → Settings → Email — paste SMTP details, flip it on.
 
 ---
 
@@ -66,7 +72,7 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
 | `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
 | `scripts/verify-tasks.py` | tasks derive and self-clear | 18/18 |
-| `scripts/audit-guards.py` | every operation is mapped | 268 ops, **0 unmapped** |
+| `scripts/audit-guards.py` | every operation is mapped | **288** ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 | `scripts/polish-sweep.mjs` | 42 routes x 2 themes at 390px | 84 checks, 0 problems |
@@ -111,4 +117,5 @@ clean. Dry-run by default; `--confirm` to act. It deliberately never touches
 users, roles, role assignments, permission overrides or sessions — emptying
 those would lock everyone out of the system it is preparing.
 
-**Not yet run.** That is a Phase 11 step, not a cleanup step.
+**Run 2026-08-12** — 482 demo rows across 21 tables deleted; users, roles,
+role assignments, sessions and the four seeded stock locations kept.

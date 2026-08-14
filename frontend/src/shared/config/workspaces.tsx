@@ -37,6 +37,7 @@ import {
   CrownOutlined,
   ShoppingCartOutlined,
   ShopOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 import { can } from '@/shared/stores/authStore';
 
@@ -78,7 +79,11 @@ export const WORKSPACES: Workspace[] = [
     label: 'Home',
     accent: 'var(--secondary)',
     icon: <HomeOutlined />,
-    items: [{ key: '/', icon: <HomeOutlined />, label: 'Overview' }],
+    items: [
+      { key: '/', icon: <HomeOutlined />, label: 'Overview' },
+      // No permission: learning how the system works is for everyone.
+      { key: '/learn', icon: <ReadOutlined />, label: 'Learn' },
+    ],
   },
   {
     // A destination, not a workspace: one page, no sub-nav, visible only to

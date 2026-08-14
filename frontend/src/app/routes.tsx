@@ -58,6 +58,7 @@ const CompOffPage = lazy(() => import('@/modules/attendance/pages/CompOffPage'))
 const SystemHealthPage = lazy(() => import('@/modules/system/pages/SystemHealthPage'));
 const AccessControlPage = lazy(() => import('@/modules/access/pages/AccessControlPage'));
 const UpdatesPage = lazy(() => import('@/modules/updates/pages/UpdatesPage'));
+const LearnPage = lazy(() => import('@/modules/learn/pages/LearnPage'));
 const LeadershipPage = lazy(() => import('@/modules/updates/pages/LeadershipPage'));
 
 /**
@@ -137,6 +138,8 @@ export function AppRoutes() {
           <Route path="finance/settlement" element={<RequirePermission permission="finance.settle"><SettlementPage /></RequirePermission>} />
           {/* Permission-gated routes */}
           <Route path="me" element={<MyDayPage />} />
+          {/* No guard: learning how things work is for everyone. */}
+          <Route path="learn" element={<LearnPage />} />
           <Route path="me/attendance" element={<RequirePermission permission="attendance.read"><MyAttendancePage /></RequirePermission>} />
           <Route path="attendance" element={<RequirePermission permission="attendance.read"><AttendanceBoardPage /></RequirePermission>} />
           <Route path="compoff" element={<RequirePermission permission="attendance.read"><CompOffPage /></RequirePermission>} />

@@ -1,6 +1,6 @@
 # NavDashboard — Plan V2: Inventory promotion, movement UX, projects & learning
 
-**Date:** 2026-08-12 · **Status:** awaiting user answers, then execution phase-by-phase
+**Date:** 2026-08-12 · **Status:** executing — phases 1–4 done and committed; 5–9 backend done, frontend in flight; 10–11 pending
 **Brief:** user's 2026-08-12 message (nav overflow, seeding removal, inline "add new", Inventory as top-level, required items, vendors, QR-driven inward/outward, learning section, deployed links in Device Management, link composition modeling, projects upgrade, team notifications).
 **Companions:** [`STATUS.md`](./STATUS.md), [`PLAN.md`](./PLAN.md) (previous 12-phase build, all done), [`PRE-PRODUCTION.md`](./PRE-PRODUCTION.md).
 
