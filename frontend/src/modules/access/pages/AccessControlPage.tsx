@@ -31,6 +31,7 @@ import {
   useRevokeUserSessions,
   useRoles,
   useSaveRole,
+  useApproveUser,
   useSaveUserAccess,
   useSessions,
   useUserAccess,
@@ -117,6 +118,7 @@ function UserAccessEditor({ user }: { user: BasicUser }) {
   const { data: roles } = useRoles();
   const save = useSaveUserAccess();
   const revokeAll = useRevokeUserSessions();
+  const approve = useApproveUser();
 
   const [roleIds, setRoleIds] = useState<string[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
@@ -195,6 +197,37 @@ function UserAccessEditor({ user }: { user: BasicUser }) {
 
   return (
     <div>
+      {user.status === 'PENDING' && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            padding: '10px 14px',
+            borderRadius: 8,
+            marginBottom: 14,
+            background: 'var(--overlay-subtle)',
+            border: '1px solid var(--status-not-working)',
+            fontSize: 12,
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <WarningOutlined style={{ color: 'var(--status-not-working)' }} />
+          <span style={{ flex: 1, minWidth: 200 }}>
+            This account is <strong>awaiting approval</strong> — they cannot sign
+            in yet. Roles you set below apply the moment you approve.
+          </span>
+          <GlassButton
+            size="sm"
+            onClick={() => approve.mutate(user.id)}
+            loading={approve.isPending}
+          >
+            Approve account
+          </GlassButton>
+        </div>
+      )}
+
       {access.is_legacy_admin && (
         <div
           style={{

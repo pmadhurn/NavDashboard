@@ -83,6 +83,21 @@ export function useUsers() {
   });
 }
 
+export function useApproveUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api.post<BasicUser>(`/auth/users/${userId}/approve`),
+    onSuccess: () => {
+      // Both this page's list and the Users & Settings page read user rows.
+      qc.invalidateQueries({ queryKey: ['authz', 'users'] });
+      qc.invalidateQueries({ queryKey: ['users'] });
+      message.success('Approved — they can sign in now');
+    },
+    onError: (err: any) =>
+      message.error(err?.response?.data?.detail || 'Could not approve the account'),
+  });
+}
+
 export function useUserAccess(userId: string | undefined) {
   return useQuery({
     queryKey: ['authz', 'user-access', userId],
