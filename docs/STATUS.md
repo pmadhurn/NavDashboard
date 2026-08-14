@@ -64,13 +64,13 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 
 | Script | Proves | Baseline |
 |---|---|---|
-| `scripts/verify-authz.py` | permission enforcement, non-admin, over HTTP | 21/21 |
+| `scripts/verify-authz.py` | permission enforcement, non-admin, over HTTP | 26/26 |
 | — | *both probe scripts self-clean on start, so a failed run never blocks the next* | |
-| `scripts/verify-sessions.py` | revocation is immediate | 14/14 |
+| `scripts/verify-sessions.py` | revocation is immediate | 19/19 |
 | `scripts/verify-scope.py` | SELF/TEAM/ALL row ownership | 14/14 |
 | `scripts/verify-attendance.py` | comp-off accrual rules | 16/16 |
 | `scripts/verify-custody.py` | custody, condition, ledger | 27/27 |
-| `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
+| `scripts/verify-movement.py` | handover, returns, kits, repairs | 38/38 |
 | `scripts/verify-tasks.py` | tasks derive and self-clear | 18/18 |
 | `scripts/audit-guards.py` | every operation is mapped | **288** ops, **0 unmapped** |
 | `scripts/route-sweep.mjs` | all routes render, 2 widths | **73/73** (5 Plan V2 routes added) |
