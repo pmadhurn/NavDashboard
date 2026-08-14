@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
+import { isDemo } from '@/shared/demo/demo';
 
 export interface ChatSession {
   id: string;
@@ -120,6 +121,16 @@ export function useSendMessageStream() {
     setIsStreaming(true);
     setSources([]);
     setStreamSessionId(null);
+
+    // Demo mode: this endpoint uses a raw fetch(), so the axios interceptor
+    // cannot catch it — short-circuit here so nothing reaches the network.
+    if (isDemo()) {
+      setStreamingContent(
+        'Chat is disabled in the demo — these are sample conversations. Open one from the sidebar to see the assistant in action.',
+      );
+      setIsStreaming(false);
+      return;
+    }
 
     const token = localStorage.getItem('access_token');
     let url = '/api/v1/ai/chat/stream';

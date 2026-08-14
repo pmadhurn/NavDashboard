@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
+import { isDemo, DEMO_READONLY_MESSAGE } from '@/shared/demo/demo';
+
+/** These endpoints use raw fetch() for blobs, which bypasses the axios demo
+ *  interceptor — so each one refuses locally before touching the network. */
+function assertNotDemo(): void {
+  if (isDemo()) throw new Error(DEMO_READONLY_MESSAGE);
+}
 
 export interface BackupInfo {
   filename: string;
@@ -46,6 +53,7 @@ export function useDeleteBackup() {
 export function useExportXlsx() {
   return useMutation({
     mutationFn: async (tables?: string[]) => {
+      assertNotDemo();
       const token = localStorage.getItem('access_token');
       const response = await fetch('/api/v1/backup/export/xlsx', {
         method: 'POST',
@@ -70,6 +78,7 @@ export function useExportXlsx() {
 export function useExportCsv() {
   return useMutation({
     mutationFn: async (tables?: string[]) => {
+      assertNotDemo();
       const token = localStorage.getItem('access_token');
       const response = await fetch('/api/v1/backup/export/csv', {
         method: 'POST',
@@ -94,6 +103,7 @@ export function useExportCsv() {
 export function useImportXlsx() {
   return useMutation({
     mutationFn: async (file: File): Promise<ImportSummary> => {
+      assertNotDemo();
       const token = localStorage.getItem('access_token');
       const formData = new FormData();
       formData.append('file', file);
@@ -114,6 +124,7 @@ export function useImportXlsx() {
 export function useImportCsv() {
   return useMutation({
     mutationFn: async (file: File): Promise<ImportSummary> => {
+      assertNotDemo();
       const token = localStorage.getItem('access_token');
       const formData = new FormData();
       formData.append('file', file);

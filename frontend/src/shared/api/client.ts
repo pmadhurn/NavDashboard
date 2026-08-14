@@ -1,9 +1,64 @@
-import axios from 'axios'
+import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/shared/stores/authStore'
+import { isDemo, DEMO_READONLY_MESSAGE } from '@/shared/demo/demo'
 
 const axiosInstance = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
+})
+
+/** An axios-shaped rejection, so every existing error toast reads `detail`. */
+function demoError(
+  config: InternalAxiosRequestConfig,
+  status: number,
+  detail: string,
+): AxiosError {
+  return new AxiosError(detail, 'ERR_DEMO_BLOCKED', config, undefined, {
+    data: { detail },
+    status,
+    statusText: status === 404 ? 'Not Found' : 'Forbidden',
+    headers: {},
+    config,
+  } as AxiosResponse)
+}
+
+// ── Demo mode — registered FIRST, before anything auth-related ──────────────
+// When the demo flag is set, every request gets its adapter swapped out, which
+// stops axios from ever touching the network: GETs are answered from the
+// fixture registry, writes are rejected with a read-only message (logout-ish
+// calls resolve harmlessly so signing out of the demo never errors).
+axiosInstance.interceptors.request.use((config) => {
+  if (!isDemo()) return config
+
+  const method = (config.method ?? 'get').toLowerCase()
+  const url = config.url ?? ''
+  const respond = (data: unknown): AxiosResponse => ({
+    data,
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config,
+  })
+
+  if (method === 'get' || method === 'head') {
+    config.adapter = async () => {
+      // Loaded on demand so real users never download the fixture data.
+      const { resolveDemo, DemoHttpError } = await import('@/shared/demo/fixtures')
+      try {
+        return respond(resolveDemo(config))
+      } catch (e) {
+        if (e instanceof DemoHttpError) throw demoError(config, e.status, e.detail)
+        throw e
+      }
+    }
+  } else if (url.includes('/auth/logout') || url.includes('/logout')) {
+    config.adapter = async () => respond({})
+  } else {
+    config.adapter = async () => {
+      throw demoError(config, 403, DEMO_READONLY_MESSAGE)
+    }
+  }
+  return config
 })
 
 axiosInstance.interceptors.request.use((config) => {

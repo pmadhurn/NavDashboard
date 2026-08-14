@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { EyeOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import GlassCard from '@/shared/components/GlassCard';
 import GlassInput from '@/shared/components/GlassInput';
@@ -9,6 +9,7 @@ import { useLogin, useGoogleLogin, useClerkLogin } from '@/modules/auth/hooks/us
 import { useAuthStore } from '@/shared/stores/authStore';
 import GoogleSignInButton, { googleSignInEnabled } from '@/modules/auth/components/GoogleSignInButton';
 import ClerkSignInButton, { clerkSignInEnabled } from '@/modules/auth/components/ClerkSignInButton';
+import { enterDemo } from '@/shared/demo/demo';
 
 /** Pull the API's `detail` off an axios error, falling back when it is absent. */
 function errorDetail(error: unknown, fallback: string): string {
@@ -204,6 +205,40 @@ export default function LoginPage() {
             <GoogleSignInButton onCredential={handleGoogleCredential} />
           </>
         )}
+
+        {/* A no-strings look around with sample data. */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            margin: '20px 0 12px',
+            color: 'var(--text-muted)',
+            fontSize: 12,
+          }}
+        >
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+          just looking?
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+        <GlassButton
+          variant="ghost"
+          fullWidth
+          icon={<EyeOutlined />}
+          onClick={() => enterDemo()}
+        >
+          Explore the demo
+        </GlassButton>
+        <div
+          style={{
+            marginTop: 8,
+            textAlign: 'center',
+            fontSize: 11,
+            color: 'var(--text-muted)',
+          }}
+        >
+          Sample data · read-only · nothing you do here is saved
+        </div>
 
         {/* Whose software this is, on the one screen every user sees. */}
         <div

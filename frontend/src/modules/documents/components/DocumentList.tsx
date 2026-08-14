@@ -16,6 +16,7 @@ import GlassButton from '@/shared/components/GlassButton';
 import ConfirmDialog from '@/shared/components/ConfirmDialog';
 import EmptyState from '@/shared/components/EmptyState';
 import { DocumentItem } from '../hooks/useDocuments';
+import { isDemo } from '@/shared/demo/demo';
 
 interface DocumentListProps {
   documents: DocumentItem[];
@@ -72,6 +73,10 @@ export default function DocumentList({ documents, loading, onDelete }: DocumentL
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleDownload = (doc: DocumentItem) => {
+    if (isDemo()) {
+      message.error('Downloads are disabled in the demo');
+      return;
+    }
     const token = localStorage.getItem('access_token');
     const url = `/api/v1/documents/${doc.id}/download`;
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })

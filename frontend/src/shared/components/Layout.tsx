@@ -12,6 +12,7 @@ import { useCurrentUser } from '@/modules/auth/hooks/useAuth';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { workspaceForPath, workspaceByKey, hasContextualNav } from '@/shared/config/workspaces';
 import ErrorBoundary from './ErrorBoundary';
+import { isDemo, exitDemo, DEMO_BANNER_HEIGHT } from '@/shared/demo/demo';
 
 const { Sider, Content } = AntLayout;
 
@@ -67,8 +68,61 @@ export default function Layout() {
   const sidebarWidth = collapsed ? 64 : 240;
   const contentMargin = isMobile || !showSidebar ? 0 : sidebarWidth;
 
+  // In demo mode a slim read-only banner sits above the top nav; everything
+  // fixed to the top slides down by its height so nothing is covered.
+  const demo = isDemo();
+  const topOffset = TOPNAV_HEIGHT + (demo ? DEMO_BANNER_HEIGHT : 0);
+
   return (
     <AntLayout style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
+      {demo && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: DEMO_BANNER_HEIGHT,
+            zIndex: 300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '0 12px',
+            background: 'rgba(182, 138, 60, 0.22)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: '1px solid var(--status-not-working)',
+            color: 'var(--text-primary)',
+            fontSize: 12,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+          }}
+        >
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <strong>Demo mode</strong>
+            {isMobile ? ' — sample data, read-only.' : ' — sample data, read-only. Nothing here is real.'}
+          </span>
+          <button
+            type="button"
+            onClick={() => exitDemo()}
+            style={{
+              flexShrink: 0,
+              border: '1px solid var(--status-not-working)',
+              background: 'transparent',
+              color: 'var(--text-primary)',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 600,
+              lineHeight: '18px',
+              padding: '0 10px',
+              cursor: 'pointer',
+            }}
+          >
+            Exit demo
+          </button>
+        </div>
+      )}
       <TopNav />
 
       {isMobile ? (
@@ -91,7 +145,7 @@ export default function Layout() {
             style={{
               position: 'fixed',
               left: 0,
-              top: TOPNAV_HEIGHT,
+              top: topOffset,
               bottom: 0,
               zIndex: 100,
               background: 'transparent',
@@ -108,7 +162,7 @@ export default function Layout() {
       <AntLayout
         style={{
           marginLeft: contentMargin,
-          marginTop: TOPNAV_HEIGHT,
+          marginTop: topOffset,
           transition: 'margin-left 0.3s ease',
           background: 'var(--bg-main)',
         }}
@@ -119,7 +173,7 @@ export default function Layout() {
             // Leave room for the bottom tab bar so the last row is never
             // trapped underneath it.
             paddingBottom: isMobile ? TABBAR_HEIGHT + 16 : 24,
-            minHeight: `calc(100vh - ${TOPNAV_HEIGHT}px)`,
+            minHeight: `calc(100vh - ${topOffset}px)`,
             background: 'var(--bg-main)',
           }}
         >

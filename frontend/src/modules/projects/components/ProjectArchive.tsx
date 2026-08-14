@@ -28,6 +28,7 @@ import {
 import type { DocumentItem } from '@/modules/documents/hooks/useDocuments';
 import GlassButton from '@/shared/components/GlassButton';
 import { useState } from 'react';
+import { isDemo } from '@/shared/demo/demo';
 
 interface Archive {
   documents_total: number;
@@ -164,6 +165,10 @@ export function ProjectFilesTab({ projectId }: { projectId: string }) {
 
   const handleDownload = (doc: DocumentItem) => {
     const token = localStorage.getItem('access_token');
+    if (isDemo()) {
+      message.error('Downloads are disabled in the demo');
+      return;
+    }
     fetch(`/api/v1/documents/${doc.id}/download`, {
       headers: { Authorization: `Bearer ${token}` },
     })

@@ -5,6 +5,8 @@ import GlassInput from '@/shared/components/GlassInput'
 import GlassButton from '@/shared/components/GlassButton'
 import { useCreatePair, useUpdatePair } from '../hooks/usePairs'
 import { useCouples } from '@/modules/couples/hooks/useCouples'
+import { api } from '@/shared/api/client'
+import { isDemo } from '@/shared/demo/demo'
 import type { Pair, PairCreate, PairUpdate } from '@/shared/types/pairs'
 import type { Couple } from '@/shared/types/couples'
 
@@ -25,6 +27,16 @@ function usePersonnel() {
   useEffect(() => {
     const fetchPersonnel = async () => {
       try {
+        // Demo mode: raw fetch() would bypass the fixture interceptor — go
+        // through the axios client instead so the demo data answers.
+        if (isDemo()) {
+          const data = await api.get<{ items: { id: string; full_name: string }[] }>(
+            '/personnel/',
+            { size: 100 },
+          )
+          setOptions(data.items.map((p) => ({ label: p.full_name, value: p.id })))
+          return
+        }
         const token = localStorage.getItem('access_token')
         const res = await fetch('/api/v1/personnel/?size=100', {
           headers: { Authorization: `Bearer ${token}` },

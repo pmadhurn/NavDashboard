@@ -13,6 +13,7 @@ import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import ConfirmDialog from '@/shared/components/ConfirmDialog';
 import ExportOptions from '../components/ExportOptions';
 import ImportUploader from '../components/ImportUploader';
+import { isDemo, DEMO_READONLY_MESSAGE } from '@/shared/demo/demo';
 import {
   useBackupHistory,
   useCreateBackup,
@@ -56,6 +57,11 @@ export default function BackupPage() {
 
   const handleRestore = async () => {
     if (!restoreFile) return;
+    if (isDemo()) {
+      message.error(DEMO_READONLY_MESSAGE);
+      setConfirmRestore(false);
+      return;
+    }
     setConfirmRestore(false);
     setRestoring(true);
     try {
@@ -81,6 +87,10 @@ export default function BackupPage() {
   };
 
   const handleDownloadBackup = (filename: string) => {
+    if (isDemo()) {
+      message.error('Downloads are disabled in the demo');
+      return;
+    }
     const token = localStorage.getItem('access_token');
     fetch(`/api/v1/backup/pg-dump/download/${filename}`, {
       headers: { Authorization: `Bearer ${token}` },

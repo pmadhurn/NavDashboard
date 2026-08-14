@@ -18,6 +18,7 @@ import { useLogout } from '@/modules/auth/hooks/useAuth';
 import { getRoleColor } from '@/shared/utils/colors';
 import { visibleWorkspaces, visibleItems, Workspace } from '@/shared/config/workspaces';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { isDemo, DEMO_BANNER_HEIGHT } from '@/shared/demo/demo';
 
 export const TOPNAV_HEIGHT = 56;
 
@@ -145,7 +146,9 @@ export default function TopNav() {
       className="navdash-topnav"
       style={{
         position: 'fixed',
-        top: 0,
+        // In demo mode the read-only banner sits above the nav; slide down so
+        // neither covers the other.
+        top: isDemo() ? DEMO_BANNER_HEIGHT : 0,
         left: 0,
         right: 0,
         zIndex: 200,

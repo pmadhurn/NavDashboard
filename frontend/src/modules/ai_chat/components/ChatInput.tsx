@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SendOutlined, LoadingOutlined } from '@ant-design/icons';
+import { isDemo } from '@/shared/demo/demo';
 
 interface ChatInputProps {
   onSend: (content: string) => void;
   disabled: boolean;
 }
 
-export default function ChatInput({ onSend, disabled }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled: disabledProp }: ChatInputProps) {
+  // In the demo the assistant can't answer live — the canned sessions are the tour.
+  const demo = isDemo();
+  const disabled = disabledProp || demo;
   const [value, setValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -61,7 +65,11 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         disabled={disabled}
-        placeholder="Ask about devices, troubleshooting, configurations..."
+        placeholder={
+          demo
+            ? 'Chat is disabled in the demo — these are sample conversations'
+            : 'Ask about devices, troubleshooting, configurations...'
+        }
         rows={1}
         style={{
           flex: 1,

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import { api } from '@/shared/api/client';
+import { isDemo } from '@/shared/demo/demo';
 
 export interface DownloadCategory {
   id: string;
@@ -117,6 +118,10 @@ export function useDeleteDownloadItem() {
 }
 
 export function downloadVersionFile(version: DownloadVersion) {
+  if (isDemo()) {
+    message.info('File downloads are disabled in the demo');
+    return Promise.resolve();
+  }
   return api.downloadFile(
     `/downloads/versions/${version.id}/download`,
     version.original_filename

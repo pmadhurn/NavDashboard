@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
+import { isDemo } from '@/shared/demo/demo';
 
 export interface ReportTemplate {
   id: string;
@@ -27,6 +28,8 @@ export function useReportTemplates() {
 export function useGenerateReport() {
   return useMutation({
     mutationFn: async (request: ReportRequest) => {
+      // Raw fetch() bypasses the axios demo interceptor — refuse locally.
+      if (isDemo()) throw new Error('Report generation is disabled in the demo');
       const token = localStorage.getItem('access_token');
       const response = await fetch('/api/v1/reports/generate', {
         method: 'POST',

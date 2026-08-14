@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
 import { PaginatedResponse } from '@/shared/types/common';
+import { isDemo, DEMO_READONLY_MESSAGE } from '@/shared/demo/demo';
 
 export interface DocumentItem {
   id: string;
@@ -60,6 +61,8 @@ export function useUploadDocument() {
       entityId?: string;
       description?: string;
     }) => {
+      // Raw fetch() bypasses the axios demo interceptor — refuse locally.
+      if (isDemo()) throw new Error(DEMO_READONLY_MESSAGE);
       const formData = new FormData();
       formData.append('file', data.file);
       if (data.entityType) formData.append('entity_type', data.entityType);
