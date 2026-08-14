@@ -16,7 +16,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 555
+    "textLen": 655
   },
   {
     "viewport": "desktop",
@@ -36,7 +36,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 818
+    "textLen": 337
   },
   {
     "viewport": "desktop",
@@ -54,8 +54,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 535
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 231
   },
   {
     "viewport": "desktop",
@@ -75,7 +78,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 463
+    "textLen": 271
   },
   {
     "viewport": "desktop",
@@ -93,8 +96,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 663
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 231
   },
   {
     "viewport": "desktop",
@@ -104,7 +110,7 @@
     "action": {
       "found": true,
       "ok": true,
-      "label": "Add Pair",
+      "label": "Add Link",
       "note": "modal opened + closed"
     },
     "overflow": {
@@ -114,7 +120,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 417
+    "textLen": 353
   },
   {
     "viewport": "desktop",
@@ -132,8 +138,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 713
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 229
   },
   {
     "viewport": "desktop",
@@ -152,7 +161,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 436
+    "textLen": 420
   },
   {
     "viewport": "desktop",
@@ -171,7 +180,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 1015
+    "textLen": 506
   },
   {
     "viewport": "desktop",
@@ -191,7 +200,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 373
+    "textLen": 446
   },
   {
     "viewport": "desktop",
@@ -210,7 +219,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 322
+    "textLen": 349
   },
   {
     "viewport": "desktop",
@@ -229,7 +238,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 334
+    "textLen": 407
   },
   {
     "viewport": "desktop",
@@ -248,7 +257,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 172
+    "textLen": 246
   },
   {
     "viewport": "desktop",
@@ -268,7 +277,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 161
+    "textLen": 279
   },
   {
     "viewport": "desktop",
@@ -288,7 +297,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 1156
+    "textLen": 554
   },
   {
     "viewport": "desktop",
@@ -306,8 +315,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 409
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 296
   },
   {
     "viewport": "desktop",
@@ -326,7 +338,103 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 299
+    "textLen": 375
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/requests",
+    "renders": true,
+    "bounced": "/inventory/requests",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 448
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/vendors",
+    "renders": true,
+    "bounced": "/inventory/vendors",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add vendor",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 380
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/outward",
+    "renders": true,
+    "bounced": "/inventory/outward",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 679
+  },
+  {
+    "viewport": "desktop",
+    "route": "/inventory/inward",
+    "renders": true,
+    "bounced": "/inventory/inward",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 387
+  },
+  {
+    "viewport": "desktop",
+    "route": "/learn",
+    "renders": true,
+    "bounced": "/learn",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 1440,
+      "doc": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 737
   },
   {
     "viewport": "desktop",
@@ -346,7 +454,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 481
+    "textLen": 277
   },
   {
     "viewport": "desktop",
@@ -364,8 +472,13 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 448
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 248
   },
   {
     "viewport": "desktop",
@@ -385,7 +498,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 675
+    "textLen": 400
   },
   {
     "viewport": "desktop",
@@ -405,7 +518,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 438
+    "textLen": 460
   },
   {
     "viewport": "desktop",
@@ -425,7 +538,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 233
+    "textLen": 340
   },
   {
     "viewport": "desktop",
@@ -445,7 +558,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 424
+    "textLen": 415
   },
   {
     "viewport": "desktop",
@@ -465,7 +578,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 465
+    "textLen": 314
   },
   {
     "viewport": "desktop",
@@ -484,7 +597,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 1915
+    "textLen": 2112
   },
   {
     "viewport": "desktop",
@@ -504,7 +617,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 4865
+    "textLen": 5676
   },
   {
     "viewport": "desktop",
@@ -524,7 +637,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 803
+    "textLen": 876
   },
   {
     "viewport": "desktop",
@@ -543,7 +656,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 448
+    "textLen": 521
   },
   {
     "viewport": "desktop",
@@ -562,7 +675,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 669
+    "textLen": 1018
   },
   {
     "viewport": "desktop",
@@ -580,7 +693,7 @@
       "Failed to load resource: the server responded with a status of 404 (Not Found)",
       "Failed to load resource: the server responded with a status of 404 (Not Found)"
     ],
-    "textLen": 158
+    "textLen": 231
   },
   {
     "viewport": "desktop",
@@ -598,7 +711,7 @@
       "Failed to load resource: the server responded with a status of 404 (Not Found)",
       "Failed to load resource: the server responded with a status of 404 (Not Found)"
     ],
-    "textLen": 158
+    "textLen": 231
   },
   {
     "viewport": "desktop",
@@ -616,7 +729,7 @@
       "Failed to load resource: the server responded with a status of 404 (Not Found)",
       "Failed to load resource: the server responded with a status of 404 (Not Found)"
     ],
-    "textLen": 156
+    "textLen": 229
   },
   {
     "viewport": "desktop",
@@ -636,7 +749,7 @@
       "Failed to load resource: the server responded with a status of 404 (Not Found)",
       "Failed to load resource: the server responded with a status of 404 (Not Found)"
     ],
-    "textLen": 231
+    "textLen": 248
   },
   {
     "viewport": "desktop",
@@ -654,7 +767,7 @@
       "Failed to load resource: the server responded with a status of 404 (Not Found)",
       "Failed to load resource: the server responded with a status of 404 (Not Found)"
     ],
-    "textLen": 228
+    "textLen": 296
   },
   {
     "viewport": "mobile",
@@ -673,7 +786,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 567
+    "textLen": 570
   },
   {
     "viewport": "mobile",
@@ -693,7 +806,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 968
+    "textLen": 230
   },
   {
     "viewport": "mobile",
@@ -711,8 +824,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 440
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 63
   },
   {
     "viewport": "mobile",
@@ -732,7 +848,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 368
+    "textLen": 103
   },
   {
     "viewport": "mobile",
@@ -750,8 +866,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 568
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 63
   },
   {
     "viewport": "mobile",
@@ -761,7 +880,7 @@
     "action": {
       "found": true,
       "ok": true,
-      "label": "Add Pair",
+      "label": "Add Link",
       "note": "modal opened + closed"
     },
     "overflow": {
@@ -771,7 +890,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 322
+    "textLen": 185
   },
   {
     "viewport": "mobile",
@@ -789,8 +908,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 618
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 61
   },
   {
     "viewport": "mobile",
@@ -809,7 +931,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 341
+    "textLen": 252
   },
   {
     "viewport": "mobile",
@@ -828,7 +950,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 920
+    "textLen": 338
   },
   {
     "viewport": "mobile",
@@ -867,7 +989,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 228
+    "textLen": 238
   },
   {
     "viewport": "mobile",
@@ -925,7 +1047,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 172
+    "textLen": 168
   },
   {
     "viewport": "mobile",
@@ -945,7 +1067,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 999
+    "textLen": 407
   },
   {
     "viewport": "mobile",
@@ -963,8 +1085,11 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 315
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 134
   },
   {
     "viewport": "mobile",
@@ -983,7 +1108,103 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 205
+    "textLen": 207
+  },
+  {
+    "viewport": "mobile",
+    "route": "/inventory/requests",
+    "renders": true,
+    "bounced": "/inventory/requests",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 286
+  },
+  {
+    "viewport": "mobile",
+    "route": "/inventory/vendors",
+    "renders": true,
+    "bounced": "/inventory/vendors",
+    "action": {
+      "found": true,
+      "ok": true,
+      "label": "Add vendor",
+      "note": "modal opened + closed"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 218
+  },
+  {
+    "viewport": "mobile",
+    "route": "/inventory/outward",
+    "renders": true,
+    "bounced": "/inventory/outward",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 517
+  },
+  {
+    "viewport": "mobile",
+    "route": "/inventory/inward",
+    "renders": true,
+    "bounced": "/inventory/inward",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 225
+  },
+  {
+    "viewport": "mobile",
+    "route": "/learn",
+    "renders": true,
+    "bounced": "/learn",
+    "action": {
+      "found": false,
+      "ok": null,
+      "note": "no primary action button"
+    },
+    "overflow": {
+      "vw": 390,
+      "doc": 390,
+      "overflow": false,
+      "offenders": []
+    },
+    "errors": [],
+    "textLen": 652
   },
   {
     "viewport": "mobile",
@@ -1003,7 +1224,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 387
+    "textLen": 166
   },
   {
     "viewport": "mobile",
@@ -1021,8 +1242,13 @@
       "overflow": false,
       "offenders": []
     },
-    "errors": [],
-    "textLen": 354
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "textLen": 137
   },
   {
     "viewport": "mobile",
@@ -1042,7 +1268,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 621
+    "textLen": 304
   },
   {
     "viewport": "mobile",
@@ -1062,7 +1288,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 393
+    "textLen": 341
   },
   {
     "viewport": "mobile",
@@ -1082,7 +1308,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 198
+    "textLen": 216
   },
   {
     "viewport": "mobile",
@@ -1102,7 +1328,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 389
+    "textLen": 291
   },
   {
     "viewport": "mobile",
@@ -1122,7 +1348,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 477
+    "textLen": 160
   },
   {
     "viewport": "mobile",
@@ -1141,7 +1367,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 1877
+    "textLen": 1988
   },
   {
     "viewport": "mobile",
@@ -1161,7 +1387,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 4887
+    "textLen": 5624
   },
   {
     "viewport": "mobile",
@@ -1200,7 +1426,7 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 429
+    "textLen": 428
   },
   {
     "viewport": "mobile",
@@ -1219,6 +1445,6 @@
       "offenders": []
     },
     "errors": [],
-    "textLen": 609
+    "textLen": 884
   }
 ]

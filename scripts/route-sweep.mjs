@@ -44,6 +44,10 @@ const ROUTES = [
   '/pairs', `/pairs/${ID.pair}`, '/map', '/troubleshooting', '/comparison',
   '/documents', '/location-history', '/search', '/downloads',
   '/inventory/assets', `/inventory/assets/${ID.asset}`, '/inventory/deployed',
+  // Plan V2 (2026-08-12): required items, vendors, the outward/inward pair,
+  // and the learning section.
+  '/inventory/requests', '/inventory/vendors', '/inventory/outward',
+  '/inventory/inward', '/learn',
   '/projects', `/projects/${ID.project}`,
   '/finance', '/finance/my', '/finance/claims', '/finance/settlement',
   '/personnel', '/audit', '/backup', '/reports', '/ai', '/settings',

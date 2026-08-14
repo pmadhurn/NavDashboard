@@ -86,13 +86,16 @@ def upgrade() -> None:
     conn = op.get_bind()
     for key, roles in GRANTS.items():
         for role in roles:
+            # :k appears twice; asyncpg cannot deduce one type for both uses
+            # without the explicit casts (AmbiguousParameterError).
             conn.execute(
                 sa.text(
                     "INSERT INTO role_permissions (id, role_id, permission_key, created_at) "
-                    "SELECT gen_random_uuid(), r.id, :k, now() FROM roles r "
+                    "SELECT gen_random_uuid(), r.id, CAST(:k AS varchar), now() FROM roles r "
                     "WHERE r.name = :n "
                     "AND NOT EXISTS (SELECT 1 FROM role_permissions rp "
-                    "                WHERE rp.role_id = r.id AND rp.permission_key = :k)"
+                    "                WHERE rp.role_id = r.id "
+                    "                AND rp.permission_key = CAST(:k AS varchar))"
                 ),
                 {"k": key, "n": role},
             )

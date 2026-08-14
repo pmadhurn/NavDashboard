@@ -79,12 +79,12 @@ Re-run all of it after any of A–C. Anything below its number is a regression.
 | `verify-custody.py` | 27/27 |
 | `verify-movement.py` | **38/38** (was 26/26 — notification checks added) |
 | `verify-tasks.py` | 18/18 |
-| `verify-authz.py` | **26/26** (was 21/21 — export permissions added) |
+| `verify-authz.py` | **26/26** |
 | `verify-scope.py` | 14/14 |
 | `verify-attendance.py` | 16/16 |
 | `verify-sessions.py` | **19/19** (was 14/14 — Clerk revocation added) |
-| `audit-guards.py` | **270** ops, 0 unmapped |
-| `route-sweep.mjs` | 63/63 |
+| `audit-guards.py` | **288** ops, 0 unmapped |
+| `route-sweep.mjs` | **73/73** (Plan V2 routes added) |
 | `polish-sweep.mjs` | 84 checks, 0 problems |
 | `nav-personas.mjs` | 6/6, settings blocked for all three non-admins |
 

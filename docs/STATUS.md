@@ -73,7 +73,7 @@ docker cp scripts/verify-authz.py navdashboard-backend-1:/tmp/va2.py && docker e
 | `scripts/verify-movement.py` | handover, returns, kits, repairs | 26/26 |
 | `scripts/verify-tasks.py` | tasks derive and self-clear | 18/18 |
 | `scripts/audit-guards.py` | every operation is mapped | **288** ops, **0 unmapped** |
-| `scripts/route-sweep.mjs` | all routes render, 2 widths | 63/63 |
+| `scripts/route-sweep.mjs` | all routes render, 2 widths | **73/73** (5 Plan V2 routes added) |
 | `scripts/nav-personas.mjs` | nav as 3 non-admin roles | 7 / 7 / 8 tabs |
 | `scripts/polish-sweep.mjs` | 42 routes x 2 themes at 390px | 84 checks, 0 problems |
 | `scripts/share-preview.mjs` | what each Share button sends | prints the messages |
