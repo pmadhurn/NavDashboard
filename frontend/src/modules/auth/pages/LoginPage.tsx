@@ -263,7 +263,6 @@ export default function LoginPage() {
               Nav Wireless Technologies Pvt Ltd
             </a>
           </div>
-          <div>Built by Raj Patel · Head of Operations</div>
         </div>
       </GlassCard>
     </div>
