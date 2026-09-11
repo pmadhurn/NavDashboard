@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 # NavDashboard — the whole stack, one file.
 #
 #   docker compose up -d --build
@@ -12,6 +18,7 @@
 #   URL          : localhost:8085     (cloudflared started with --network host)
 services:
   nginx:
+    logging: *default-logging
     image: nginx:alpine
     # Loopback only: the tunnel dials this; nothing else on the network can.
     # 8080 is taken on this host by open-webui, hence 8085.
@@ -29,6 +36,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    logging: *default-logging
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -46,6 +54,7 @@ services:
       start_period: 30s
 
   backend:
+    logging: *default-logging
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -79,6 +88,7 @@ services:
       start_period: 15s
 
   db:
+    logging: *default-logging
     build:
       context: ./database
       dockerfile: Dockerfile
@@ -100,6 +110,7 @@ services:
       retries: 5
 
   redis:
+    logging: *default-logging
     image: redis:7-alpine
     networks:
       - navdashboard
@@ -111,6 +122,7 @@ services:
       retries: 5
 
   minio:
+    logging: *default-logging
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     ports:
