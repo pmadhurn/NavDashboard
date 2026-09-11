@@ -75,7 +75,7 @@ export default function LoginPage() {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -258,7 +258,14 @@ export default function LoginPage() {
               href="https://www.navwireless.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: 'var(--text-secondary)' }}
+              // Padding + negative margin: same visual size, but a >=24px
+              // tap target (WCAG 2.5.8) instead of a 12px-tall text line.
+              style={{
+                color: 'var(--text-secondary)',
+                display: 'inline-block',
+                padding: '8px 6px',
+                margin: '-8px -6px',
+              }}
             >
               Nav Wireless Technologies Pvt Ltd
             </a>

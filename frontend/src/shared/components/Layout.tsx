@@ -74,7 +74,7 @@ export default function Layout() {
   const topOffset = TOPNAV_HEIGHT + (demo ? DEMO_BANNER_HEIGHT : 0);
 
   return (
-    <AntLayout style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
+    <AntLayout style={{ minHeight: '100dvh', background: 'var(--bg-main)' }}>
       {demo && (
         <div
           style={{
@@ -173,7 +173,7 @@ export default function Layout() {
             // Leave room for the bottom tab bar so the last row is never
             // trapped underneath it.
             paddingBottom: isMobile ? TABBAR_HEIGHT + 16 : 24,
-            minHeight: `calc(100vh - ${topOffset}px)`,
+            minHeight: `calc(100dvh - ${topOffset}px)`,
             background: 'var(--bg-main)',
           }}
         >

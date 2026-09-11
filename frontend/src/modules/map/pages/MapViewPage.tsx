@@ -1,6 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUiStore } from '@/shared/stores/uiStore'
+import { useIsMobile } from '@/shared/hooks/useIsMobile'
+import { TOPNAV_HEIGHT } from '@/shared/components/TopNav'
+import { TABBAR_HEIGHT } from '@/shared/components/MobileTabBar'
+import { isDemo, DEMO_BANNER_HEIGHT } from '@/shared/demo/demo'
 import MainMap from '../components/MainMap'
 import MapFilters from '../components/MapFilters'
 import MapSidePanel from '../components/MapSidePanel'
@@ -16,6 +20,7 @@ import type { Couple } from '@/shared/types/couples'
 
 export default function MapViewPage() {
   const setPageTitle = useUiStore((s) => s.setPageTitle)
+  const isMobile = useIsMobile()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -76,15 +81,29 @@ export default function MapViewPage() {
 
   return (
     <div
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: 'calc(100vh - 56px - 48px)',
-        margin: '-24px',
-        marginTop: '-24px',
-        padding: 0,
-        overflow: 'hidden',
-      }}
+      // Mobile: the -24px margin (which cancels the desktop content padding)
+      // overflowed the 12px mobile padding, so pin the map between the top nav
+      // and the bottom tab bar instead — no vh math, no URL-bar jumps.
+      style={
+        isMobile
+          ? {
+              position: 'fixed',
+              top: TOPNAV_HEIGHT + (isDemo() ? DEMO_BANNER_HEIGHT : 0),
+              left: 0,
+              right: 0,
+              bottom: TABBAR_HEIGHT,
+              overflow: 'hidden',
+            }
+          : {
+              position: 'relative',
+              width: '100%',
+              height: 'calc(100vh - 56px - 48px)',
+              margin: '-24px',
+              marginTop: '-24px',
+              padding: 0,
+              overflow: 'hidden',
+            }
+      }
     >
       {/* Loading overlay */}
       {isLoading && (
